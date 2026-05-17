@@ -91,7 +91,7 @@ is `N_∩ = 32` datasets, listed in
 
 - **AOM-Ridge headline is single-seed.** `runs/ridge/all54_headline/` is
   seed 0 only. Seeds 1 and 2 are listed as a paper-submission blocker in
-  `paper/review/talanta_review.md` (weakness #2). The runner to fill them is
+  `paper/review/paper_review.md` (weakness #2). The runner to fill them is
   `benchmarks/ridge/run_aomridge_benchmark.py` invoked with seeds 1, 2.
 - **HPO denominator collapse.** PLS-TabPFN-HPO and Ridge-TabPFN-HPO cover
   ~36 datasets each; the strict intersection is N=32. The list of missing

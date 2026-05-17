@@ -5,10 +5,10 @@ All notable changes to `aom-nirs` are documented here. Format based on
 
 ## [Unreleased]
 
-### Planned (post-Talanta)
+### Planned (post-submission)
 
 - Run AOM-Ridge Blender / AutoSelector with seeds 1 and 2 (the current
-  paper headline is single-seed; see `paper/review/talanta_review.md`
+  paper headline is single-seed; see `paper/review/paper_review.md`
   weakness #2).
 - Fill the HPO denominator gap for PLS-TabPFN-HPO and Ridge-TabPFN-HPO
   (see `paper/review/missing_datasets_per_variant.md`).
@@ -24,7 +24,7 @@ All notable changes to `aom-nirs` are documented here. Format based on
 ### Added
 
 - Initial public release. Companion Python implementation of the
-  Talanta paper *"Operator-adaptive PLS and Ridge calibration for NIR
+  paper *"Operator-adaptive PLS and Ridge calibration for NIR
   spectroscopy"*.
 - `aom_nirs.pls` — AOM-PLS, POP-PLS, AOM-PLS-DA, POP-PLS-DA. Strict
   linear operator bank (identity, Savitzky-Golay, finite difference,
@@ -63,7 +63,7 @@ All notable changes to `aom-nirs` are documented here. Format based on
   v3_stats.md, classification_stats.md, missing_datasets_per_variant.md,
   cohort_manifest.csv, failure_mode_table.csv, plus
   `aom_code_inventory.md`, `aom_lib_migration_plan.md`,
-  `pls4all_integration_eval.md`, `talanta_review.md`).
+  `pls4all_integration_eval.md`, `paper_review.md`).
 - `benchmarks/` carries cohort runners for all three families plus the
   paper-tied result outputs under `benchmarks/runs/{pls,ridge,fast,
   scenarios}/`. Total 16 MB of paper-tied result CSVs.
@@ -83,7 +83,7 @@ All notable changes to `aom-nirs` are documented here. Format based on
 
 - Code formerly at `nirs4all/bench/AOM_v0/{aompls,Ridge/aomridge,
   FastAOM}/`. The original locations are now empty in `nirs4all`.
-- The Talanta paper formerly at `nirs4all/paper_aom/` now lives at
+- The paper formerly at `nirs4all/paper_aom/` now lives at
   `aom_nirs/paper/`. A `paper_aom/README.md` breadcrumb at the old
   location points here.
 - `nirs4all` retains thin wrapper modules at
@@ -97,6 +97,6 @@ All notable changes to `aom-nirs` are documented here. Format based on
   `gate='sparsemax'`, `FFTBandpassOperator`, `WaveletProjectionOperator`,
   the `tau` / `n_orth` / `operator_index` / `prefix` arguments, and
   the in-fit torch dispatch are dropped. None of those features are
-  part of the Talanta paper. The torch backend now lives at
+  part of the paper. The torch backend now lives at
   `aom_nirs/pls/torch_backend.py` and is selected via the `backend`
   argument.

@@ -1,6 +1,6 @@
 # Reproducibility runbook
 
-Step-by-step instructions to reproduce the Talanta paper claims for
+Step-by-step instructions to reproduce the paper claims for
 `aom_nirs` from a fresh clone. Commands assume the current working
 directory is the `aom_nirs/` repo root and that `python3.11` is on
 `PATH`. The companion library
@@ -214,7 +214,7 @@ python benchmarks/fast/run_fast_aom_benchmark.py --seeds 0
 After every run, re-aggregate (Section 4) and rebuild the PDF
 (Section 3).
 
-## Section 6. Talanta-review blockers still open
+## Section 6. paper-review blockers still open
 
 Two gaps must be closed before the manuscript can claim seed-stable
 statistics across every variant:

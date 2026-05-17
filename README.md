@@ -2,7 +2,7 @@
 
 **Adaptive Operator-Mixture PLS and Ridge for near-infrared spectroscopy.**
 
-Companion code for the Talanta paper *"Operator-adaptive PLS and Ridge calibration for NIR spectroscopy"* (manuscript in `paper/`).
+Companion code for the paper *"Operator-adaptive PLS and Ridge calibration for NIR spectroscopy"* (manuscript in `paper/`).
 
 This repository ships three sklearn-compatible model families plus benchmark runners:
 
@@ -49,7 +49,7 @@ A full reproduction of one smoke dataset for AOM-PLS, AOM-Ridge, and FastAOM is 
 
 ## Paper
 
-The Talanta manuscript and supplement live under `paper/`. The review dossier (`paper/review/`) contains the inventory, migration plan, and pls4all-integration evaluation that drove this code release. See `paper/review/aom_code_inventory.md` for the per-variant score evidence.
+The manuscript and supplement live under `paper/`. The review dossier (`paper/review/`) contains the inventory, migration plan, and pls4all-integration evaluation that drove this code release. See `paper/review/aom_code_inventory.md` for the per-variant score evidence.
 
 ## License
 
