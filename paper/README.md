@@ -1,6 +1,6 @@
 # aom-nirs paper
 
-Manuscript and supplement for the Talanta paper *Operator-adaptive PLS and
+Manuscript and supplement for the paper *Operator-adaptive PLS and
 Ridge calibration for NIR spectroscopy*.
 
 ## Build
@@ -39,7 +39,7 @@ paper/
 The `review/` directory contains everything needed to reason about the
 paper's claims, audit the data, and migrate the code base if needed:
 
-- `talanta_review.md` — internal review with weakness ranking and fix plan
+- `paper_review.md` — internal review with weakness ranking and fix plan
 - `aom_code_inventory.md` — per-file inventory of every AOM source module
 - `aom_lib_migration_plan.md` — the three repo options that led to `aom_nirs`
 - `pls4all_integration_eval.md` — convergence path with the C++ engine
@@ -69,10 +69,10 @@ emits the operator-frequency / failure-mode tables.
 
 After regeneration, rerun `bash build.sh` to refresh `main.pdf`.
 
-## Open paper blockers (carried over from `review/talanta_review.md`)
+## Open paper blockers (carried over from `review/paper_review.md`)
 
 1. **AOM-Ridge headline is single-seed.** Re-run Blender / AutoSelector
-   with seeds 1 and 2 (see `paper/review/talanta_review.md` weakness #2).
+   with seeds 1 and 2 (see `paper/review/paper_review.md` weakness #2).
 2. **HPO denominator gap.** Fill the PLS-TabPFN-HPO and Ridge-TabPFN-HPO
    "not attempted" rows in `missing_datasets_per_variant.md`.
 3. **Code availability.** This repo is the answer: clone `gbeurier/aom`,

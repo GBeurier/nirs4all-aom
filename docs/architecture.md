@@ -1,6 +1,6 @@
 # Architecture
 
-`aom_nirs` is the companion code for the Talanta paper
+`aom_nirs` is the companion code for the paper
 *Operator-adaptive PLS and Ridge calibration for NIR spectroscopy*. It ships
 three sibling subpackages, all sklearn-compatible, all sharing the strict
 linear-operator scope defined in the paper. Production pipelines that need
@@ -19,7 +19,7 @@ aom_nirs/
 │   ├── fast/       # FastAOM chain screening
 │   └── experimental/
 ├── benchmarks/     # Paper runners (pls/, ridge/, fast/, runs/, scenarios/)
-├── paper/          # Talanta manuscript, figures, review/
+├── paper/          # manuscript, figures, review/
 ├── examples/       # 01_aom_pls_quickstart.py, 02_aom_ridge_blender.py
 ├── tests/          # pls/, ridge/, fast/
 └── docs/           # this directory

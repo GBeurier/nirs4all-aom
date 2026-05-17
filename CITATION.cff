@@ -29,7 +29,7 @@ date-released: "2026-05-17"
 repository-code: "https://github.com/GBeurier/aom-nirs"
 url: "https://github.com/GBeurier/aom-nirs"
 abstract: >-
-  Companion Python implementation for the Talanta paper
+  Companion Python implementation for the paper
   "Operator-adaptive PLS and Ridge calibration for NIR spectroscopy".
   Provides AOM-PLS / POP-PLS / AOM-PLS-DA / POP-PLS-DA (operator-adaptive
   partial least squares), the AOM-Ridge family (Regressor, Classifier,
@@ -45,7 +45,7 @@ references:
         given-names: Gregory
     title: "Operator-adaptive PLS and Ridge calibration for NIR spectroscopy"
     year: 2026
-    journal: "Talanta"
+    notes: "Preprint; see paper/main.tex and paper/aom_arxiv_v2.tar.gz"
     notes: "Submitted; see paper/main.tex"
   - type: software
     title: "nirs4all"
@@ -62,4 +62,4 @@ preferred-citation:
       given-names: Gregory
   title: "Operator-adaptive PLS and Ridge calibration for NIR spectroscopy"
   year: 2026
-  journal: "Talanta"
+  notes: "Preprint; see paper/main.tex and paper/aom_arxiv_v2.tar.gz"

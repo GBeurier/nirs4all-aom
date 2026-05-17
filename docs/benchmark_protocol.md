@@ -1,6 +1,6 @@
 # Benchmark protocol
 
-This document describes the protocol used in the Talanta paper
+This document describes the protocol used in the paper
 *Operator-adaptive PLS and Ridge calibration for NIR spectroscopy* to
 benchmark `aom_nirs` against PLS and Ridge baselines. Companion
 [`nirs4all`](https://github.com/GBeurier/nirs4all) provides the
@@ -68,7 +68,7 @@ The headline **AOM-Ridge Blender** (`AOMRidge-Blender-headline-spxy3`)
 and `AOMRidge-AutoSelect-headline-spxy3` and
 `AOMRidge-global-compact-none` currently ship results for **seed 0
 only** (see `paper/review/final_stats.md` "Seed stability" table: 0
-full-seed datasets for these three variants). This is a known Talanta
+full-seed datasets for these three variants). This is a known paper-review
 review blocker. Before journal submission, seeds 1 and 2 must be
 filled to enable the same paired-stats methodology used for the PLS
 families.

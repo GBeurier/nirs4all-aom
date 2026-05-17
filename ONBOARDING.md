@@ -18,7 +18,7 @@ Companion docs (deeper dives):
   three options that led to this layout.
 - `paper/review/pls4all_integration_eval.md` — convergence path with the
   C++ engine.
-- `paper/review/talanta_review.md` — internal Talanta review with
+- `paper/review/paper_review.md` — internal review dossier with
   weakness ranking.
 - `paper/review/final_stats.md` — current paired-stats numbers.
 
@@ -31,7 +31,7 @@ the manuscript and `final_stats.md` are the sources of truth.
 
 ## 1. The 30-second pitch
 
-`aom-nirs` is the citation repository for the Talanta paper
+`aom-nirs` is the citation repository for the paper
 *"Operator-adaptive PLS and Ridge calibration for NIR spectroscopy"*. It
 ships three Python packages plus the manuscript:
 
@@ -114,14 +114,14 @@ seeds). PLS-default with no tuning is the "what most practitioners
 deploy" baseline; the TabPFN-HPO baselines are the "what a careful
 analyst with a budget" baseline.
 
-**Talanta-review blockers (open).**
+**paper-review blockers (open).**
 
 - AOM-Ridge Blender headline is **single-seed** (seed 0 only) while
   the paper's other variants run 3 seeds. Re-run with seeds 1, 2.
 - HPO baselines have ~25 "not attempted" datasets each. Either fill
   them or document the missingness in the manuscript.
 
-Both are tracked in `paper/review/talanta_review.md` weaknesses #1-#2
+Both are tracked in `paper/review/paper_review.md` weaknesses #1-#2
 and `paper/review/missing_datasets_per_variant.md`.
 
 ## 3. Repo at a glance
@@ -203,7 +203,7 @@ This costs three things:
    dominates calibration time.
 2. **Model-selection variance**. The winner of a small grid changes
    when you change the random seed of the CV split. Reviewers (and
-   `paper/review/talanta_review.md`) flag this as a recurring
+   `paper/review/paper_review.md`) flag this as a recurring
    weakness in the literature.
 3. **Cognitive load**. The analyst memorises which recipe works on
    which dataset family. The science is "I tried 50 recipes, this one
@@ -699,9 +699,9 @@ python benchmarks/pls/run_aompls_benchmark.py --cohort benchmarks/pls/cohort_reg
   Superseded by `aom_nirs` (Python) + `pls4all` (C++); kept at
   `_archive/multi_lang/AOM_lib/` as a historical reference.
 
-## 12. Current blockers — Talanta submission
+## 12. Current blockers — paper submission
 
-From `paper/review/talanta_review.md`, ordered by severity:
+From `paper/review/paper_review.md`, ordered by severity:
 
 1. **AOM-Ridge Blender / AutoSelector seeds 1 and 2 not run** (weakness #2).
    The headline ratio 0.918 and the AutoSelect ratio 0.963 are

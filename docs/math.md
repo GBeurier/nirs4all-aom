@@ -1,6 +1,6 @@
 # Mathematical reference
 
-Companion notes to the Talanta paper *Operator-adaptive PLS and Ridge
+Companion notes to the paper *Operator-adaptive PLS and Ridge
 calibration for NIR spectroscopy*. The paper (`paper/main.tex`) contains
 the full derivations and the formal statements; this document gives just
 enough to map each formula to the corresponding code in `aom_nirs`.

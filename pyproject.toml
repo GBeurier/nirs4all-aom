@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "aom-nirs"
 version = "0.1.0"
-description = "Adaptive Operator-Mixture PLS and Ridge for near-infrared spectroscopy: companion code for the Talanta paper."
+description = "Adaptive Operator-Mixture PLS and Ridge for near-infrared spectroscopy: companion code for the paper."
 readme = "README.md"
 license = { text = "AGPL-3.0-or-later OR Commercial" }
 authors = [
