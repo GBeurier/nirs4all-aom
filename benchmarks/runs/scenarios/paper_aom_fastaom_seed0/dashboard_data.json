@@ -1,0 +1,208 @@
+{
+  "by_status": {
+    "ok": 70
+  },
+  "leaderboard": [
+    {
+      "canonical_name": "FastAOM-single-chain-compact",
+      "model_class": "fastaom-single-chain-pls-ridge",
+      "n_datasets": 10,
+      "median_rmsep": 3.1171958974701273,
+      "min_rmsep": 0.029583836575970038,
+      "max_rmsep": 73.12273587326573,
+      "median_fit_time_s": 16.44266099050583,
+      "max_fit_time_s": 84.92321761799394
+    },
+    {
+      "canonical_name": "FastAOM-hard-chain-compact",
+      "model_class": "fastaom-hard-aom-chain",
+      "n_datasets": 10,
+      "median_rmsep": 3.1970558795401613,
+      "min_rmsep": 0.03223339606645408,
+      "max_rmsep": 69.61627639829162,
+      "median_fit_time_s": 29.068173959007254,
+      "max_fit_time_s": 118.38213249700493
+    },
+    {
+      "canonical_name": "FastAOM-hard-chain-compact-d4",
+      "model_class": "fastaom-hard-aom-chain",
+      "n_datasets": 10,
+      "median_rmsep": 3.1970558795401613,
+      "min_rmsep": 0.03223339606645408,
+      "max_rmsep": 69.61627639829162,
+      "median_fit_time_s": 30.251960196001164,
+      "max_fit_time_s": 118.02922875699005
+    },
+    {
+      "canonical_name": "FastAOM-hard-chain-shrinkage",
+      "model_class": "fastaom-hard-aom-chain",
+      "n_datasets": 10,
+      "median_rmsep": 3.1970558795401613,
+      "min_rmsep": 0.03223339606645408,
+      "max_rmsep": 69.61627639829162,
+      "median_fit_time_s": 28.762241865500982,
+      "max_fit_time_s": 119.23120627499884
+    },
+    {
+      "canonical_name": "FastAOM-hard-chain-multibase",
+      "model_class": "fastaom-hard-aom-chain",
+      "n_datasets": 10,
+      "median_rmsep": 3.2182747561885865,
+      "min_rmsep": 0.030982406256106,
+      "max_rmsep": 71.81965584835585,
+      "median_fit_time_s": 52.23169497198978,
+      "max_fit_time_s": 201.696734379002
+    },
+    {
+      "canonical_name": "FastAOM-sparse-mkr-compact",
+      "model_class": "fastaom-sparse-mkr",
+      "n_datasets": 10,
+      "median_rmsep": 3.4993457985788927,
+      "min_rmsep": 0.03004858381451803,
+      "max_rmsep": 73.0781655935965,
+      "median_fit_time_s": 27.737102128994593,
+      "max_fit_time_s": 121.7798594670021
+    },
+    {
+      "canonical_name": "FastAOM-soft-chain-compact",
+      "model_class": "fastaom-soft-aom-chain",
+      "n_datasets": 10,
+      "median_rmsep": 3.5713787638727563,
+      "min_rmsep": 0.03314018947663473,
+      "max_rmsep": 71.72444350858578,
+      "median_fit_time_s": 27.594471515003534,
+      "max_fit_time_s": 97.29417643201305
+    }
+  ],
+  "heatmap": {
+    "canonicals": [
+      "FastAOM-single-chain-compact",
+      "FastAOM-hard-chain-compact",
+      "FastAOM-hard-chain-compact-d4",
+      "FastAOM-hard-chain-shrinkage",
+      "FastAOM-hard-chain-multibase",
+      "FastAOM-sparse-mkr-compact",
+      "FastAOM-soft-chain-compact"
+    ],
+    "datasets": [
+      "All_manure_CaO_SPXY_strat_Manure_type",
+      "All_manure_P2O5_SPXY_strat_Manure_type",
+      "An_spxyG70_30_byCultivar_MicroNIR",
+      "Beef_Marbling_RandomSplit",
+      "Chla+b_spxyG_block2deg",
+      "DIESEL_bp50_246_b-a",
+      "DIESEL_bp50_246_hla-b",
+      "Fv_Fm_grp70_30",
+      "WOOD_N_402_Olale",
+      "ta_groupSampleID_stratDateVar_balRows"
+    ],
+    "rmsep": [
+      [
+        7.633810313444305,
+        2.6306757283413065,
+        4.404346494505269,
+        73.12273587326573,
+        48.40644563517737,
+        3.4586308812607616,
+        2.7757609136794934,
+        0.029583836575970038,
+        0.0489041774121714,
+        2.2701150498403746
+      ],
+      [
+        9.570201993353809,
+        3.272405943557728,
+        4.684899070648295,
+        69.61627639829162,
+        60.51732908160826,
+        3.121705815522595,
+        2.901956885038228,
+        0.03223339606645408,
+        0.05178517461216664,
+        2.3125928351459715
+      ],
+      [
+        9.570201993353809,
+        3.272405943557728,
+        4.684899070648295,
+        69.61627639829162,
+        60.51732908160826,
+        3.121705815522595,
+        2.901956885038228,
+        0.03223339606645408,
+        0.05178517461216664,
+        2.3125928351459715
+      ],
+      [
+        9.570201993353809,
+        3.272405943557728,
+        4.684899070648295,
+        69.61627639829162,
+        60.51732908160826,
+        3.121705815522595,
+        2.901956885038228,
+        0.03223339606645408,
+        0.05178517461216664,
+        2.3125928351459715
+      ],
+      [
+        9.24208994032241,
+        3.245232497645788,
+        4.946602793668473,
+        71.81965584835585,
+        50.581630470809735,
+        3.1913170147313847,
+        3.0787017046094127,
+        0.030982406256106,
+        0.05178517461216664,
+        2.3125928351459715
+      ],
+      [
+        7.7809143621879695,
+        2.5359675625118,
+        3.58580546703614,
+        73.0781655935965,
+        45.80287925230377,
+        3.4128861301216453,
+        3.9872103633151452,
+        0.03004858381451803,
+        0.047870043297518566,
+        2.0334516260626607
+      ],
+      [
+        8.687932229284742,
+        3.5852217512709665,
+        4.627453110656019,
+        71.72444350858578,
+        51.676872445220084,
+        3.5575357764745457,
+        3.0081015025000433,
+        0.03314018947663473,
+        0.0491169125940364,
+        2.477968271719926
+      ]
+    ]
+  },
+  "failures": {
+    "total": 0,
+    "by_class": {},
+    "samples": []
+  },
+  "n_datasets": 10,
+  "n_candidates": 7,
+  "meta": {
+    "generated_at": "2026-05-15 10:11 UTC",
+    "workspace": "bench/scenarios/runs/paper_aom_fastaom_seed0",
+    "n_rows": 70,
+    "presets": [
+      "fastaom_smoke"
+    ],
+    "cohorts": [
+      "diverse11"
+    ],
+    "seeds": [
+      "0"
+    ],
+    "hosts": []
+  }
+}

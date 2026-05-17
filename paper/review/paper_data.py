@@ -8,7 +8,7 @@ from pathlib import Path
 import pandas as pd
 
 ROOT = Path(__file__).resolve().parents[2]
-REVIEW = ROOT / "paper_aom" / "review"
+REVIEW = ROOT / "paper" / "review"
 COHORT_MANIFEST = REVIEW / "cohort_manifest.csv"
 
 
@@ -26,9 +26,9 @@ class VariantSpec:
     glob: bool = False
 
 
-LINEAR_DEFAULT = "bench/scenarios/runs/paper_aom_linear_hpo_full_cartesian_default_cv5_all/results.csv"
-AOMPLS_SEEDS012 = "bench/scenarios/runs/paper_aom_aompls_seeds012/results.csv"
-AOMRIDGE_HEADLINE = "bench/AOM_v0/Ridge/benchmark_runs/all54_headline/results.csv"
+LINEAR_DEFAULT = "benchmarks/runs/scenarios/paper_aom_linear_hpo_full_cartesian_default_cv5_all/results.csv"
+AOMPLS_SEEDS012 = "benchmarks/runs/scenarios/paper_aom_aompls_seeds012/results.csv"
+AOMRIDGE_HEADLINE = "benchmarks/runs/ridge/all54_headline/results.csv"
 
 PAPER_VARIANT_SPECS: tuple[VariantSpec, ...] = (
     VariantSpec(
@@ -45,7 +45,7 @@ PAPER_VARIANT_SPECS: tuple[VariantSpec, ...] = (
     ),
     VariantSpec(
         key="pls-tabpfn-hpo-25trials",
-        workspace="bench/scenarios/runs/paper_aom_linear_hpo_full_cartesian_pls-tabpfn-hpo-25trials_seed*/results.csv",
+        workspace="benchmarks/runs/scenarios/paper_aom_linear_hpo_full_cartesian_pls-tabpfn-hpo-25trials_seed*/results.csv",
         variant_column="variant",
         variant_value="pls-tabpfn-hpo-25trials",
         require_seeds=3,
@@ -53,7 +53,7 @@ PAPER_VARIANT_SPECS: tuple[VariantSpec, ...] = (
     ),
     VariantSpec(
         key="ridge-tabpfn-hpo-60trials",
-        workspace="bench/scenarios/runs/paper_aom_linear_hpo_full_cartesian_ridge-tabpfn-hpo-60trials_seed*/results.csv",
+        workspace="benchmarks/runs/scenarios/paper_aom_linear_hpo_full_cartesian_ridge-tabpfn-hpo-60trials_seed*/results.csv",
         variant_column="variant",
         variant_value="ridge-tabpfn-hpo-60trials",
         require_seeds=3,
@@ -250,7 +250,7 @@ def write_missing_datasets_doc(output_path: Path | None = None) -> Path:
         "",
         "## Reference cohort",
         "",
-        f"Source: `paper_aom/review/cohort_manifest.csv` -- N attempted = {len(reference)}.",
+        f"Source: `paper/review/cohort_manifest.csv` -- N attempted = {len(reference)}.",
         "",
         "## Strict intersection used in the paper",
         "",
