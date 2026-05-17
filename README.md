@@ -62,7 +62,7 @@ Dual-license: **AGPL-3.0-or-later** (default open-source) or commercial. See `LI
   author = {Beurier, Gregory},
   title  = {aom-nirs: Adaptive Operator-Mixture PLS and Ridge for NIR spectroscopy},
   year   = {2026},
-  url    = {https://github.com/GBeurier/aom},
+  url    = {https://github.com/GBeurier/aom-nirs},
   version = {0.1.0}
 }
 ```

@@ -12,7 +12,7 @@ authors:
 identifiers:
   - description: "GitHub repository"
     type: url
-    value: "https://github.com/GBeurier/aom"
+    value: "https://github.com/GBeurier/aom-nirs"
 keywords:
   - chemometrics
   - NIRS
@@ -26,8 +26,8 @@ keywords:
 license: AGPL-3.0-or-later OR LicenseRef-Commercial
 version: 0.1.0
 date-released: "2026-05-17"
-repository-code: "https://github.com/GBeurier/aom"
-url: "https://github.com/GBeurier/aom"
+repository-code: "https://github.com/GBeurier/aom-nirs"
+url: "https://github.com/GBeurier/aom-nirs"
 abstract: >-
   Companion Python implementation for the Talanta paper
   "Operator-adaptive PLS and Ridge calibration for NIR spectroscopy".
