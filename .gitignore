@@ -56,3 +56,6 @@ paper/*.synctex.gz
 benchmarks/runs/
 *.duckdb
 *.duckdb.wal
+
+# Pre-paper workspace cache (1.3 GB, kept on disk for inspection — not in git)
+_archive/pre_paper_drafts/workspace/
