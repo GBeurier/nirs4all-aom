@@ -30,9 +30,9 @@ from scipy import stats
 import paper_data
 
 ROOT = Path(__file__).resolve().parents[2]
-REVIEW = ROOT / "paper_aom" / "review"
-TABLES = ROOT / "paper_aom" / "tables"
-FIGURES = ROOT / "paper_aom" / "figures"
+REVIEW = ROOT / "paper" / "review"
+TABLES = ROOT / "paper" / "tables"
+FIGURES = ROOT / "paper" / "figures"
 
 
 # ---------------------------------------------------------------------------
@@ -192,21 +192,21 @@ def style_grid(ax, axis: str = "y") -> None:
 EXCLUDED_RATIO_DATASETS = {"QUARTZ_spxy70", "Quartz_spxy70"}
 RNG = np.random.default_rng(20260517)
 
-FAST_SUMMARY = ROOT / "bench/scenarios/runs/paper_aom_fastaom_full60_seed0/headline_with_lucas_summary.csv"
-FAST_WINNERS = ROOT / "bench/scenarios/runs/paper_aom_fastaom_full60_seed0/headline_with_lucas_winners.csv"
-FAST_WIDE = ROOT / "bench/scenarios/runs/paper_aom_fastaom_full60_seed0/headline_with_lucas.csv"
-FAST_LONG = ROOT / "bench/scenarios/runs/paper_aom_fastaom_full60_seed0/merged_results_with_lucas.csv"
+FAST_SUMMARY = ROOT / "benchmarks/runs/scenarios/paper_aom_fastaom_full60_seed0/headline_with_lucas_summary.csv"
+FAST_WINNERS = ROOT / "benchmarks/runs/scenarios/paper_aom_fastaom_full60_seed0/headline_with_lucas_winners.csv"
+FAST_WIDE = ROOT / "benchmarks/runs/scenarios/paper_aom_fastaom_full60_seed0/headline_with_lucas.csv"
+FAST_LONG = ROOT / "benchmarks/runs/scenarios/paper_aom_fastaom_full60_seed0/merged_results_with_lucas.csv"
 
-AOMPLS = ROOT / "bench/scenarios/runs/paper_aom_aompls_seeds012/results.csv"
-AOMRIDGE_PARTIAL = ROOT / "bench/AOM_v0/Ridge/benchmark_runs/paper_aom_aomridge_seeds012/results.csv"
-AOMRIDGE_HEADLINE = ROOT / "bench/AOM_v0/Ridge/benchmark_runs/all54_headline/results.csv"
-LINEAR_DEFAULT = ROOT / "bench/scenarios/runs/paper_aom_linear_hpo_full_cartesian_default_cv5_all/results.csv"
+AOMPLS = ROOT / "benchmarks/runs/scenarios/paper_aom_aompls_seeds012/results.csv"
+AOMRIDGE_PARTIAL = ROOT / "benchmarks/runs/ridge/paper_aom_aomridge_seeds012/results.csv"
+AOMRIDGE_HEADLINE = ROOT / "benchmarks/runs/ridge/all54_headline/results.csv"
+LINEAR_DEFAULT = ROOT / "benchmarks/runs/scenarios/paper_aom_linear_hpo_full_cartesian_default_cv5_all/results.csv"
 
-PLS_HPO_GLOB = "bench/scenarios/runs/paper_aom_linear_hpo_full_cartesian_pls-tabpfn-hpo-25trials_seed*/results.csv"
-RIDGE_HPO_GLOB = "bench/scenarios/runs/paper_aom_linear_hpo_full_cartesian_ridge-tabpfn-hpo-60trials_seed*/results.csv"
+PLS_HPO_GLOB = "benchmarks/runs/scenarios/paper_aom_linear_hpo_full_cartesian_pls-tabpfn-hpo-25trials_seed*/results.csv"
+RIDGE_HPO_GLOB = "benchmarks/runs/scenarios/paper_aom_linear_hpo_full_cartesian_ridge-tabpfn-hpo-60trials_seed*/results.csv"
 
-CLS_AOMPLS = ROOT / "bench/AOM_v0/benchmark_runs/paper_aom_aompls_da_seeds012/results.csv"
-CLS_AOMRIDGE = ROOT / "bench/AOM_v0/Ridge/benchmark_runs/paper_aom_aomridge_cls_seeds012/results.csv"
+CLS_AOMPLS = ROOT / "benchmarks/runs/pls/paper_aom_aompls_da_seeds012/results.csv"
+CLS_AOMRIDGE = ROOT / "benchmarks/runs/ridge/paper_aom_aomridge_cls_seeds012/results.csv"
 
 
 def latex_escape(value: object) -> str:
@@ -1106,8 +1106,8 @@ def _read_csv_auto(path: Path) -> pd.DataFrame | None:
 def _split_paths() -> dict[str, dict[str, str]]:
     paths: dict[str, dict[str, str]] = {}
     for rel in [
-        "bench/AOM_v0/benchmarks/cohort_regression.csv",
-        "bench/AOM_v0/benchmarks/cohort_classification.csv",
+        "benchmarks/pls/cohort_regression.csv",
+        "benchmarks/pls/cohort_classification.csv",
     ]:
         table = ROOT / rel
         if not table.exists():

@@ -9,7 +9,7 @@ benchmark-harness schema) and produces:
   family), Cliff's delta and no-harm tails;
 - seed-stability and runtime summaries;
 - LaTeX tables and matplotlib PDF/PNG figures for the Talanta submission;
-- companion markdown reports under ``paper_aom/review/``.
+- companion markdown reports under ``paper/review/``.
 
 The script is designed to be run repeatedly while result generation is still
 in flight: ``--partial`` aggregates whatever exists on disk and warns about
@@ -38,9 +38,9 @@ import paper_data
 # ---------------------------------------------------------------------------
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-REVIEW_DIR = REPO_ROOT / "paper_aom" / "review"
-TABLES_DIR = REPO_ROOT / "paper_aom" / "tables"
-FIGURES_DIR = REPO_ROOT / "paper_aom" / "figures"
+REVIEW_DIR = REPO_ROOT / "paper" / "review"
+TABLES_DIR = REPO_ROOT / "paper" / "tables"
+FIGURES_DIR = REPO_ROOT / "paper" / "figures"
 COHORT_MANIFEST = REVIEW_DIR / "cohort_manifest.csv"
 
 # The full set of workspaces to look at. Order matters: schema mapping is
@@ -48,73 +48,73 @@ COHORT_MANIFEST = REVIEW_DIR / "cohort_manifest.csv"
 WORKSPACES: list[dict[str, str]] = [
     {
         "name": "aom_pls_seeds012",
-        "path": "bench/scenarios/runs/paper_aom_aompls_seeds012/results.csv",
+        "path": "benchmarks/runs/scenarios/paper_aom_aompls_seeds012/results.csv",
         "schema": "aom_v0_wide",
         "required": True,
     },
     {
         "name": "aom_pls_da_seeds012",
-        "path": "bench/AOM_v0/benchmark_runs/paper_aom_aompls_da_seeds012/results.csv",
+        "path": "benchmarks/runs/pls/paper_aom_aompls_da_seeds012/results.csv",
         "schema": "aom_v0_wide",
         "required": True,
     },
     {
         "name": "aom_ridge_top5_seeds012",
-        "path": "bench/AOM_v0/Ridge/benchmark_runs/paper_aom_aomridge_seeds012/results.csv",
+        "path": "benchmarks/runs/ridge/paper_aom_aomridge_seeds012/results.csv",
         "schema": "harness",
         "required": True,
     },
     {
         "name": "aom_ridge_cls_seeds012",
-        "path": "bench/AOM_v0/Ridge/benchmark_runs/paper_aom_aomridge_cls_seeds012/results.csv",
+        "path": "benchmarks/runs/ridge/paper_aom_aomridge_cls_seeds012/results.csv",
         "schema": "harness",
         "required": True,
     },
     {
         "name": "aom_ridge_headline",
-        "path": "bench/AOM_v0/Ridge/benchmark_runs/all54_headline/results.csv",
+        "path": "benchmarks/runs/ridge/all54_headline/results.csv",
         "schema": "harness",
         "required": True,
     },
     {
         "name": "linear_default_cv5",
-        "path": "bench/scenarios/runs/paper_aom_linear_hpo_full_cartesian_default_cv5_all/results.csv",
+        "path": "benchmarks/runs/scenarios/paper_aom_linear_hpo_full_cartesian_default_cv5_all/results.csv",
         "schema": "linear_hpo",
         "required": True,
     },
     {
         "name": "pls_hpo_seed0",
-        "path": "bench/scenarios/runs/paper_aom_linear_hpo_full_cartesian_pls-tabpfn-hpo-25trials_seed0/results.csv",
+        "path": "benchmarks/runs/scenarios/paper_aom_linear_hpo_full_cartesian_pls-tabpfn-hpo-25trials_seed0/results.csv",
         "schema": "linear_hpo",
         "required": True,
     },
     {
         "name": "pls_hpo_seed1",
-        "path": "bench/scenarios/runs/paper_aom_linear_hpo_full_cartesian_pls-tabpfn-hpo-25trials_seed1/results.csv",
+        "path": "benchmarks/runs/scenarios/paper_aom_linear_hpo_full_cartesian_pls-tabpfn-hpo-25trials_seed1/results.csv",
         "schema": "linear_hpo",
         "required": True,
     },
     {
         "name": "pls_hpo_seed2",
-        "path": "bench/scenarios/runs/paper_aom_linear_hpo_full_cartesian_pls-tabpfn-hpo-25trials_seed2/results.csv",
+        "path": "benchmarks/runs/scenarios/paper_aom_linear_hpo_full_cartesian_pls-tabpfn-hpo-25trials_seed2/results.csv",
         "schema": "linear_hpo",
         "required": True,
     },
     {
         "name": "ridge_hpo_seed0",
-        "path": "bench/scenarios/runs/paper_aom_linear_hpo_full_cartesian_ridge-tabpfn-hpo-60trials_seed0/results.csv",
+        "path": "benchmarks/runs/scenarios/paper_aom_linear_hpo_full_cartesian_ridge-tabpfn-hpo-60trials_seed0/results.csv",
         "schema": "linear_hpo",
         "required": True,
     },
     {
         "name": "ridge_hpo_seed1",
-        "path": "bench/scenarios/runs/paper_aom_linear_hpo_full_cartesian_ridge-tabpfn-hpo-60trials_seed1/results.csv",
+        "path": "benchmarks/runs/scenarios/paper_aom_linear_hpo_full_cartesian_ridge-tabpfn-hpo-60trials_seed1/results.csv",
         "schema": "linear_hpo",
         "required": True,
     },
     {
         "name": "ridge_hpo_seed2",
-        "path": "bench/scenarios/runs/paper_aom_linear_hpo_full_cartesian_ridge-tabpfn-hpo-60trials_seed2/results.csv",
+        "path": "benchmarks/runs/scenarios/paper_aom_linear_hpo_full_cartesian_ridge-tabpfn-hpo-60trials_seed2/results.csv",
         "schema": "linear_hpo",
         "required": True,
     },

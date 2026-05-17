@@ -51,9 +51,10 @@ paper/*.fdb_latexmk
 paper/*.fls
 paper/*.synctex.gz
 
-# Benchmark outputs (results CSVs etc. live in paper/review/ when paper-tied;
-# everything else under benchmarks/runs/ is local)
-benchmarks/runs/
+# Paper-tied benchmark outputs are tracked under benchmarks/runs/{pls,ridge,
+# fast,scenarios}/. Local / experimental runs should live under
+# benchmarks/runs/local/ which is ignored.
+benchmarks/runs/local/
 *.duckdb
 *.duckdb.wal
 

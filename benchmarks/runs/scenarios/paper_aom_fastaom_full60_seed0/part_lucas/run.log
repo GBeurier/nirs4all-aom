@@ -1,0 +1,6 @@
+/home/delete/nirs4all/bench/AOM_v0/FastAOM/models/_common.py:60: RuntimeWarning: invalid value encountered in divide
+  hat_diag = (eigvals / denom)
+[LUCAS/LUCAS_SOC_Cropland_8731_NocitaKS] +11 rows
+[LUCAS/LUCAS_SOC_all_26650_NocitaKS] +9 rows
+[LUCAS/LUCAS_pH_Organic_1763_LiuRandomOrganic] +11 rows
+FastAOM done: 31 new rows written to /home/delete/nirs4all/bench/scenarios/runs/paper_aom_fastaom_full60_seed0/part_lucas/results.csv
