@@ -1,0 +1,12 @@
+\begin{tabularx}{\linewidth}{p{0.22\linewidth}Xr}
+\toprule
+Model family & Selection protocol in reference benchmark & Candidate evaluations per dataset \\
+\midrule
+PLS-default & component CV without preprocessing screening & 25 \\
+PLS-HPO & 600 preprocessing combinations $\times$ 5 trials & 3000 \\
+Ridge-default & regularization CV without preprocessing screening & 15 \\
+Ridge-HPO & 600 preprocessing combinations $\times$ 10 trials & 6000 \\
+AOM (simple) & compact bank inside calibration; no fitted branch or Blender selector & 45 \\
+AOM (best) & selected compact AOM branch inside calibration & 45 \\
+\bottomrule
+\end{tabularx}

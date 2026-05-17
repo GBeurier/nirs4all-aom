@@ -1,0 +1,90 @@
+\begin{longtable}{L{0.34\linewidth}L{0.14\linewidth}L{0.18\linewidth}rrrL{0.15\linewidth}}
+\caption{Cohort manifest used for the AOM paper.  Status is the primary-analysis flag from the refreshed manifest; exclusion notes are kept where present.}\\
+\toprule
+Dataset & Task & Domain & Train & Test & $p$ & Status / note \\
+\midrule
+\endfirsthead
+\toprule
+Dataset & Task & Domain & Train & Test & $p$ & Status / note \\
+\midrule
+\endhead
+CoffeeType\_kenstone70\_strat & classification & beverage & 49 & 21 & 601 & include \\
+Species\_56\_Bagnall & classification & beverage & n/a & n/a & n/a & exclude; missing files: Xtrain.csv,Ytrain.csv,Xtest.csv,Ytest.csv \\
+Oocist2C\_333\_Maia\_Acc87.6 & classification & biomedical & 227 & 106 & 2151 & include \\
+Sporozoite2C\_229\_Maia\_Acc94.5 & classification & biomedical & 138 & 91 & 2151 & include \\
+CT2C\_1057\_CIAT\_Acc & classification & crop-tuber & 975 & 81 & 1050 & include \\
+labels\_kenstone70\_strat & classification & dairy & 315 & 135 & 601 & include \\
+Strawberry2C\_983\_Holland\_Acc94.3 & classification & fruit-quality & 666 & 317 & 235 & include \\
+Beef\_Impurity\_60\_AlJowder & classification & meat-quality & 30 & 30 & 470 & include \\
+FinalScoreBin\_grp70\_30\_classStrat & classification & plant-disease & 646 & 289 & 2177 & include \\
+ScoreBin\_grp70\_30\_classStrat & classification & plant-disease & 578 & 238 & 2177 & include \\
+Genotype10\_250 & classification & plant-id & 175 & 75 & 2152 & include \\
+Group9\_1856 & classification & plant-id & 1260 & 540 & 2152 & include \\
+Group\_2185 & classification & plant-id & 1530 & 655 & 2152 & include \\
+InOut\_1264 & classification & plant-id & 884 & 379 & 2152 & include \\
+Species\_code\_grpStrat70\_30\_bySpecimen & classification & plant-id & 5103 & 2220 & 1951 & include \\
+C2\_511\_Davrieux\_Acc82 & classification & wood-product & 358 & 153 & 1050 & include \\
+C5\_511\_Davrieux\_Acc82 & classification & wood-product & 358 & 153 & 1050 & include \\
+Beer\_OriginalExtract\_60\_KS & regression & beverage & 40 & 20 & 576 & include \\
+Beer\_OriginalExtract\_60\_YbaseSplit & regression & beverage & 40 & 20 & 576 & include \\
+Malaria\_Oocist\_333\_Maia & regression & biomedical & 227 & 106 & 2151 & include \\
+Malaria\_Sporozoite\_229\_Maia & regression & biomedical & 138 & 91 & 2151 & include \\
+Corn\_Oil\_80\_ZhengChenPelegYbaseSplit & regression & crop-grain & 64 & 16 & 700 & include \\
+Corn\_Starch\_80\_ZhengChenPelegYbaseSplit & regression & crop-grain & 64 & 16 & 700 & include \\
+Rice\_Amylose\_313\_YbasedSplit & regression & crop-grain & 203 & 110 & 1154 & include \\
+C\_woOutlier & regression & crop-seed & 1210 & 1209 & 1154 & include \\
+N\_wOutlier & regression & crop-seed & 1220 & 1207 & 1154 & include \\
+N\_woOutlier & regression & crop-seed & 1205 & 1207 & 1154 & include \\
+Milk\_Fat\_1224\_KS & regression & dairy & 181 & 221 & 255 & include \\
+Milk\_Lactose\_1224\_KS & regression & dairy & 856 & 368 & 255 & include \\
+Milk\_Urea\_1224\_KS & regression & dairy & 856 & 368 & 255 & include \\
+Biscuit\_Fat\_40\_RandomSplit & regression & food-product & 40 & 32 & 700 & include \\
+Biscuit\_Sucrose\_40\_RandomSplit & regression & food-product & 40 & 32 & 700 & include \\
+Brix\_spxy70 & regression & fruit-quality & 35 & 15 & 600 & include \\
+Firmness\_spxy70 & regression & fruit-quality & 28 & 12 & 600 & include \\
+brix\_groupSampleID\_stratDateVar\_balRows & regression & fruit-quality & 1434 & 699 & 2101 & include \\
+ph\_groupSampleID\_stratDateVar\_balRows & regression & fruit-quality & 912 & 489 & 2101 & include \\
+ta\_groupSampleID\_stratDateVar\_balRows & regression & fruit-quality & 912 & 489 & 2101 & include \\
+TIC\_spxy70 & regression & industrial & 43 & 19 & 254 & include \\
+ALPINE\_P\_291\_KS & regression & leaf-physiology & 247 & 44 & 2151 & include \\
+An\_spxyG70\_30\_byCultivar\_ASD & regression & leaf-physiology & 78 & 34 & 2101 & include \\
+An\_spxyG70\_30\_byCultivar\_MicroNIR & regression & leaf-physiology & 81 & 35 & 125 & include \\
+An\_spxyG70\_30\_byCultivar\_MicroNIR\_NeoSpectra & regression & leaf-physiology & 80 & 35 & 276 & include \\
+An\_spxyG70\_30\_byCultivar\_NeoSpectra & regression & leaf-physiology & 82 & 37 & 257 & include \\
+Ccar\_spxyG\_block2deg & regression & leaf-physiology & 1016 & 3229 & 196 & include \\
+Chla+b\_spxyG\_block2deg & regression & leaf-physiology & 2925 & 3925 & 196 & include \\
+Chla+b\_spxyG\_species & regression & leaf-physiology & 3734 & 3116 & 196 & include \\
+LMA\_spxyG70\_30\_byCultivar\_ASD & regression & leaf-physiology & 1092 & 472 & 2101 & include \\
+LMA\_spxyG\_block2deg & regression & leaf-physiology & 39225 & 6192 & 196 & include \\
+LP\_spxyG & regression & leaf-physiology & 169 & 88 & 2101 & include \\
+MP\_spxyG & regression & leaf-physiology & 169 & 88 & 2101 & include \\
+NP\_spxyG & regression & leaf-physiology & 169 & 88 & 2101 & include \\
+Pi\_spxyG & regression & leaf-physiology & 169 & 88 & 2101 & include \\
+Rd25\_CBtestSite & regression & leaf-physiology & 324 & 146 & 2151 & include \\
+Rd25\_GTtestSite & regression & leaf-physiology & 297 & 173 & 2151 & include \\
+Rd25\_XSBNtestSite & regression & leaf-physiology & 319 & 151 & 2151 & include \\
+Rd25\_spxy70 & regression & leaf-physiology & 329 & 141 & 2151 & include \\
+V25\_spxyG & regression & leaf-physiology & 168 & 82 & 2101 & include \\
+WUEinst\_spxyG70\_30\_byCultivar\_MicroNIR\_NeoSpectra & regression & leaf-physiology & 77 & 35 & 276 & include \\
+grapevine\_chloride\_556\_KS & regression & leaf-physiology & 388 & 167 & 1023 & include \\
+Beef\_Marbling\_RandomSplit & regression & meat-quality & 554 & 278 & 331 & include \\
+Quartz\_spxy70 & regression & mineral & 212 & 91 & 1500 & include; denominator\_near\_zero\_pairwise \\
+DIESEL\_bp50\_246\_b-a & regression & petroleum & 113 & 113 & 401 & include \\
+DIESEL\_bp50\_246\_hla-b & regression & petroleum & 133 & 113 & 401 & include \\
+DIESEL\_bp50\_246\_hlb-a & regression & petroleum & 133 & 113 & 401 & include \\
+Escitalopramt\_310\_Zhao & regression & pharmaceutical & 207 & 103 & 404 & include \\
+FinalScore\_grp70\_30\_scoreQ & regression & plant-disease & 646 & 289 & 2177 & include \\
+Fv\_Fm\_grp70\_30 & regression & plant-disease & 351 & 167 & 2177 & include \\
+Tleaf\_grp70\_30 & regression & plant-disease & 458 & 207 & 2177 & include \\
+All\_manure\_CaO\_SPXY\_strat\_Manure\_type & regression & soil-amendment & 343 & 147 & 1003 & include \\
+All\_manure\_K2O\_SPXY\_strat\_Manure\_type & regression & soil-amendment & 343 & 147 & 1003 & include \\
+All\_manure\_MgO\_SPXY\_strat\_Manure\_type & regression & soil-amendment & 343 & 147 & 1003 & include \\
+All\_manure\_P2O5\_SPXY\_strat\_Manure\_type & regression & soil-amendment & 343 & 147 & 1003 & include \\
+All\_manure\_Total\_N\_SPXY\_strat\_Manure\_type & regression & soil-amendment & 343 & 147 & 1003 & include \\
+LUCAS\_SOC\_Cropland\_8731\_NocitaKS & regression & soil-eu & 6111 & 2620 & 4200 & include \\
+LUCAS\_SOC\_all\_26650\_NocitaKS & regression & soil-eu & 13325 & 5711 & 4200 & include \\
+LUCAS\_pH\_Organic\_1763\_LiuRandomOrganic & regression & soil-eu & 1175 & 588 & 4200 & include \\
+WOOD\_Density\_402\_Olale & regression & wood-product & 216 & 186 & 1038 & include \\
+WOOD\_N\_402\_Olale & regression & wood-product & 216 & 186 & 1038 & include \\
+\bottomrule
+\end{longtable}

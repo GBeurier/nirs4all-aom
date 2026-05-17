@@ -1,0 +1,29 @@
+\begin{tabularx}{\linewidth}{Xrrrr}
+\toprule
+Comparison & $N$ & Median ratio & 95\% CI & Wins; $p_{\mathrm{Holm}}$ \\
+\midrule
+ASLS-\allowbreak{}AOM-\allowbreak{}compact-\allowbreak{}cv5 vs PLS-\allowbreak{}standard & 32 & 0.973 & 0.934--0.995 & 22/32; 0.184 \\
+AOM-\allowbreak{}compact-\allowbreak{}cv5 vs PLS-\allowbreak{}standard & 32 & 0.983 & 0.963--1.005 & 20/32; 0.518 \\
+AOM-\allowbreak{}default-\allowbreak{}nipals-\allowbreak{}adjoint vs PLS-\allowbreak{}standard & 32 & 1.003 & 0.966--1.049 & 16/32; 1.000 \\
+ASLS-\allowbreak{}AOM-\allowbreak{}compact-\allowbreak{}cv5 vs PLS-\allowbreak{}default & 32 & 0.985 & 0.916--1.018 & 20/32; 1.000 \\
+AOM-\allowbreak{}compact-\allowbreak{}cv5 vs PLS-\allowbreak{}default & 32 & 0.991 & 0.970--1.000 & 22/32; 0.896 \\
+AOM-\allowbreak{}default-\allowbreak{}nipals-\allowbreak{}adjoint vs PLS-\allowbreak{}default & 32 & 1.005 & 0.975--1.057 & 15/32; 1.000 \\
+ASLS-\allowbreak{}AOM-\allowbreak{}compact-\allowbreak{}cv5 vs PLS-\allowbreak{}TabPFN-\allowbreak{}HPO & 32 & 1.002 & 0.977--1.035 & 15/32; 1.000 \\
+AOM-\allowbreak{}compact-\allowbreak{}cv5 vs PLS-\allowbreak{}TabPFN-\allowbreak{}HPO & 32 & 0.990 & 0.975--1.021 & 19/32; 1.000 \\
+PLS-\allowbreak{}TabPFN-\allowbreak{}HPO vs PLS-\allowbreak{}default & 32 & 0.992 & 0.939--1.010 & 19/32; 1.000 \\
+Ridge-\allowbreak{}TabPFN-\allowbreak{}HPO vs Ridge-\allowbreak{}default & 32 & 0.962 & 0.913--1.004 & 19/32; 1.000 \\
+AOMRidge-\allowbreak{}global-\allowbreak{}compact-\allowbreak{}none vs Ridge-\allowbreak{}default & 32 & 0.974 & 0.892--0.993 & 25/32; 0.007 \\
+AOMRidge-\allowbreak{}Blender vs Ridge-\allowbreak{}default & 32 & 0.918 & 0.808--0.937 & 27/32; 2.6e-04 \\
+AOMRidge-\allowbreak{}Blender vs Ridge-\allowbreak{}TabPFN-\allowbreak{}HPO & 32 & 0.966 & 0.918--0.985 & 25/32; 0.033 \\
+AOMRidge-\allowbreak{}AutoSelect vs Ridge-\allowbreak{}TabPFN-\allowbreak{}HPO & 32 & 0.963 & 0.929--0.996 & 22/32; 0.741 \\
+AOMRidge-\allowbreak{}global-\allowbreak{}compact-\allowbreak{}none vs Ridge-\allowbreak{}TabPFN-\allowbreak{}HPO & 32 & 0.984 & 0.934--1.020 & 19/32; 1.000 \\
+AOMRidge-\allowbreak{}Local-\allowbreak{}knn50 vs Ridge-\allowbreak{}TabPFN-\allowbreak{}HPO & 23 & 1.212 & 1.051--1.550 & 4/23; 1.000 \\
+FastAOM-\allowbreak{}sparse-\allowbreak{}mkr-\allowbreak{}supervised vs PLS-\allowbreak{}standard & 32 & 0.953 & 0.903--0.980 & 23/32; 0.741 \\
+FastAOM-\allowbreak{}sparse-\allowbreak{}mkr-\allowbreak{}compact vs PLS-\allowbreak{}standard & 32 & 0.953 & 0.909--0.979 & 22/32; 0.518 \\
+FastAOM-\allowbreak{}single-\allowbreak{}chain-\allowbreak{}compact vs PLS-\allowbreak{}standard & 32 & 0.999 & 0.977--1.036 & 16/32; 1.000 \\
+FastAOM-\allowbreak{}sparse-\allowbreak{}mkr-\allowbreak{}supervised vs PLS-\allowbreak{}TabPFN-\allowbreak{}HPO & 32 & 0.993 & 0.931--1.070 & 16/32; 1.000 \\
+FastAOM-\allowbreak{}sparse-\allowbreak{}mkr-\allowbreak{}compact vs PLS-\allowbreak{}TabPFN-\allowbreak{}HPO & 32 & 0.995 & 0.919--1.066 & 16/32; 1.000 \\
+FastAOM-\allowbreak{}single-\allowbreak{}chain-\allowbreak{}compact vs PLS-\allowbreak{}TabPFN-\allowbreak{}HPO & 32 & 1.066 & 1.021--1.131 & 7/32; 1.000 \\
+FastAOM-\allowbreak{}sparse-\allowbreak{}mkr-\allowbreak{}supervised vs ASLS-\allowbreak{}AOM-\allowbreak{}compact-\allowbreak{}cv5 & 32 & 1.021 & 0.975--1.067 & 15/32; 1.000 \\
+\bottomrule
+\end{tabularx}

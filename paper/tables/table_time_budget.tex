@@ -1,0 +1,14 @@
+\begin{tabularx}{\linewidth}{p{0.30\linewidth}rXrr}
+\toprule
+Method & Datasets & Search budget & Median fit (s) & Median total (s) \\
+\midrule
+PLS-\allowbreak{}default & 32 & 25 component trials; observed 0.1 h & 0.02 & 1.21 \\
+PLS-\allowbreak{}HPO & 32 & 600 x 5 trials; observed 40.8 h & 0.03 & 710.81 \\
+AOM-\allowbreak{}PLS (simple) & 32 & 9 operators x CV-\allowbreak{}5; observed 0.1 h & 1.18 & 1.18 \\
+AOM-\allowbreak{}PLS (best) & 32 & ASLS branch + 9 operators x CV-\allowbreak{}5; observed 0.1 h & 1.43 & 1.63 \\
+Ridge-\allowbreak{}default & 32 & 15 alpha trials; observed 0.0 h & 0.00 & 0.38 \\
+Ridge-\allowbreak{}HPO & 32 & 600 x 10 trials; observed 96.5 h & 0.05 & 1584.00 \\
+AOM-\allowbreak{}Ridge (simple) & 32 & 9 operators x 50 alpha cells; observed 0.5 h & 23.77 & 23.78 \\
+AOM-\allowbreak{}Ridge (best) & 32 & AOM-\allowbreak{}Ridge Blender: 8 candidates x 3 outer folds + 8 refits; observed 9.3 h & 727.51 & 728.81 \\
+\bottomrule
+\end{tabularx}

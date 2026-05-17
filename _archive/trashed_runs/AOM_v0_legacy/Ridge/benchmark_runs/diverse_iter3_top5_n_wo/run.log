@@ -1,0 +1,3 @@
+[aomridge] 1 datasets, variants=top5_fast, cv=spxy(3)
+[aomridge] COLZA/N_woOutlier +5 rows
+[aomridge] wrote 5 rows -> bench/AOM_v0/Ridge/benchmark_runs/diverse_iter3_top5_n_wo/results.csv

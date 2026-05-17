@@ -1,0 +1,5 @@
+[aomridge] 2 datasets, variants=headline, cv=spxy(3)
+[aomridge] 2 datasets, variants=headline, cv=spxy(3)
+[aomridge] ECOSIS_LeafTraits/Chla+b_spxyG_block2deg +2 rows
+[aomridge] ECOSIS_LeafTraits/Chla+b_spxyG_species +2 rows
+[aomridge] wrote 4 rows -> bench/AOM_v0/Ridge/benchmark_runs/diverse_iter3_wrappers_giants/results.csv

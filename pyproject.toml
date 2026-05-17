@@ -1,0 +1,84 @@
+[build-system]
+requires = ["setuptools>=64", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "aom-nirs"
+version = "0.1.0"
+description = "Adaptive Operator-Mixture PLS and Ridge for near-infrared spectroscopy: companion code for the Talanta paper."
+readme = "README.md"
+license = { text = "AGPL-3.0-or-later OR Commercial" }
+authors = [
+    { name = "Gregory Beurier", email = "gregory.beurier@cirad.fr" },
+]
+keywords = [
+    "chemometrics",
+    "NIRS",
+    "PLS",
+    "Ridge",
+    "AOM-PLS",
+    "POP-PLS",
+    "FastAOM",
+    "operator-adaptive",
+    "spectroscopy",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Scientific/Engineering :: Chemistry",
+]
+requires-python = ">=3.10"
+dependencies = [
+    "numpy>=1.24",
+    "scipy>=1.10",
+    "scikit-learn>=1.3",
+    "joblib>=1.2",
+    "pybaselines>=1.0",
+]
+
+[project.optional-dependencies]
+torch = ["torch>=2.0"]
+tabpfn = ["tabpfn>=0.1"]
+bench = [
+    "pandas>=2.0",
+    "matplotlib>=3.7",
+    "pyarrow>=12",
+]
+dev = [
+    "pytest>=7",
+    "pytest-cov>=4",
+    "ruff>=0.5",
+    "mypy>=1.5",
+]
+
+[project.urls]
+Homepage = "https://github.com/GBeurier/aom"
+Repository = "https://github.com/GBeurier/aom"
+"Companion library" = "https://github.com/GBeurier/nirs4all"
+"C++ engine" = "https://github.com/GBeurier/pls4all"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["aom_nirs*"]
+exclude = ["tests*", "benchmarks*", "_archive*", "paper*", "examples*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"
+
+[tool.ruff]
+line-length = 220
+target-version = "py310"
+
+[tool.ruff.lint]
+ignore = ["E501"]
+
+[tool.mypy]
+python_version = "3.10"
+ignore_missing_imports = true

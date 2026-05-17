@@ -1,0 +1,16 @@
+\begin{tabularx}{\linewidth}{p{0.31\linewidth}Xrr}
+\toprule
+Comparison & Evidence source & $N$ & Median RMSEP ratio / wins; $p_{\mathrm{Holm}}$ \\
+\midrule
+AOM-\allowbreak{}PLS (simple) vs PLS-\allowbreak{}default & AOM-\allowbreak{}PLS seeds012 /\allowbreak{} default-\allowbreak{}CV all & 32 & 0.991; 22/32; 0.896 \\
+AOM-\allowbreak{}PLS (best) vs PLS-\allowbreak{}default & AOM-\allowbreak{}PLS seeds012 /\allowbreak{} default-\allowbreak{}CV all & 32 & 0.985; 20/32; 1.000 \\
+AOM-\allowbreak{}PLS (simple) vs PLS-\allowbreak{}HPO & AOM-\allowbreak{}PLS seeds012 /\allowbreak{} cartesian HPO seeds012 & 32 & 0.990; 19/32; 1.000 \\
+AOM-\allowbreak{}PLS (best) vs PLS-\allowbreak{}HPO & AOM-\allowbreak{}PLS seeds012 /\allowbreak{} cartesian HPO seeds012 & 32 & 1.002; 15/32; 1.000 \\
+PLS-\allowbreak{}HPO vs PLS-\allowbreak{}default & cartesian HPO seeds012 /\allowbreak{} default-\allowbreak{}CV all & 32 & 0.992; 19/32; 1.000 \\
+Ridge-\allowbreak{}HPO vs Ridge-\allowbreak{}default & cartesian HPO seeds012 /\allowbreak{} default-\allowbreak{}CV all & 32 & 0.962; 19/32; 1.000 \\
+AOM-\allowbreak{}Ridge (simple) vs Ridge-\allowbreak{}default & AOM-\allowbreak{}Ridge headline /\allowbreak{} default-\allowbreak{}CV all & 32 & 0.974; 25/32; 0.007 \\
+AOM-\allowbreak{}Ridge (best) vs Ridge-\allowbreak{}default & AOM-\allowbreak{}Ridge headline /\allowbreak{} default-\allowbreak{}CV all & 32 & 0.918; 27/32; 2.6e-04 \\
+AOM-\allowbreak{}Ridge (simple) vs Ridge-\allowbreak{}HPO & AOM-\allowbreak{}Ridge headline /\allowbreak{} cartesian HPO seeds012 & 32 & 0.984; 19/32; 1.000 \\
+AOM-\allowbreak{}Ridge (best) vs Ridge-\allowbreak{}HPO & AOM-\allowbreak{}Ridge headline /\allowbreak{} cartesian HPO seeds012 & 32 & 0.966; 25/32; 0.033 \\
+\bottomrule
+\end{tabularx}
