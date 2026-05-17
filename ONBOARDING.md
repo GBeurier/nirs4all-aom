@@ -649,7 +649,7 @@ Full version: `docs/reproducibility.md`. Critical-path commands:
 
 ```bash
 # 0. clone
-git clone https://github.com/GBeurier/aom.git aom-nirs
+git clone https://github.com/GBeurier/aom-nirs.git aom-nirs
 cd aom-nirs
 
 # 1. install

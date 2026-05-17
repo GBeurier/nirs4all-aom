@@ -58,8 +58,8 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/GBeurier/aom"
-Repository = "https://github.com/GBeurier/aom"
+Homepage = "https://github.com/GBeurier/aom-nirs"
+Repository = "https://github.com/GBeurier/aom-nirs"
 "Companion library" = "https://github.com/GBeurier/nirs4all"
 "C++ engine" = "https://github.com/GBeurier/pls4all"
 
