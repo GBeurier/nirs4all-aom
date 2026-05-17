@@ -1,0 +1,666 @@
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[margin=2.6cm]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage{microtype}
+\usepackage{amsmath,amssymb,bm}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{tabularx}
+\usepackage{makecell}
+\usepackage{array}
+\usepackage[numbers,sort&compress]{natbib}
+\usepackage[hidelinks]{hyperref}
+\usepackage{url}
+\usepackage{xcolor}
+
+\emergencystretch=3em
+
+\newcommand{\X}{\mathbf{X}}
+\newcommand{\Y}{\mathbf{Y}}
+\newcommand{\A}{\mathbf{A}}
+\newcommand{\K}{\mathbf{K}}
+\newcommand{\B}{\mathbf{B}}
+\newcommand{\Z}{\mathbf{Z}}
+\newcommand{\T}{\mathbf{T}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\transpose}{^{\mathsf T}}
+
+\title{\textbf{Reframing preprocessing selection as model-internal calibration in near-infrared spectroscopy}\\
+\large A large-scale benchmark of operator-adaptive PLS and Ridge models}
+
+\author{
+Gr{\'e}gory Beurier\textsuperscript{1,2}
+\quad Robin Reiter\textsuperscript{1,2}
+\quad Camille No{\^u}s\textsuperscript{3}\\[0.35em]
+Lauriane Rouan\textsuperscript{1,2}
+\quad Denis Cornet\textsuperscript{1,2}
+}
+
+\date{
+\textsuperscript{1}CIRAD, UMR AGAP Institut, Montpellier, France\\
+\textsuperscript{2}UMR AGAP Institut, Univ Montpellier, CIRAD, INRAE, Institut Agro, Montpellier, France\\[0.75em]
+\textsuperscript{3}Laboratoire Cogitamus, Havre de recherche, \url{https://www.cogitamus.fr/}\\
+Camille No{\^u}s: \href{mailto:camille.nous@cogitamus.fr}{camille.nous@cogitamus.fr}\\[0.75em]
+May 17, 2026
+}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Preprocessing screening is often the most expensive part of a near-infrared
+spectroscopy calibration workflow.  It works because smoothing, derivatives,
+detrending and related filters change the spectral directions seen by PLS or
+Ridge regression, but a full external search repeatedly refits nearly the same
+linear model.  This paper studies the case where that search can be collapsed
+into one calibration step.
+
+For strict linear preprocessing operators, the transformed PLS
+cross-covariance satisfies
+$(\X\A\transpose)\transpose\Y=\A\X\transpose\Y$, and Ridge regression
+depends on the operator-induced kernel
+$\X\A\transpose\A\X\transpose$.  These identities allow a finite operator
+bank to be screened inside the model while retaining original-wavelength
+coefficients.  Sample-adaptive or fitted corrections such as SNV, MSC, EMSC
+and ASLS remain fold-local branches, not absorbed into the algebra.
+
+The study uses the AOM benchmark cohort: 61 regression rows in the manifest
+and 17 classification rows.  On the main regression denominator ($N=32$),
+plain compact-bank AOM-PLS records median RMSEP ratios of 0.991 against
+PLS-default and 0.990 against PLS-HPO; the selected
+\texttt{ASLS-AOM-compact-cv5} branch records 0.985 and 1.002 on the same two
+references.  The plain \texttt{AOMRidge-global-compact-none} baseline records
+0.974 against Ridge-default and 0.984 against Ridge-HPO, while the selected
+\texttt{AOMRidge-Blender-headline-spxy3} records 0.918 and 0.966.  The
+selected classifier, \texttt{AOM-PLS-DA-global-simpls-covariance}, improves
+balanced accuracy by 0.159 on $N=13$ datasets with 12/13 wins.  The runtime
+gap is the practical result: PLS-HPO takes a median total time of 710.81 s per
+run, whereas the selected AOM-PLS branch takes 1.63 s.  Linear
+operator-adaptive calibration therefore gives comparable prediction quality to
+exhaustive preprocessing screening, with orders-of-magnitude less fitting
+time for PLS.
+\end{abstract}
+
+\noindent\textbf{Keywords:} near-infrared spectroscopy; chemometrics;
+preprocessing selection; partial least squares; ridge regression; operator
+kernels; calibration.
+
+\section{Introduction}
+
+Near-infrared spectroscopy (NIRS) is used because it is rapid,
+non-destructive and compatible with routine analytical deployment
+\citep{burns2007handbook,pasquini2018near}.  The calibration step is still
+fragile.  A model that works on raw spectra may fail after a different split,
+instrument or sample family, while the same regressor with a derivative,
+smoother or baseline correction can become usable.  In practice, much of the
+model-building effort is therefore spent screening preprocessing choices.
+
+The usual response is external search.  A calibration workflow enumerates
+normalizations, smoothers, derivative orders, baseline corrections and model
+hyperparameters, then chooses the best validated pipeline.  That workflow is
+straightforward and often effective, but it is slow.  It also hides a
+scientific question inside a large engineering loop: which spectral linear
+geometry does the calibration model need?
+
+The cost is concrete in this benchmark.  The full PLS preprocessing grid
+evaluates 600 combinations across five trials, and the Ridge grid evaluates
+the same combinations across ten trials, giving 3000 and 6000 candidate fits
+per dataset/seed before the final refit.  Repeating this search on small
+calibration sets can also make the selected pipeline unstable: the chosen
+preprocessing is the winner of a multiplicative loop over folds, operators and
+model hyperparameters.  A single operator-adaptive linear fit is easier to
+audit because the selected geometry is part of one calibration object with
+coefficients recovered on the original wavelength axis.
+
+This paper focuses on the part of preprocessing that has a simple algebraic
+answer.  If a preprocessing step is a fixed linear operator on the wavelength
+axis, it can be represented by a matrix $\A$ and moved inside PLS or Ridge
+calibration.  The model can then screen a bank of such operators in one fit
+rather than refitting every transformed data matrix as an external pipeline.
+This does not claim that every preprocessing step is linear.  SNV, MSC, EMSC
+and ASLS are fitted or sample-adaptive transformations; they remain
+fold-local branches in the experimental protocol.
+
+The contribution is deliberately narrow.  We derive the PLS covariance
+identity and the Ridge operator-kernel identity, instantiate them in AOM-PLS
+and AOM-Ridge, and test the resulting models against default PLS/Ridge and
+full cartesian preprocessing-HPO baselines.  The question is not whether a
+new nonlinear learner can win a benchmark.  The question is whether the
+preprocessing search already used with linear chemometric models can be made
+faster, simpler and easier to audit.
+
+The key empirical check is intentionally plain.  The AOM-compact-cv5 PLS row
+and the AOMRidge-global-compact-none Ridge row use compact strict-linear banks
+without the selected ASLS branch, Blender selector or local-neighbourhood
+machinery.  If these simple AOM baselines already compete with default and
+preprocessing-HPO PLS/Ridge, the algebra is doing useful work rather than only
+moving complexity into another tuning grid.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\linewidth]{figures/fig_concept.pdf}
+  \caption{External preprocessing screening repeatedly fits transformed
+  pipelines.  Operator-adaptive calibration moves strict linear alternatives
+  inside the calibration model; fitted or sample-adaptive corrections remain
+  fold-local branches.}
+  \label{fig:concept}
+\end{figure}
+
+\section{Related work}
+
+Spectral preprocessing is a central part of chemometrics.  Common tools
+include Savitzky--Golay smoothing and derivatives
+\citep{savitzky1964smoothing}, Norris--Williams derivatives
+\citep{norris1976influence}, SNV \citep{barnes1989standard}, MSC
+\citep{geladi1985linearization}, EMSC \citep{martens1991extended} and
+penalized baseline smoothers \citep{eilers2003perfect,zhang2010baseline}.
+Reviews emphasize that these transformations remove different nuisance
+structures and should be chosen with the analytical setting in mind
+\citep{rinnan2009review}.
+
+PLS remains the reference linear method for many NIRS calibration problems
+\citep{geladi1986partial,wold2001pls}.  NIPALS and SIMPLS offer two useful
+views: one iterative and score-based, the other covariance-based
+\citep{dejong1993simpls}.  Ridge regression provides a complementary
+regularized linear model \citep{hoerl1970ridge}; in dual form it depends on
+the sample Gram matrix, which makes preprocessing a change of kernel geometry
+\citep{scholkopf2002learning,hastie2009elements}.
+
+This work combines these two lines.  It keeps the chemometric interpretability
+of linear calibration, but treats strict preprocessing alternatives as
+operators that can be selected inside the model rather than as independent
+outer-loop pipelines.
+
+\section{Linear-operator scope}
+
+Let $\X\in\R^{n\times p}$ be a centered spectral matrix, with rows as samples
+and columns as wavelengths.  A strict linear preprocessing operator is a fixed
+matrix $\A\in\R^{p\times p}$ applied to each row spectrum:
+\begin{equation}
+  \X_{\A}=\X\A\transpose .
+\end{equation}
+The operator is fixed once the wavelength grid and operator parameters are
+chosen.  It does not depend on the response, the validation fold, the current
+sample, or a reference spectrum estimated from the calibration set.
+
+The strict-linear bank used in the main experiments contains identity,
+Savitzky--Golay smoothers, Savitzky--Golay first and second derivatives,
+finite differences, and polynomial detrending projections.  The compact bank
+is intentionally small: it has nine operators, so internal CV selection
+evaluates a small number of candidate geometries rather than a large
+cartesian preprocessing grid.
+
+\begin{table}[t]
+  \centering
+  \caption{Operator-bank scope.  Strict linear operators are handled by the
+  AOM identities; fitted or sample-adaptive transformations remain explicit
+  fold-local branches.}
+  \label{tab:operators}
+  \small
+  \input{tables/table_operator_bank.tex}
+\end{table}
+
+The outside-scope examples are important.  SNV uses sample-specific centering
+and scaling.  MSC and EMSC estimate correction parameters relative to a
+reference.  ASLS estimates a baseline through an iterative asymmetric
+criterion.  These transformations are allowed in the benchmark, but only as
+branches fitted inside each calibration fold.  The selected PLS result uses
+such a branch followed by the compact strict-linear AOM bank.
+
+\section{Methods}
+
+\subsection{Covariance identity for one-shot AOM-PLS}
+
+For centered $\X$ and $\Y$, the transformed PLS cross-covariance for operator
+$\A_b$ is
+\begin{equation}
+  (\X\A_b\transpose)\transpose\Y
+  =
+  \A_b\X\transpose\Y .
+  \label{eq:cov_identity}
+\end{equation}
+Equation~\ref{eq:cov_identity} is the core simplification.  It means that a
+bank of strict linear preprocessings can be screened by acting on
+$\X\transpose\Y$, without fitting one full PLS model for every transformed
+matrix.
+
+The simulation check for this identity is direct: explicit transformed-space
+PLS and covariance-space AOM-PLS must select the same operator direction when
+the same centered fold and operator bank are supplied.  The check is used as
+an implementation guard, while the benchmark below evaluates the effect on
+held-out prediction.
+
+\subsection{AOM-PLS solvers and coefficient recovery}
+
+A standard PLS coefficient matrix can be written as
+\begin{equation}
+  \B=\mathbf W(\mathbf P\transpose\mathbf W)^+\mathbf Q\transpose ,
+\end{equation}
+where $\mathbf W$ are weights, $\mathbf P$ are spectral loadings,
+$\mathbf Q$ are response loadings and $+$ denotes the Moore--Penrose inverse.
+In AOM-PLS, a component may be selected in a transformed space.  If the
+transformed-space direction is $r_a$ under operator $\A_b$, its
+original-wavelength direction is
+\begin{equation}
+  z_a=\A_b\transpose r_a .
+\end{equation}
+With $\Z=[z_1,\ldots,z_k]$ and scores $\T=\X\Z$, the recovered coefficient
+matrix is
+\begin{equation}
+  \B=\Z(\mathbf P\transpose\Z)^+\mathbf Q\transpose .
+  \label{eq:aompls_coef}
+\end{equation}
+The fitted model is therefore still one linear calibration on the original
+wavelength grid.
+
+Two solver views are implemented.  The NIPALS-adjoint solver applies operator
+adjoints during iterative score extraction.  The SIMPLS-covariance solver
+uses Equation~\ref{eq:cov_identity} directly in covariance space.  The main
+plain baseline is \texttt{AOM-compact-cv5}: the compact nine-operator bank
+with internal five-fold selection and no fitted ASLS branch.  The selected
+regression result uses the same compact CV5 branch after ASLS is fitted
+fold-locally.  The default bank, SIMPLS-only variants, and other non-selected
+AOM variants are reported in the supplementary material.
+
+The compact bank was chosen from the selector diagnostics, not by adding an
+unbounded operator catalogue.  In the refreshed diagnostics, the three most
+frequent strict operators
+(\texttt{sg\_smooth\_w21\_p3}, \texttt{sg\_d1\_w21\_p3} and
+\texttt{sg\_d1\_w11\_p2}) account for 54.7\% of compact-bank component
+selections, while identity remains selected on 8.7\% of components.  The
+operator bank is therefore diverse enough to adapt, but small enough to keep
+the selection problem stable.
+
+\subsection{AOM-Ridge operator kernels}
+
+For centered spectra $\X_c$ and response $\Y_c$, Ridge regression can be
+solved in the dual.  Operator $\A_b$ induces the kernel
+\begin{equation}
+  \K_b=\X_c\A_b\transpose\A_b\X_c\transpose .
+  \label{eq:ridge_kernel}
+\end{equation}
+For regularization $\alpha>0$,
+\begin{equation}
+  \mathbf C=(\K_b+\alpha\mathbf I_n)^{-1}\Y_c,
+  \qquad
+  \bm\beta_b=\A_b\transpose\A_b\X_c\transpose\mathbf C .
+  \label{eq:ridge_beta}
+\end{equation}
+Weighted operator mixtures are obtained by replacing $\K_b$ with
+\begin{equation}
+  \K=\sum_b s_b^2\X_c\A_b\transpose\A_b\X_c\transpose,
+\end{equation}
+which gives an original-space coefficient matrix through the matching
+operator metric
+$\sum_b s_b^2\A_b\transpose\A_b$.
+
+The plain Ridge baseline is \texttt{AOMRidge-global-compact-none}: one global
+selection over the compact strict-linear bank, without Blender mixing or local
+neighbourhood routing.  The selected Ridge result uses the Blender selector
+(\texttt{AOMRidge-Blender-headline-spxy3}).  It combines several strong
+operator geometries through internal validation rather than committing to one
+noisy winner.  GCV, local-neighbourhood and additional global compact
+selectors are mathematically described in the supplement.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\linewidth]{figures/fig_math.pdf}
+  \caption{AOM mathematical structure.  AOM-PLS screens operators through
+  cross-covariances; AOM-Ridge screens operator-induced kernels.  Both recover
+  coefficients on the original wavelength grid.}
+  \label{fig:math}
+\end{figure}
+
+\section{Datasets and protocol}
+\label{sec:datasets}
+
+\subsection{Simulation checks}
+
+The implementation checks use explicit-vs-operator simulations for the PLS
+covariance identity and the Ridge kernel identity.  These checks verify that
+for fixed folds and fixed strict operators, the folded computation matches
+the explicit transformed computation used by an external search.
+
+\subsection{Datasets}
+
+The benchmark cohort is intentionally heterogeneous.  It combines public and
+local NIRS calibration tasks from leaf physiology, fruit quality, grain and
+seed traits, dairy, beverages, meat quality, petroleum, soil amendments, wood
+products and pharmaceutical tablets.  Several source databases contribute more
+than one response variable, so a row denotes a concrete prediction or
+classification task rather than only a spectral database.  The cohort covers
+small calibration settings, high-sample leaf datasets and several
+high-dimensional low-$n$ regimes.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.92\linewidth]{figures/fig_dataset_diversity.pdf}
+  \caption{Dataset diversity in the AOM cohort.  Points show total sample
+  count and number of spectral variables on logarithmic axes; colours separate
+  regression and classification rows, and the inset summarizes coarse
+  application domains.}
+  \label{fig:dataset_diversity}
+\end{figure}
+
+Table~\ref{tab:dataset_statistics} summarizes the cohort in the same compact
+form used for the companion benchmark inventory.  Regression contains 61 rows
+with median $n=402$ samples and median $p=1023$ spectral variables.
+Classification contains 17 rows with median $n=511$ and median $p=1951$; the
+median number of classes is two and the median largest-class share is 0.513.
+The complete per-dataset description is provided in the supplementary
+longtable.
+
+\begin{table}[t]
+  \centering
+  \caption{Dataset shape summary for the AOM cohort.  Here $n$ is the total
+  calibration plus external-test sample count, $p$ is the number of spectral
+  variables, $C$ is the number of classes and $I$ is the largest-class share
+  for classification rows.}
+  \label{tab:dataset_statistics}
+  \small
+  \input{tables/table_dataset_statistics.tex}
+\end{table}
+
+Whenever a source dataset already defined an external split, that split was
+preserved.  Otherwise deterministic SPXY was used for regression, with the
+stratified variant used for classification when class labels were present
+\citep{kennard1969computer,galvao2005method}.  Test sets were kept outside
+preprocessing, operator, component and regularization selection.  No explicit
+outlier removal was applied during cohort construction: calibration and test
+samples were kept as supplied by the source datasets.
+
+\subsection{Benchmark protocol}
+
+The empirical benchmark reports eight regression variants and one selected
+classification variant.  All paired comparisons reported below are computed
+on the strict intersection $N_{\cap}=32$ of cohort rows available for every
+paper variant, so that ratios and win counts are directly comparable across
+variant pairs.  The classification cohort contains 17 manifest rows, with 13
+paired datasets for the selected classifier.
+
+\begin{table}[t]
+  \centering
+  \caption{Cohort denominators and data-quality rules used in the main
+  manuscript.}
+  \label{tab:benchmark_diversity}
+  \small
+  \input{tables/table_benchmark_diversity.tex}
+\end{table}
+
+All selection steps are internal to the calibration set.  RMSEP is the primary
+regression metric.  Because response scales differ across traits, aggregate
+regression results use paired RMSEP ratios.  Classification uses balanced
+accuracy.  Paired tests use one-sided Wilcoxon signed-rank tests with Holm
+correction within the displayed family.
+
+The cartesian-HPO baselines are intentionally strong and expensive.  They
+enumerate 600 preprocessing combinations.  PLS-HPO uses five trials per
+combination; Ridge-HPO uses ten trials per combination.
+
+The eight paper labels correspond to the following runner keys:
+PLS-default (\texttt{pls-default-cv5}), PLS-HPO
+(\texttt{pls-tabpfn-hpo-25trials}), AOM-PLS (simple)
+(\texttt{AOM-compact-cv5}), AOM-PLS (best)
+(\texttt{ASLS-AOM-compact-cv5}), Ridge-default
+(\texttt{ridge-default-cv5}), Ridge-HPO
+(\texttt{ridge-tabpfn-hpo-60trials}), AOM-Ridge (simple)
+(\texttt{AOMRidge-global-compact-none}) and AOM-Ridge (best)
+(\texttt{AOMRidge-Blender-headline-spxy3}).
+
+\section{Results}
+
+\subsection{PLS regression}
+
+The plain AOM-PLS regression baseline is \texttt{AOM-compact-cv5}.  Against
+PLS-default, it reaches a median RMSEP ratio of 0.991 on $N=32$ datasets with
+22/32 wins.  Against PLS-HPO, it is near parity, with a median ratio of
+0.990 on $N=32$ and 19/32 wins.  This row has no ASLS branch
+and no enlarged operator search; it is the compact strict-linear bank selected
+by internal five-fold validation.
+
+The selected AOM-PLS regression variant is \texttt{ASLS-AOM-compact-cv5}.  It
+is compared in the main text with the pre-registered linear references.
+Against PLS-default, it reaches a median RMSEP ratio of 0.985 on $N=32$
+datasets with 20/32 wins.  Against PLS-HPO, it is essentially tied:
+median ratio 1.002 on $N=32$, 15/32 wins.
+
+This is the intended interpretation.  Full external preprocessing-HPO can
+recover the benefit of careful preprocessing, but the gain is obtained by
+repeatedly fitting the linear calibration under a much larger search budget.
+AOM-PLS makes the strict-linear part of the same decision inside one
+coefficient-bearing calibration object.
+
+\subsection{Ridge regression}
+
+The plain Ridge AOM baseline is \texttt{AOMRidge-global-compact-none}.  It
+improves over default Ridge with a median RMSEP ratio of 0.974 on $N=32$
+datasets, 25/32 wins and Holm-adjusted $p=0.007$.  Against Ridge-HPO, it
+remains close to the grid baseline: median ratio 0.984 on $N=32$, 19/32 wins.
+
+The selected Ridge variant is \texttt{AOMRidge-Blender-headline-spxy3}.  It
+improves strongly over default Ridge: median RMSEP ratio 0.918 on $N=32$
+datasets with 27/32 wins and Holm-adjusted $p=2.6\times10^{-4}$.  It also
+improves over Ridge-HPO, with median ratio 0.966 on $N=32$, 25/32 wins and
+$p=0.033$.
+
+The Ridge result supports the operator-kernel view.  In Ridge, preprocessing
+changes the regularized sample geometry.  Blender is the best main selector
+because it combines strong operator geometries through internal validation
+while preserving a single deployable Ridge model.
+
+\begin{table}[t]
+  \centering
+  \caption{Main paired regression results.  Ratios below one favour the row
+  method over the reference named in the comparison.}
+  \label{tab:main_results}
+  \small
+  \input{tables/table_main_results.tex}
+\end{table}
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\linewidth]{figures/fig_results.pdf}
+  \caption{Eight paired regression comparisons for the plain compact-bank AOM
+  baselines and the selected AOM-PLS and AOM-Ridge variants against their
+  PLS-default, PLS-HPO, Ridge-default and Ridge-HPO references.}
+  \label{fig:results}
+\end{figure}
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\linewidth]{figures/fig_paired_rmsep_scatter.pdf}
+  \caption{Prediction-quality scatter plots for the selected AOM-PLS and
+  AOM-Ridge variants against default and HPO references.  Axes are log RMSEP;
+  points below the diagonal favour AOM.}
+  \label{fig:paired_rmsep_scatter}
+\end{figure}
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\linewidth]{figures/fig_r2_cdf.pdf}
+  \caption{$R^2$ coverage curves for the eight paper variants on the main
+  regression denominator.  Higher curves indicate a larger fraction of
+  datasets exceeding each test-$R^2$ threshold.}
+  \label{fig:r2_cdf}
+\end{figure}
+
+\subsection{Classification}
+
+The selected classification variant is
+\texttt{AOM-PLS-DA-global-simpls-covariance}.  On the paired classification
+cohort, it improves balanced accuracy by a median 0.159 on $N=13$ datasets,
+with 12/13 wins and Holm-adjusted $p=0.007$.  This secondary result confirms
+that the covariance-space operator selection used for regression transfers
+to PLS-DA when the response encoding and scoring metric are changed.
+
+\begin{table}[t]
+  \centering
+  \caption{Main classification result.  Positive balanced-accuracy
+  differences favour the operator-adaptive classifier.}
+  \label{tab:classification_main}
+  \small
+  \input{tables/table_classification_main.tex}
+\end{table}
+
+\subsection{Time budget}
+
+The practical advantage is runtime.  PLS-HPO has a median total time of
+710.81 s per run and an observed row total of 40.8 h.
+AOM-PLS (simple), implemented as \texttt{AOM-compact-cv5}, has a median total
+time of 1.18 s, and AOM-PLS (best) has a median total time of 1.63 s and an
+observed total of 0.1 h.  On median total time, AOM-PLS (best) is about 436
+times faster than PLS-HPO.  In runner-level search units, the contrast is
+3000 trial fits per PLS-HPO dataset/seed versus 45 compact-bank CV fits for
+each AOM-PLS row.
+
+Ridge is different because AOM-Ridge (best), the Blender selector, is heavier.
+It still improves over Ridge-HPO, and its median total time is 728.81 s
+compared with 1584.00 s for Ridge-HPO.  AOM-Ridge
+(simple), implemented as \texttt{AOMRidge-global-compact-none}, is much
+lighter, with median total time 23.78 s and 450 operator-alpha cells.  The
+result is not that every AOM selector is instant; it is that strict-linear
+preprocessing can be represented as a model geometry rather than as a blind
+external pipeline loop.
+
+\begin{table}[t]
+  \centering
+  \caption{Search and runtime budget for the main methods.  Observed totals
+  are sums over benchmark rows.}
+  \label{tab:time_budget}
+  \small
+  \input{tables/table_time_budget.tex}
+\end{table}
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\linewidth]{figures/fig_budget.pdf}
+  \caption{Search-budget scale for the eight paper variants: PLS-default,
+  PLS-HPO, AOM-PLS (simple), AOM-PLS (best), Ridge-default, Ridge-HPO,
+  AOM-Ridge (simple) and AOM-Ridge (best).  Counts are runner-level search
+  units: logged trials for PLS/Ridge defaults and HPO, compact-bank CV fits
+  for AOM-PLS, operator-alpha cells for AOM-Ridge (simple), and top-level
+  outer-selector fits plus refits for AOM-Ridge (best).}
+  \label{fig:budget}
+\end{figure}
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\linewidth]{figures/fig_accuracy_time_pareto.pdf}
+  \caption{Accuracy/time view for all eight paper variants.  The horizontal
+  axis uses median total fit/search time: default and HPO rows include the
+  complete CV or search/refit run, while AOM rows include the selector fit and
+  final fitted model.}
+  \label{fig:pareto}
+\end{figure}
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\linewidth]{figures/fig_runtime_distribution.pdf}
+  \caption{Runtime distributions for all eight paper variants.  PLS-default,
+  PLS-HPO, Ridge-default and Ridge-HPO boxes show total CV or HPO run time;
+  AOM-PLS and AOM-Ridge boxes show selector fit time plus prediction overhead.}
+  \label{fig:runtime}
+\end{figure}
+
+\section{Discussion}
+
+The benchmark supports a simple engineering conclusion: when preprocessing
+alternatives are strict linear operators, screening them outside the model is
+often unnecessary.  AOM-PLS folds the operator choice into the PLS
+cross-covariance calculation, and AOM-Ridge folds it into the Ridge kernel.
+The resulting calibration remains linear and auditable.
+
+The strongest use case is the one common in NIRS: small to moderate
+calibration sets, noisy validation folds and many plausible preprocessing
+choices.  In that regime, an exhaustive external search spends most of its
+time refitting variations of the same linear model.  The grid baselines here
+require 3000 PLS or 6000 Ridge candidate fits per dataset/seed, whereas the
+compact AOM-PLS selector evaluates 45 operator/component candidates.  The
+observed median total times reflect that difference: 710.81 s for PLS-HPO
+against 1.18--1.63 s for the compact AOM-PLS rows.
+
+The statistical reason is related to the engineering cost.  A large cartesian
+grid repeatedly re-estimates pipelines on small folds and then promotes the
+winner of that noisy search.  The strict-linear AOM step instead selects
+operators from a covariance or kernel representation of one calibration
+problem.  It does not remove validation uncertainty, but it avoids turning the
+choice of a derivative or smoother into a multiplicative refitting loop.
+
+Auditability and re-deployment are also different.  A grid winner is an
+external preprocessing pipeline plus a downstream linear model; every fitted
+branch must be reproduced correctly when the calibration is moved to another
+instrument or software stack.  AOM-PLS and AOM-Ridge recover coefficients on
+the original wavelength axis (Equations~\ref{eq:aompls_coef} and
+\ref{eq:ridge_beta}), so the deployed object is still one linear calibration
+whose spectral coefficients can be inspected directly.
+
+The plain baselines are the most useful evidence for choosing this route over
+a preprocessing grid.  \texttt{AOM-compact-cv5} already improves modestly over
+default PLS and reaches near-parity with PLS-HPO, while
+\texttt{AOMRidge-global-compact-none} improves over default Ridge and remains
+close to Ridge-HPO.  The selected ASLS-AOM and Blender rows add accuracy, but
+the compact no-frills rows show that the main gain is not dependent on a large
+new tuning apparatus.
+
+The scope is also clear.  AOM algebra does not absorb sample-adaptive
+transforms.  SNV, MSC, EMSC and ASLS must be fitted inside folds.  This is why
+the selected PLS result is described as an ASLS branch followed by strict
+linear AOM, not as ASLS being part of the operator identity.  When such
+branches dominate a dataset, they should remain explicit and audited.
+
+Taken together, the simple-baseline result is the practical summary: before
+adding the selected ASLS or Blender refinements, compact AOM already captures
+much of the value of preprocessing search while keeping the model linear,
+fast and directly deployable.
+
+\section{Conclusion}
+
+Preprocessing screening for linear NIRS calibration works, but it is often
+implemented as an expensive outer loop.  For strict linear operators, PLS and
+Ridge provide identities that move the operator choice inside the calibration
+itself.  On the available AOM benchmark, the selected AOM-PLS and AOM-Ridge
+variants are comparable to or better than full preprocessing-HPO on the
+reported paired tests, with a large time advantage for PLS.  The useful scientific message
+is therefore modest and practical: keep fitted corrections fold-local, fold
+strict linear operators into the model, and report every comparison on its
+paired denominator.
+
+\section*{Data and code availability}
+
+The public software entry point is \texttt{nirs4all} at
+\url{https://github.com/GBeurier/nirs4all}.  The experiment code for this
+paper will be released upon publication at \url{https://github.com/gbeurier/aom}.
+A portable PLS / NIRS engine with stable C ABI and first-class bindings for
+Python, R, MATLAB, JavaScript/WebAssembly and Android will be released at
+\url{https://github.com/gbeurier/pls4all}.
+
+The reproducibility protocol is defined by the cohort denominators in
+Section~\ref{sec:datasets}, the fold-local model-selection rules in the
+Methods, and paired dataset-level tests with Holm correction for the reported
+families of comparisons.  The supplementary material gives the full cohort
+manifest, per-dataset regression table, prediction-quality diagnostics,
+seed-stability diagnostics and software-validation matrix.  Table~\ref{tab:software} summarizes
+the software artifacts and validation status for the public release.
+
+\begin{table}[t]
+  \centering
+  \caption{Software artifacts and validation status.}
+  \label{tab:software}
+  \small
+  \input{tables/table_software.tex}
+\end{table}
+
+\section*{Supplementary Material}
+
+The supplementary material contains complete derivations, the cohort
+manifest, operator-bank diagnostics, non-selected AOM variants, alternative
+AOM-form explorations, per-dataset tables, classification details, seed
+stability, software artifacts and the AI-assistance statement.
+
+\bibliographystyle{unsrtnat}
+\bibliography{references}
+
+\end{document}

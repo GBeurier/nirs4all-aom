@@ -1,0 +1,24 @@
+[aomridge-cls] 16 datasets, variants=smoke, cv=kfold(3)
+[aomridge-cls] ARABIDOPSIS_CEFE/Genotype10_250 +15 rows
+/home/delete/nirs4all/nirs4all/bench/AOM_v0/Ridge/benchmarks/run_aomridge_classification.py:115: RuntimeWarning: Mean of empty slice
+  col_mean = np.nanmean(arr, axis=0)
+/home/delete/nirs4all/nirs4all/bench/AOM_v0/Ridge/benchmarks/run_aomridge_classification.py:115: RuntimeWarning: Mean of empty slice
+  col_mean = np.nanmean(arr, axis=0)
+[aomridge-cls] ARABIDOPSIS_CEFE/Group9_1856 +15 rows
+[aomridge-cls] ARABIDOPSIS_CEFE/Group_2185 +15 rows
+[aomridge-cls] ARABIDOPSIS_CEFE/InOut_1264 +15 rows
+[aomridge-cls] BEEF_Impurity/Beef_Impurity_60_AlJowder +15 rows
+[aomridge-cls] dataset CoffeeType_kenstone70_strat failed: could not convert string to float: 'Tauro'
+[aomridge-cls] COFFEE_orig/CoffeeType_kenstone70_strat +0 rows
+[aomridge-cls] Cassava/CT2C_1057_CIAT_Acc +15 rows
+[aomridge-cls] FUSARIUM/FinalScoreBin_grp70_30_classStrat +15 rows
+[aomridge-cls] FUSARIUM/ScoreBin_grp70_30_classStrat +15 rows
+[aomridge-cls] FruitPuree/Strawberry2C_983_Holland_Acc94.3 +15 rows
+[aomridge-cls] MALARIA/Oocist2C_333_Maia_Acc87.6 +15 rows
+[aomridge-cls] MALARIA/Sporozoite2C_229_Maia_Acc94.5 +15 rows
+[aomridge-cls] MILK/labels_kenstone70_strat +15 rows
+[aomridge-cls] dataset Species_code_grpStrat70_30_bySpecimen failed: could not convert string to float: 'PIAAT'
+[aomridge-cls] PISTACIA/Species_code_grpStrat70_30_bySpecimen +0 rows
+[aomridge-cls] Wood_Sustainability/C2_511_Davrieux_Acc82 +15 rows
+[aomridge-cls] Wood_Sustainability/C5_511_Davrieux_Acc82 +15 rows
+[aomridge-cls] wrote 210 rows -> bench/AOM_v0/Ridge/benchmark_runs/paper_aom_aomridge_cls_seeds012/results.csv

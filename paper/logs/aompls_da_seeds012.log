@@ -1,0 +1,18 @@
+[ARABIDOPSIS_CEFE/Genotype10_250] +15 rows
+[ARABIDOPSIS_CEFE/Group9_1856] +3 rows
+[ARABIDOPSIS_CEFE/Group_2185] +15 rows
+[ARABIDOPSIS_CEFE/InOut_1264] +15 rows
+[BEEF_Impurity/Beef_Impurity_60_AlJowder] +15 rows
+[COFFEE_orig/CoffeeType_kenstone70_strat] +15 rows
+[COFFEE_sp/Species_56_Bagnall] +0 rows
+[Cassava/CT2C_1057_CIAT_Acc] +15 rows
+[FUSARIUM/FinalScoreBin_grp70_30_classStrat] +3 rows
+[FUSARIUM/ScoreBin_grp70_30_classStrat] +3 rows
+[FruitPuree/Strawberry2C_983_Holland_Acc94.3] +15 rows
+[MALARIA/Oocist2C_333_Maia_Acc87.6] +15 rows
+[MALARIA/Sporozoite2C_229_Maia_Acc94.5] +15 rows
+[MILK/labels_kenstone70_strat] +15 rows
+[PISTACIA/Species_code_grpStrat70_30_bySpecimen] +15 rows
+[Wood_Sustainability/C2_511_Davrieux_Acc82] +15 rows
+[Wood_Sustainability/C5_511_Davrieux_Acc82] +15 rows
+completed 204 new rows -> bench/AOM_v0/benchmark_runs/paper_aom_aompls_da_seeds012/results.csv

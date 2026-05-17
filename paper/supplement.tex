@@ -1,0 +1,459 @@
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[margin=2.4cm]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage{microtype}
+\usepackage{amsmath,amssymb,bm}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{tabularx}
+\usepackage{longtable}
+\usepackage{pdflscape}
+\usepackage{array}
+\usepackage{xcolor}
+\usepackage[numbers,sort&compress]{natbib}
+\usepackage[hidelinks]{hyperref}
+\usepackage{url}
+
+\emergencystretch=3em
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
+\newcommand{\X}{\mathbf{X}}
+\newcommand{\Y}{\mathbf{Y}}
+\newcommand{\A}{\mathbf{A}}
+\newcommand{\K}{\mathbf{K}}
+\newcommand{\B}{\mathbf{B}}
+\newcommand{\Z}{\mathbf{Z}}
+\newcommand{\T}{\mathbf{T}}
+\newcommand{\transpose}{^{\mathsf T}}
+\newcommand{\code}[1]{\nolinkurl{#1}}
+
+\title{\textbf{Supplementary Material}\\
+One-shot screening of linear preprocessing operators for PLS and Ridge calibration in near-infrared spectroscopy}
+
+\author{
+Gr{\'e}gory Beurier \quad Robin Reiter \quad Camille No{\^u}s\\[0.35em]
+Lauriane Rouan \quad Denis Cornet
+}
+
+\date{Supplement of May 17, 2026}
+
+\begin{document}
+\maketitle
+
+\tableofcontents
+
+\section{Notation, Scope and Complete Derivations}
+
+\subsection{Strict linear operators}
+
+Let $\X\in\mathbb{R}^{n\times p}$ be a spectral matrix and
+$\Y\in\mathbb{R}^{n\times q}$ a response matrix.  A strict linear spectral
+operator $\A_b\in\mathbb{R}^{p\times p}$ acts on row spectra as
+\begin{equation}
+  \X_b=\X\A_b\transpose .
+\end{equation}
+The operator is fixed once the wavelength grid and hyperparameters are fixed.
+The compact bank contains identity, Savitzky--Golay smoothers and
+derivatives, finite differences and polynomial detrending projections.
+
+Sample-adaptive or fitted transformations do not satisfy this definition.
+SNV uses sample-specific statistics, MSC and EMSC estimate correction
+parameters relative to a reference, and ASLS solves an asymmetric baseline
+problem.  They are valid preprocessing branches, but they are fitted inside
+each calibration fold and are not inserted into the strict-linear operator
+identities.
+
+\subsection{AOM-PLS covariance identity}
+
+For centered $\X$ and $\Y$, standard PLS can be written with weights
+$\mathbf W$, loadings $\mathbf P$ and response loadings $\mathbf Q$:
+\begin{equation}
+  \B=\mathbf W(\mathbf P\transpose\mathbf W)^+\mathbf Q\transpose .
+\end{equation}
+For a fixed operator $\A_b$,
+\begin{equation}
+  (\X\A_b\transpose)\transpose\Y
+  =
+  \A_b\X\transpose\Y .
+  \label{eq:sup_cov_identity}
+\end{equation}
+Equation~\ref{eq:sup_cov_identity} is the algebraic reason why strict-linear
+preprocessing alternatives can be evaluated in covariance space.  The
+SIMPLS-covariance implementation acts on $\X\transpose\Y$ directly.  The
+NIPALS-adjoint implementation applies $\A_b$ and $\A_b\transpose$ during the
+iterative extraction without storing every transformed design matrix.
+
+If a transformed-space direction for component $a$ is $r_a$, the
+original-wavelength direction is
+\begin{equation}
+  z_a=\A_b\transpose r_a .
+\end{equation}
+With $\Z=[z_1,\ldots,z_k]$ and $\T=\X\Z$, the final coefficient matrix is
+\begin{equation}
+  \B=\Z(\mathbf P\transpose\Z)^+\mathbf Q\transpose .
+  \label{eq:sup_aompls_coef}
+\end{equation}
+Thus the fitted AOM-PLS object predicts from original spectra and can expose
+coefficients on the original wavelength grid.
+
+\subsection{AOM-Ridge kernels}
+
+For centered $\X_c$ and $\Y_c$, a single operator induces
+\begin{align}
+  \mathbf Z_b &= \X_c\A_b\transpose,\\
+  \K_b &= \mathbf Z_b\mathbf Z_b\transpose
+       = \X_c\A_b\transpose\A_b\X_c\transpose,\\
+  \mathbf C_b &= (\K_b+\alpha\mathbf I_n)^{-1}\Y_c,
+\end{align}
+and the recovered original-space coefficient matrix is
+\begin{equation}
+  \bm\beta_b=\A_b\transpose\A_b\X_c\transpose\mathbf C_b .
+\end{equation}
+For weighted operator mixtures,
+\begin{equation}
+  \K=\sum_{b=1}^{m}s_b^2\X_c\A_b\transpose\A_b\X_c\transpose,
+  \qquad
+  \mathbf M=\sum_{b=1}^{m}s_b^2\A_b\transpose\A_b,
+\end{equation}
+so
+\begin{equation}
+  \bm\beta=\mathbf M\X_c\transpose(\K+\alpha\mathbf I_n)^{-1}\Y_c.
+\end{equation}
+This is the Ridge counterpart of AOM-PLS: PLS adapts supervised
+cross-covariance directions, while Ridge adapts the regularized sample
+geometry.
+
+\subsection{Ridge selector family}
+
+The main manuscript now reports both the plain global compact selector and the
+Blender selector.  The full Ridge family also includes branch-specific compact
+variants, local-neighbourhood selectors and multi-branch kernel mixtures.
+Global selectors choose one operator geometry for the whole calibration set.
+Local selectors restrict the geometry to neighbourhoods such as $k=50$ nearest
+calibration samples.  Multi-branch kernels combine several branch geometries
+with shrinkage.  These variants are useful for understanding the design space,
+but their refreshed paired statistics do not beat Blender on the main Ridge
+denominators.
+
+\subsection{FastAOM derivation}
+
+FastAOM is treated here as an exploration of alternative AOM forms, not as a
+main result.  It defines a chain as an ordered composition of primitive
+strict operators.  The grammar assigns roles to operators:
+baseline/projection, smoothing, derivative and projection-mask operations.  A
+depth cap limits the number of composed operators, and grammar pruning removes
+invalid or redundant role sequences before screening.
+
+For each fold-local base $B_j(\X)$ and chain $s$, FastAOM computes
+\begin{equation}
+  \mathrm{score}(j,s)
+  =
+  \frac{\left\|A_s B_j(\X_c)\transpose y_c\right\|_2^2}
+       {\left\|B_j(\X_c)A_s\transpose\right\|_F^2
+        \left\|y_c\right\|_2^2}.
+\end{equation}
+With a truncated SVD $B_j(\X_c)\approx U_j\Sigma_jV_j\transpose$ and
+$F_{j,s}=A_sV_j\Sigma_j$, the screened kernel is approximated by
+\begin{equation}
+  \K_{j,s}
+  =
+  B_j(\X_c)A_s\transpose A_s B_j(\X_c)\transpose
+  \approx U_j C_{j,s}U_j\transpose,
+  \qquad
+  C_{j,s}=F_{j,s}\transpose F_{j,s}.
+\end{equation}
+
+\begin{table}[h]
+\centering
+\caption{FastAOM model families.  These are supplementary explorations of
+alternative AOM forms.}
+\small
+\begin{tabularx}{\linewidth}{p{0.25\linewidth}p{0.25\linewidth}X}
+\toprule
+Class & Routing strategy & Role in this work \\
+\midrule
+\code{SingleChainPLSRidge} & Top screened chain followed by PLS-Ridge &
+Fast baseline equivalent to selecting one screened chain.\\
+\code{HardAOMChainPLSRidge} & One greedy chain per latent component &
+Diagnostic component-level routing.\\
+\code{SoftAOMChainPLSRidge} & Sparse non-negative chain mixture per component &
+Mixture-routing exploration.\\
+\code{SparseMultiKernelRidge} & Greedy sparse non-negative kernel mixture &
+Best FastAOM exploration family in the full60 table.\\
+\code{FastAOMPLSRidge} & Orchestrator over bases, chains, SVD, screening and fit &
+Entry point used by the benchmark runner.\\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\section{Cohort Manifest}
+
+The refreshed manifest contains 61 regression rows and 17 classification rows.
+The main regression comparisons use the strict intersection
+$N_{\cap}=32$; the per-dataset long table below includes only those rows.
+The classification tables are paired within the classification cohort.
+
+\begin{table}[h]
+\centering
+\caption{Cohort denominator summary.}
+\small
+\input{tables/table_benchmark_diversity.tex}
+\end{table}
+
+\input{tables/table_dataset_overview_supp.tex}
+
+\section{Operator Bank Exploration}
+
+The compact bank contains nine operators:
+\begin{equation}
+\begin{split}
+\mathcal A_{\mathrm{compact}}=\{&
+\mathrm{identity},
+\mathrm{SG}_{11,2}^{(0)},\mathrm{SG}_{21,3}^{(0)},
+\mathrm{SG}_{11,2}^{(1)},\mathrm{SG}_{21,3}^{(1)},\\
+&\mathrm{SG}_{11,2}^{(2)},
+\mathrm{detrend}_{1},\mathrm{detrend}_{2},
+\mathrm{FD}_{1}\}.
+\end{split}
+\end{equation}
+With $B$ operators and $K_{\max}$ component prefixes, the selector considers
+approximately $BK_{\max}$ candidates before fold replication.  At
+$K_{\max}=15$, the compact bank has 135 operator/component candidates,
+whereas a 100-operator bank has 1500.
+
+\begin{table}[h]
+\centering
+\caption{Compact-bank operator frequencies from the refreshed selector
+diagnostics.}
+\label{tab:sup_selector}
+\small
+\input{tables/table_operator_diagnostics.tex}
+\end{table}
+
+The wider Savitzky--Golay smoother \code{sg\_smooth\_w21\_p3} is the most
+frequent selected operator (23.4\% of selected components).  First-derivative
+operators occupy the next two positions.  Identity remains selected on 8.7\%
+of selected components, confirming that the bank can fall back to raw centered
+spectra when preprocessing is not beneficial.
+
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=\linewidth]{figures/fig_operator_heatmap.pdf}
+  \caption{Per-dataset compact-bank operator heatmap.  Cells count selected
+  components across compact AOM-PLS variants and seeds.}
+  \label{fig:sup_operator_heatmap}
+\end{figure}
+
+\section{Full AOM-PLS Family}
+
+The main manuscript reports the plain compact-CV5 AOM-PLS baseline.  It
+promotes the ASLS compact-CV5 branch as the selected PLS regression variant.
+Table \ref{tab:sup_aompls_family} keeps the full AOM-PLS and POP-PLS family in
+the supplement.  Ratios are computed against PLS-standard on matching
+dataset/seed rows.
+
+\begin{table}[h]
+\centering
+\caption{AOM-PLS family summary from the seeds012 run.}
+\label{tab:sup_aompls_family}
+\small
+\input{tables/table_aompls_family.tex}
+\end{table}
+
+The strict compact CV variants are close to the ASLS branch, but the ASLS
+branch has the best aggregate RMSEP ratio among the reported AOM-PLS rows.
+The default NIPALS-adjoint row is neutral at the aggregate level.  POP
+regression variants are substantially weaker and are discussed separately
+below.
+
+\section{Full AOM-Ridge Family}
+
+The Ridge family includes headline Blender and AutoSelect rows, plus local
+and multi-branch variants.  Table~\ref{tab:sup_aomridge_family} reports the
+variant-level summary.  Absolute RMSEP medians are descriptive only; the main
+choice is based on paired ratios and wins.
+
+\begin{table}[h]
+\centering
+\caption{AOM-Ridge family summary.}
+\label{tab:sup_aomridge_family}
+\small
+\input{tables/table_aomridge_family.tex}
+\end{table}
+
+The global compact row is the plain Ridge AOM baseline used in the main text.
+Blender is promoted as the selected Ridge variant because it gives the best
+paired Ridge result against default Ridge and Ridge-HPO.  AutoSelect has a
+similar median ratio against Ridge-HPO but fewer wins.  Local selectors are
+fast and useful diagnostically, but they do not beat Ridge-HPO in the paired
+summary.
+
+\section{FastAOM Exploration}
+
+FastAOM remains a supplementary exploration.  It tests whether low-rank
+screening and sparse kernel mixtures can explore a larger operator-chain
+space without fitting every chain as a full external pipeline.
+
+\begin{table}[h]
+\centering
+\caption{FastAOM full-variant summary from the full60 seed0 table.}
+\label{tab:sup_fastaom_variants}
+\small
+\input{tables/table_fastaom_variants.tex}
+\end{table}
+
+The best FastAOM entry by median relative RMSEP after the $N\ge50$ filter is
+\code{FastAOM-sparse-mkr-supervised}: $N=50$, median relative RMSEP 1.009,
+10 headline wins and median fit time 87.77 s.  The compact sparse-MKR variant
+has median relative RMSEP 1.022 with median fit time 2.48 s.  The compact
+single-chain variant has median relative RMSEP 1.052 and median fit time
+1.86 s.  These rows show that screened operator-chain models are promising,
+but the refreshed paired comparison does not beat the selected ASLS-AOM
+variant on the same wide table.
+
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=\linewidth]{figures/fig_fastaom_variants.pdf}
+  \caption{FastAOM variant comparison ordered by median relative RMSEP.  The
+  upper axis shows median fit time on a logarithmic scale.}
+\end{figure}
+
+Hard-chain routing is valuable diagnostically because it assigns one chain
+per latent component.  In the full table, however, the compact hard-chain
+variant has median relative RMSEP 1.128, and the ASLS, multibase and
+supervised hard-chain variants range from 1.084 to 1.109 with substantially
+higher runtime for the supervised and ASLS branches.  These results explain
+why FastAOM is not promoted in the main manuscript.
+
+\section{POP-PLS Exploration}
+
+POP-PLS allows different operators across components, which is attractive as
+a modelling idea but weak in the current regression benchmark.  The two
+regression POP variants have median ratios above 1.37 against PLS-standard
+and win on roughly one fifth of dataset/seed rows.
+
+\begin{table}[h]
+\centering
+\caption{POP-PLS regression summary from the AOM-PLS seeds012 run.}
+\label{tab:sup_pop}
+\small
+\input{tables/table_pop_summary.tex}
+\end{table}
+
+The poor POP regression result is consistent with a noisy component-wise
+selection surface: extra flexibility increases variance without producing a
+stable aggregate gain.  POP-style classification rows are kept in the full
+classification table, but POP is not part of the main result.
+
+\section{Per-Dataset Regression Results}
+
+The heatmap gives a compact per-dataset view, and the long table gives the
+underlying RMSEP values on the same $N_{\cap}=32$ regression rows used in the
+main manuscript.
+
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=\linewidth]{figures/fig_dataset_variant_heatmap.pdf}
+  \caption{Per-dataset RMSEP ratios against PLS-standard.  Columns are ordered
+  by PLS, AOM-PLS, Ridge, AOM-Ridge and then exploratory FastAOM/POP variants;
+  missing cells are shown in light gray.}
+  \label{fig:sup_dataset_heatmap}
+\end{figure}
+
+\input{tables/table_supplement_long_results.tex}
+
+\section{Per-dataset prediction quality}
+
+Figure~\ref{fig:sup_gain_per_dataset} shows the per-dataset RMSEP reduction
+for the selected AOM-PLS and AOM-Ridge variants against default and HPO
+references.
+
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=\linewidth]{figures/fig_gain_per_dataset.pdf}
+  \caption{Per-dataset RMSEP reduction for selected AOM variants.  Positive
+  bars indicate lower RMSEP than the named reference; gray bars indicate a
+  higher RMSEP.}
+  \label{fig:sup_gain_per_dataset}
+\end{figure}
+
+\section{Classification Full Results}
+
+\begin{table}[h]
+\centering
+\caption{Full classification paired comparisons.  Positive differences favour
+the AOM or POP candidate over PLS-DA.}
+\label{tab:sup_classification_full}
+\small
+\input{tables/table_classification_full.tex}
+\end{table}
+
+The SIMPLS AOM-PLS-DA variant is the classification row promoted in the main
+manuscript.  NIPALS-adjoint classifiers are less stable.  AOM-Ridge
+classification variants are favourable on the 14-dataset overlap, but they
+are kept here because the main classification question is the PLS-DA
+covariance analogue.
+
+\section{Seed Stability}
+
+\begin{table}[h]
+\centering
+\caption{Seed-stability diagnostics for the multi-seed AOM-PLS and AOM-Ridge
+runs.}
+\label{tab:sup_seed_stability}
+\small
+\input{tables/table_seed_stability.tex}
+\end{table}
+
+AOM-PLS dataset-level RMSEP rankings are highly correlated across seeds, but
+some datasets change the winning member of the AOM-PLS family.  The top AOM
+Ridge rows are deterministic for the recorded split/random-state
+representation.  FastAOM was run on seed0 for the full60 exploration and
+should be read as chain-space evidence rather than split-resampling evidence.
+
+\section{Reproducibility and Software Artifacts}
+
+\begin{table}[h]
+\centering
+\caption{Software artifacts distributed with the AOM study.}
+\label{tab:sup_software}
+\small
+\input{tables/table_software.tex}
+\end{table}
+
+All numerical claims in the main manuscript and in this supplement are
+computed from benchmark result tables produced by the public repositories
+announced in the main manuscript.  The regression cohort contains 61 manifest
+rows, and the main paired regression comparisons use $N_{\cap}=32$ rows.  The
+classification cohort contains 17 manifest rows and is summarized in the
+classification tables.
+
+Multi-seed evidence is aggregated at dataset level before paired tests.
+AOM-PLS, PLS-default, Ridge-default, PLS-HPO and Ridge-HPO use seeds 0, 1 and
+2.  The AOM-Ridge headline selectors are reported on the deterministic
+headline run with random state 0, while the supplementary seed-stability
+table reports the multi-seed AOM-PLS and AOM-Ridge diagnostics.  The main
+regression comparisons use paired dataset-level RMSEP ratios, Wilcoxon
+signed-rank tests where applicable and Holm correction within the reported
+comparison family.
+Classification comparisons use paired balanced-accuracy differences with the
+same family-wise correction.  The validation status of the software artifacts
+is summarized in Table~\ref{tab:sup_software}.
+
+\section{AI-Assistance Statement}
+
+AI assistance was used to draft explanatory text and to generate
+manuscript-support scripts for aggregation, paired statistics and figure
+generation.  Every numerical claim in the main manuscript and in this
+supplement is computed from benchmark result tables; the assistance did not
+generate numerical results by itself.  The authors remain responsible for the
+study design, data interpretation, code review and final text.
+
+\nocite{geladi1986partial,wold2001pls,dejong1993simpls,hoerl1970ridge,rinnan2009review,savitzky1964smoothing,barnes1989standard,geladi1985linearization}
+
+\bibliographystyle{unsrtnat}
+\bibliography{references}
+
+\end{document}

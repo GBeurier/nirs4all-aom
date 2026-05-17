@@ -1,0 +1,591 @@
+2026-02-21 14:05:37.790982: I tensorflow/core/util/port.cc:153] oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
+2026-02-21 14:05:37.828438: I tensorflow/core/platform/cpu_feature_guard.cc:210] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: AVX2 AVX_VNNI FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+[I 2026-02-21 14:06:09,195] A new study created in memory with name: no-name-cff09ba1-1d25-4520-a925-4ab9c3be8022
+
+==================================================
+Running Baseline AOM-PLS
+==================================================
+  AMYLOSE/Rice_Amylose_313_YbasedSplit: RMSE = 1.8873
+  BEER/Beer_OriginalExtract_60_KS: RMSE = 0.2042
+  PLUMS/Firmness_spxy70: RMSE = 0.3771
+  MILK/Milk_Lactose_1224_KS: RMSE = 0.0580
+  PHOSPHORUS/LP_spxyG: RMSE = 0.1728
+
+==================================================
+Running Finetuned PLS
+==================================================
+  AMYLOSE/Rice_Amylose_313_YbasedSplit: RMSE = 5.1908
+  BEER/Beer_OriginalExtract_60_KS: RMSE = 0.2198
+  PLUMS/Firmness_spxy70: RMSE = 0.2917
+  MILK/Milk_Lactose_1224_KS: RMSE = 0.1556
+  PHOSPHORUS/LP_spxyG: RMSE = 0.1507
+
+==================================================
+Running 1. Pseudo-Linear SNV AOM
+==================================================
+  AMYLOSE/Rice_Amylose_313_YbasedSplit: RMSE = 1.8873
+  BEER/Beer_OriginalExtract_60_KS: RMSE = 0.2042
+  PLUMS/Firmness_spxy70: RMSE = 0.3771
+  MILK/Milk_Lactose_1224_KS: RMSE = 0.0580
+  PHOSPHORUS/LP_spxyG: RMSE = 0.1728
+
+==================================================
+Running 2. BCD PLS
+==================================================
+  AMYLOSE/Rice_Amylose_313_YbasedSplit: RMSE = 4.7494
+  BEER/Beer_OriginalExtract_60_KS: RMSE = 0.3635
+  PLUMS/Firmness_spxy70: RMSE = 0.3027
+  MILK/Milk_Lactose_1224_KS: RMSE = 0.1481
+  PHOSPHORUS/LP_spxyG: RMSE = 0.1302
+
+==================================================
+Running 3. Bandit AOM-PLS
+==================================================
+  AMYLOSE/Rice_Amylose_313_YbasedSplit: RMSE = 1.8691
+  BEER/Beer_OriginalExtract_60_KS: RMSE = 0.1657
+  PLUMS/Firmness_spxy70: RMSE = 0.3771
+  MILK/Milk_Lactose_1224_KS: RMSE = 0.0595
+  PHOSPHORUS/LP_spxyG: RMSE = 0.1913
+
+==================================================
+Running 4. Differentiable PLS
+==================================================
+  AMYLOSE/Rice_Amylose_313_YbasedSplit: RMSE = 5.2311
+  BEER/Beer_OriginalExtract_60_KS: RMSE = 0.5666
+  PLUMS/Firmness_spxy70: RMSE = 0.2773
+  MILK/Milk_Lactose_1224_KS: RMSE = 0.1514
+  PHOSPHORUS/LP_spxyG: RMSE = 0.1457
+
+==================================================
+Running 5. Zero-Shot Router
+==================================================
+  AMYLOSE/Rice_Amylose_313_YbasedSplit: RMSE = 4.2171
+  BEER/Beer_OriginalExtract_60_KS: RMSE = 0.2485
+  PLUMS/Firmness_spxy70: RMSE = 0.4371
+  MILK/Milk_Lactose_1224_KS: RMSE = 0.1473
+  PHOSPHORUS/LP_spxyG: RMSE = 0.1667
+
+==================================================
+Running 6. MoE PLS
+==================================================
+  AMYLOSE/Rice_Amylose_313_YbasedSplit: RMSE = 3.8507
+  BEER/Beer_OriginalExtract_60_KS: RMSE = 0.1945
+  PLUMS/Firmness_spxy70: RMSE = 0.4254
+  MILK/Milk_Lactose_1224_KS: RMSE = 0.1458
+  PHOSPHORUS/LP_spxyG: RMSE = 0.1653
+
+==================================================
+Running 7. Latent Space PLS
+==================================================
+[X] Pipeline 7._Latent_Space_PLS_p0_b0d08031 on dataset rice_amylose_313_ybasedsplit failed: Pipeline step 3 failed: Step execution failed: adaptive_avg_pool2d_backward(): Expected grad_output to have non-zero size for non-batch dimensions, but grad_output has sizes [135, 32, 1, 0] with dimension 3 being empty
+Traceback (most recent call last):
+  File "/home/delete/nirs4all/nirs4all/nirs4all/pipeline/steps/step_runner.py", line 173, in execute
+    controller_result = controller.execute(
+        step_info=parsed_step,
+    ...<6 lines>...
+        prediction_store=prediction_store
+    )
+  File "/home/delete/nirs4all/nirs4all/nirs4all/controllers/models/sklearn_model.py", line 602, in execute
+    return super().execute(step_info, dataset, context, runtime_context, source, mode, loaded_binaries, prediction_store)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/delete/nirs4all/nirs4all/nirs4all/controllers/models/base_model.py", line 629, in execute
+    return self._execute_train(
+           ~~~~~~~~~~~~~~~~~~~^
+        dataset, model_config, context, runtime_context, prediction_store,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<2 lines>...
+        train_sample_ids=train_sample_ids, test_sample_ids=test_sample_ids
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/delete/nirs4all/nirs4all/nirs4all/controllers/models/base_model.py", line 693, in _execute_train
+    binaries = self.train(
+        dataset, model_config, context, runtime_context, prediction_store,
+    ...<2 lines>...
+        train_sample_ids=train_sample_ids, test_sample_ids=test_sample_ids
+    )
+  File "/home/delete/nirs4all/nirs4all/nirs4all/controllers/models/base_model.py", line 910, in train
+    results = [self.launch_training(*args) for args in fold_args]
+               ~~~~~~~~~~~~~~~~~~~~^^^^^^^
+  File "/home/delete/nirs4all/nirs4all/nirs4all/controllers/models/base_model.py", line 1221, in launch_training
+    trained_model = self._train_model(
+        model, X_train_prep, y_train_prep, X_val_prep, y_val_prep,
+        **train_params
+    )
+  File "/home/delete/nirs4all/nirs4all/nirs4all/controllers/models/sklearn_model.py", line 279, in _train_model
+    trained_model.fit(X_train, y_fit)
+    ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^
+  File "/home/delete/nirs4all/nirs4all/bench/AOM/models.py", line 389, in fit
+    loss.backward()
+    ~~~~~~~~~~~~~^^
+  File "/home/delete/nirs4all/nirs4all/.venv/lib/python3.13/site-packages/torch/_tensor.py", line 630, in backward
+    torch.autograd.backward(
+    ~~~~~~~~~~~~~~~~~~~~~~~^
+        self, gradient, retain_graph, create_graph, inputs=inputs
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/delete/nirs4all/nirs4all/.venv/lib/python3.13/site-packages/torch/autograd/__init__.py", line 364, in backward
+    _engine_run_backward(
+    ~~~~~~~~~~~~~~~~~~~~^
+        tensors,
+        ^^^^^^^^
+    ...<5 lines>...
+        accumulate_grad=True,
+        ^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/delete/nirs4all/nirs4all/.venv/lib/python3.13/site-packages/torch/autograd/graph.py", line 865, in _engine_run_backward
+    return Variable._execution_engine.run_backward(  # Calls into the C++ engine to run the backward pass
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        t_outputs, *args, **kwargs
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )  # Calls into the C++ engine to run the backward pass
+    ^
+RuntimeError: adaptive_avg_pool2d_backward(): Expected grad_output to have non-zero size for non-batch dimensions, but grad_output has sizes [135, 32, 1, 0] with dimension 3 being empty
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/delete/nirs4all/nirs4all/nirs4all/pipeline/execution/executor.py", line 852, in _execute_single_step
+    step_result = self.step_runner.execute(
+        step=step,
+    ...<4 lines>...
+        prediction_store=prediction_store
+    )
+  File "/home/delete/nirs4all/nirs4all/nirs4all/pipeline/steps/step_runner.py", line 211, in execute
+    raise RuntimeError(f"Step execution failed: {str(e)}") from e
+RuntimeError: Step execution failed: adaptive_avg_pool2d_backward(): Expected grad_output to have non-zero size for non-batch dimensions, but grad_output has sizes [135, 32, 1, 0] with dimension 3 being empty
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/delete/nirs4all/nirs4all/nirs4all/pipeline/execution/executor.py", line 199, in execute
+    context = self._execute_steps(
+        steps,
+    ...<4 lines>...
+        all_artifacts
+    )
+  File "/home/delete/nirs4all/nirs4all/nirs4all/pipeline/execution/executor.py", line 547, in _execute_steps
+    context = self._execute_single_step(
+        step=step,
+    ...<5 lines>...
+        all_artifacts=all_artifacts
+    )
+  File "/home/delete/nirs4all/nirs4all/nirs4all/pipeline/execution/executor.py", line 929, in _execute_single_step
+    raise RuntimeError(f"Pipeline step {self.step_number} failed: {str(e)}") from e
+RuntimeError: Pipeline step 3 failed: Step execution failed: adaptive_avg_pool2d_backward(): Expected grad_output to have non-zero size for non-batch dimensions, but grad_output has sizes [135, 32, 1, 0] with dimension 3 being empty
+[X] Dataset 'rice_amylose_313_ybasedsplit' failed: Pipeline step 3 failed: Step execution failed: adaptive_avg_pool2d_backward(): Expected grad_output to have non-zero size for non-batch dimensions, but grad_output has sizes [135, 32, 1, 0] with dimension 3 being empty
+  AMYLOSE/Rice_Amylose_313_YbasedSplit Failed: Pipeline step 3 failed: Step execution failed: adaptive_avg_pool2d_backward(): Expected grad_output to have non-zero size for non-batch dimensions, but grad_output has sizes [135, 32, 1, 0] with dimension 3 being empty
+[X] Pipeline 7._Latent_Space_PLS_p0_b0d08031 on dataset beer_originalextract_60_ks failed: Pipeline step 3 failed: Step execution failed: adaptive_avg_pool2d_backward(): Expected grad_output to have non-zero size for non-batch dimensions, but grad_output has sizes [26, 32, 1, 0] with dimension 3 being empty
+Traceback (most recent call last):
+  File "/home/delete/nirs4all/nirs4all/nirs4all/pipeline/steps/step_runner.py", line 173, in execute
+    controller_result = controller.execute(
+        step_info=parsed_step,
+    ...<6 lines>...
+        prediction_store=prediction_store
+    )
+  File "/home/delete/nirs4all/nirs4all/nirs4all/controllers/models/sklearn_model.py", line 602, in execute
+    return super().execute(step_info, dataset, context, runtime_context, source, mode, loaded_binaries, prediction_store)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/delete/nirs4all/nirs4all/nirs4all/controllers/models/base_model.py", line 629, in execute
+    return self._execute_train(
+           ~~~~~~~~~~~~~~~~~~~^
+        dataset, model_config, context, runtime_context, prediction_store,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<2 lines>...
+        train_sample_ids=train_sample_ids, test_sample_ids=test_sample_ids
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/delete/nirs4all/nirs4all/nirs4all/controllers/models/base_model.py", line 693, in _execute_train
+    binaries = self.train(
+        dataset, model_config, context, runtime_context, prediction_store,
+    ...<2 lines>...
+        train_sample_ids=train_sample_ids, test_sample_ids=test_sample_ids
+    )
+  File "/home/delete/nirs4all/nirs4all/nirs4all/controllers/models/base_model.py", line 910, in train
+    results = [self.launch_training(*args) for args in fold_args]
+               ~~~~~~~~~~~~~~~~~~~~^^^^^^^
+  File "/home/delete/nirs4all/nirs4all/nirs4all/controllers/models/base_model.py", line 1221, in launch_training
+    trained_model = self._train_model(
+        model, X_train_prep, y_train_prep, X_val_prep, y_val_prep,
+        **train_params
+    )
+  File "/home/delete/nirs4all/nirs4all/nirs4all/controllers/models/sklearn_model.py", line 279, in _train_model
+    trained_model.fit(X_train, y_fit)
+    ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^
+  File "/home/delete/nirs4all/nirs4all/bench/AOM/models.py", line 389, in fit
+    loss.backward()
+    ~~~~~~~~~~~~~^^
+  File "/home/delete/nirs4all/nirs4all/.venv/lib/python3.13/site-packages/torch/_tensor.py", line 630, in backward
+    torch.autograd.backward(
+    ~~~~~~~~~~~~~~~~~~~~~~~^
+        self, gradient, retain_graph, create_graph, inputs=inputs
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/delete/nirs4all/nirs4all/.venv/lib/python3.13/site-packages/torch/autograd/__init__.py", line 364, in backward
+    _engine_run_backward(
+    ~~~~~~~~~~~~~~~~~~~~^
+        tensors,
+        ^^^^^^^^
+    ...<5 lines>...
+        accumulate_grad=True,
+        ^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/delete/nirs4all/nirs4all/.venv/lib/python3.13/site-packages/torch/autograd/graph.py", line 865, in _engine_run_backward
+    return Variable._execution_engine.run_backward(  # Calls into the C++ engine to run the backward pass
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        t_outputs, *args, **kwargs
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )  # Calls into the C++ engine to run the backward pass
+    ^
+RuntimeError: adaptive_avg_pool2d_backward(): Expected grad_output to have non-zero size for non-batch dimensions, but grad_output has sizes [26, 32, 1, 0] with dimension 3 being empty
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/delete/nirs4all/nirs4all/nirs4all/pipeline/execution/executor.py", line 852, in _execute_single_step
+    step_result = self.step_runner.execute(
+        step=step,
+    ...<4 lines>...
+        prediction_store=prediction_store
+    )
+  File "/home/delete/nirs4all/nirs4all/nirs4all/pipeline/steps/step_runner.py", line 211, in execute
+    raise RuntimeError(f"Step execution failed: {str(e)}") from e
+RuntimeError: Step execution failed: adaptive_avg_pool2d_backward(): Expected grad_output to have non-zero size for non-batch dimensions, but grad_output has sizes [26, 32, 1, 0] with dimension 3 being empty
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/delete/nirs4all/nirs4all/nirs4all/pipeline/execution/executor.py", line 199, in execute
+    context = self._execute_steps(
+        steps,
+    ...<4 lines>...
+        all_artifacts
+    )
+  File "/home/delete/nirs4all/nirs4all/nirs4all/pipeline/execution/executor.py", line 547, in _execute_steps
+    context = self._execute_single_step(
+        step=step,
+    ...<5 lines>...
+        all_artifacts=all_artifacts
+    )
+  File "/home/delete/nirs4all/nirs4all/nirs4all/pipeline/execution/executor.py", line 929, in _execute_single_step
+    raise RuntimeError(f"Pipeline step {self.step_number} failed: {str(e)}") from e
+RuntimeError: Pipeline step 3 failed: Step execution failed: adaptive_avg_pool2d_backward(): Expected grad_output to have non-zero size for non-batch dimensions, but grad_output has sizes [26, 32, 1, 0] with dimension 3 being empty
+[X] Dataset 'beer_originalextract_60_ks' failed: Pipeline step 3 failed: Step execution failed: adaptive_avg_pool2d_backward(): Expected grad_output to have non-zero size for non-batch dimensions, but grad_output has sizes [26, 32, 1, 0] with dimension 3 being empty
+  BEER/Beer_OriginalExtract_60_KS Failed: Pipeline step 3 failed: Step execution failed: adaptive_avg_pool2d_backward(): Expected grad_output to have non-zero size for non-batch dimensions, but grad_output has sizes [26, 32, 1, 0] with dimension 3 being empty
+[X] Pipeline 7._Latent_Space_PLS_p0_b0d08031 on dataset firmness_spxy70 failed: Pipeline step 3 failed: Step execution failed: adaptive_avg_pool2d_backward(): Expected grad_output to have non-zero size for non-batch dimensions, but grad_output has sizes [18, 32, 1, 0] with dimension 3 being empty
+Traceback (most recent call last):
+  File "/home/delete/nirs4all/nirs4all/nirs4all/pipeline/steps/step_runner.py", line 173, in execute
+    controller_result = controller.execute(
+        step_info=parsed_step,
+    ...<6 lines>...
+        prediction_store=prediction_store
+    )
+  File "/home/delete/nirs4all/nirs4all/nirs4all/controllers/models/sklearn_model.py", line 602, in execute
+    return super().execute(step_info, dataset, context, runtime_context, source, mode, loaded_binaries, prediction_store)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/delete/nirs4all/nirs4all/nirs4all/controllers/models/base_model.py", line 629, in execute
+    return self._execute_train(
+           ~~~~~~~~~~~~~~~~~~~^
+        dataset, model_config, context, runtime_context, prediction_store,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<2 lines>...
+        train_sample_ids=train_sample_ids, test_sample_ids=test_sample_ids
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/delete/nirs4all/nirs4all/nirs4all/controllers/models/base_model.py", line 693, in _execute_train
+    binaries = self.train(
+        dataset, model_config, context, runtime_context, prediction_store,
+    ...<2 lines>...
+        train_sample_ids=train_sample_ids, test_sample_ids=test_sample_ids
+    )
+  File "/home/delete/nirs4all/nirs4all/nirs4all/controllers/models/base_model.py", line 910, in train
+    results = [self.launch_training(*args) for args in fold_args]
+               ~~~~~~~~~~~~~~~~~~~~^^^^^^^
+  File "/home/delete/nirs4all/nirs4all/nirs4all/controllers/models/base_model.py", line 1221, in launch_training
+    trained_model = self._train_model(
+        model, X_train_prep, y_train_prep, X_val_prep, y_val_prep,
+        **train_params
+    )
+  File "/home/delete/nirs4all/nirs4all/nirs4all/controllers/models/sklearn_model.py", line 279, in _train_model
+    trained_model.fit(X_train, y_fit)
+    ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^
+  File "/home/delete/nirs4all/nirs4all/bench/AOM/models.py", line 389, in fit
+    loss.backward()
+    ~~~~~~~~~~~~~^^
+  File "/home/delete/nirs4all/nirs4all/.venv/lib/python3.13/site-packages/torch/_tensor.py", line 630, in backward
+    torch.autograd.backward(
+    ~~~~~~~~~~~~~~~~~~~~~~~^
+        self, gradient, retain_graph, create_graph, inputs=inputs
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/delete/nirs4all/nirs4all/.venv/lib/python3.13/site-packages/torch/autograd/__init__.py", line 364, in backward
+    _engine_run_backward(
+    ~~~~~~~~~~~~~~~~~~~~^
+        tensors,
+        ^^^^^^^^
+    ...<5 lines>...
+        accumulate_grad=True,
+        ^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/delete/nirs4all/nirs4all/.venv/lib/python3.13/site-packages/torch/autograd/graph.py", line 865, in _engine_run_backward
+    return Variable._execution_engine.run_backward(  # Calls into the C++ engine to run the backward pass
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        t_outputs, *args, **kwargs
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )  # Calls into the C++ engine to run the backward pass
+    ^
+RuntimeError: adaptive_avg_pool2d_backward(): Expected grad_output to have non-zero size for non-batch dimensions, but grad_output has sizes [18, 32, 1, 0] with dimension 3 being empty
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/delete/nirs4all/nirs4all/nirs4all/pipeline/execution/executor.py", line 852, in _execute_single_step
+    step_result = self.step_runner.execute(
+        step=step,
+    ...<4 lines>...
+        prediction_store=prediction_store
+    )
+  File "/home/delete/nirs4all/nirs4all/nirs4all/pipeline/steps/step_runner.py", line 211, in execute
+    raise RuntimeError(f"Step execution failed: {str(e)}") from e
+RuntimeError: Step execution failed: adaptive_avg_pool2d_backward(): Expected grad_output to have non-zero size for non-batch dimensions, but grad_output has sizes [18, 32, 1, 0] with dimension 3 being empty
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/delete/nirs4all/nirs4all/nirs4all/pipeline/execution/executor.py", line 199, in execute
+    context = self._execute_steps(
+        steps,
+    ...<4 lines>...
+        all_artifacts
+    )
+  File "/home/delete/nirs4all/nirs4all/nirs4all/pipeline/execution/executor.py", line 547, in _execute_steps
+    context = self._execute_single_step(
+        step=step,
+    ...<5 lines>...
+        all_artifacts=all_artifacts
+    )
+  File "/home/delete/nirs4all/nirs4all/nirs4all/pipeline/execution/executor.py", line 929, in _execute_single_step
+    raise RuntimeError(f"Pipeline step {self.step_number} failed: {str(e)}") from e
+RuntimeError: Pipeline step 3 failed: Step execution failed: adaptive_avg_pool2d_backward(): Expected grad_output to have non-zero size for non-batch dimensions, but grad_output has sizes [18, 32, 1, 0] with dimension 3 being empty
+[X] Dataset 'firmness_spxy70' failed: Pipeline step 3 failed: Step execution failed: adaptive_avg_pool2d_backward(): Expected grad_output to have non-zero size for non-batch dimensions, but grad_output has sizes [18, 32, 1, 0] with dimension 3 being empty
+  PLUMS/Firmness_spxy70 Failed: Pipeline step 3 failed: Step execution failed: adaptive_avg_pool2d_backward(): Expected grad_output to have non-zero size for non-batch dimensions, but grad_output has sizes [18, 32, 1, 0] with dimension 3 being empty
+[X] Pipeline 7._Latent_Space_PLS_p0_b0d08031 on dataset milk_lactose_1224_ks failed: Pipeline step 3 failed: Step execution failed: adaptive_avg_pool2d_backward(): Expected grad_output to have non-zero size for non-batch dimensions, but grad_output has sizes [570, 32, 1, 0] with dimension 3 being empty
+Traceback (most recent call last):
+  File "/home/delete/nirs4all/nirs4all/nirs4all/pipeline/steps/step_runner.py", line 173, in execute
+    controller_result = controller.execute(
+        step_info=parsed_step,
+    ...<6 lines>...
+        prediction_store=prediction_store
+    )
+  File "/home/delete/nirs4all/nirs4all/nirs4all/controllers/models/sklearn_model.py", line 602, in execute
+    return super().execute(step_info, dataset, context, runtime_context, source, mode, loaded_binaries, prediction_store)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/delete/nirs4all/nirs4all/nirs4all/controllers/models/base_model.py", line 629, in execute
+    return self._execute_train(
+           ~~~~~~~~~~~~~~~~~~~^
+        dataset, model_config, context, runtime_context, prediction_store,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<2 lines>...
+        train_sample_ids=train_sample_ids, test_sample_ids=test_sample_ids
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/delete/nirs4all/nirs4all/nirs4all/controllers/models/base_model.py", line 693, in _execute_train
+    binaries = self.train(
+        dataset, model_config, context, runtime_context, prediction_store,
+    ...<2 lines>...
+        train_sample_ids=train_sample_ids, test_sample_ids=test_sample_ids
+    )
+  File "/home/delete/nirs4all/nirs4all/nirs4all/controllers/models/base_model.py", line 910, in train
+    results = [self.launch_training(*args) for args in fold_args]
+               ~~~~~~~~~~~~~~~~~~~~^^^^^^^
+  File "/home/delete/nirs4all/nirs4all/nirs4all/controllers/models/base_model.py", line 1221, in launch_training
+    trained_model = self._train_model(
+        model, X_train_prep, y_train_prep, X_val_prep, y_val_prep,
+        **train_params
+    )
+  File "/home/delete/nirs4all/nirs4all/nirs4all/controllers/models/sklearn_model.py", line 279, in _train_model
+    trained_model.fit(X_train, y_fit)
+    ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^
+  File "/home/delete/nirs4all/nirs4all/bench/AOM/models.py", line 389, in fit
+    loss.backward()
+    ~~~~~~~~~~~~~^^
+  File "/home/delete/nirs4all/nirs4all/.venv/lib/python3.13/site-packages/torch/_tensor.py", line 630, in backward
+    torch.autograd.backward(
+    ~~~~~~~~~~~~~~~~~~~~~~~^
+        self, gradient, retain_graph, create_graph, inputs=inputs
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/delete/nirs4all/nirs4all/.venv/lib/python3.13/site-packages/torch/autograd/__init__.py", line 364, in backward
+    _engine_run_backward(
+    ~~~~~~~~~~~~~~~~~~~~^
+        tensors,
+        ^^^^^^^^
+    ...<5 lines>...
+        accumulate_grad=True,
+        ^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/delete/nirs4all/nirs4all/.venv/lib/python3.13/site-packages/torch/autograd/graph.py", line 865, in _engine_run_backward
+    return Variable._execution_engine.run_backward(  # Calls into the C++ engine to run the backward pass
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        t_outputs, *args, **kwargs
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )  # Calls into the C++ engine to run the backward pass
+    ^
+RuntimeError: adaptive_avg_pool2d_backward(): Expected grad_output to have non-zero size for non-batch dimensions, but grad_output has sizes [570, 32, 1, 0] with dimension 3 being empty
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/delete/nirs4all/nirs4all/nirs4all/pipeline/execution/executor.py", line 852, in _execute_single_step
+    step_result = self.step_runner.execute(
+        step=step,
+    ...<4 lines>...
+        prediction_store=prediction_store
+    )
+  File "/home/delete/nirs4all/nirs4all/nirs4all/pipeline/steps/step_runner.py", line 211, in execute
+    raise RuntimeError(f"Step execution failed: {str(e)}") from e
+RuntimeError: Step execution failed: adaptive_avg_pool2d_backward(): Expected grad_output to have non-zero size for non-batch dimensions, but grad_output has sizes [570, 32, 1, 0] with dimension 3 being empty
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/delete/nirs4all/nirs4all/nirs4all/pipeline/execution/executor.py", line 199, in execute
+    context = self._execute_steps(
+        steps,
+    ...<4 lines>...
+        all_artifacts
+    )
+  File "/home/delete/nirs4all/nirs4all/nirs4all/pipeline/execution/executor.py", line 547, in _execute_steps
+    context = self._execute_single_step(
+        step=step,
+    ...<5 lines>...
+        all_artifacts=all_artifacts
+    )
+  File "/home/delete/nirs4all/nirs4all/nirs4all/pipeline/execution/executor.py", line 929, in _execute_single_step
+    raise RuntimeError(f"Pipeline step {self.step_number} failed: {str(e)}") from e
+RuntimeError: Pipeline step 3 failed: Step execution failed: adaptive_avg_pool2d_backward(): Expected grad_output to have non-zero size for non-batch dimensions, but grad_output has sizes [570, 32, 1, 0] with dimension 3 being empty
+[X] Dataset 'milk_lactose_1224_ks' failed: Pipeline step 3 failed: Step execution failed: adaptive_avg_pool2d_backward(): Expected grad_output to have non-zero size for non-batch dimensions, but grad_output has sizes [570, 32, 1, 0] with dimension 3 being empty
+  MILK/Milk_Lactose_1224_KS Failed: Pipeline step 3 failed: Step execution failed: adaptive_avg_pool2d_backward(): Expected grad_output to have non-zero size for non-batch dimensions, but grad_output has sizes [570, 32, 1, 0] with dimension 3 being empty
+[X] Pipeline 7._Latent_Space_PLS_p0_b0d08031 on dataset lp_spxyg failed: Pipeline step 3 failed: Step execution failed: adaptive_avg_pool2d_backward(): Expected grad_output to have non-zero size for non-batch dimensions, but grad_output has sizes [112, 32, 1, 0] with dimension 3 being empty
+Traceback (most recent call last):
+  File "/home/delete/nirs4all/nirs4all/nirs4all/pipeline/steps/step_runner.py", line 173, in execute
+    controller_result = controller.execute(
+        step_info=parsed_step,
+    ...<6 lines>...
+        prediction_store=prediction_store
+    )
+  File "/home/delete/nirs4all/nirs4all/nirs4all/controllers/models/sklearn_model.py", line 602, in execute
+    return super().execute(step_info, dataset, context, runtime_context, source, mode, loaded_binaries, prediction_store)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/delete/nirs4all/nirs4all/nirs4all/controllers/models/base_model.py", line 629, in execute
+    return self._execute_train(
+           ~~~~~~~~~~~~~~~~~~~^
+        dataset, model_config, context, runtime_context, prediction_store,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<2 lines>...
+        train_sample_ids=train_sample_ids, test_sample_ids=test_sample_ids
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/delete/nirs4all/nirs4all/nirs4all/controllers/models/base_model.py", line 693, in _execute_train
+    binaries = self.train(
+        dataset, model_config, context, runtime_context, prediction_store,
+    ...<2 lines>...
+        train_sample_ids=train_sample_ids, test_sample_ids=test_sample_ids
+    )
+  File "/home/delete/nirs4all/nirs4all/nirs4all/controllers/models/base_model.py", line 910, in train
+    results = [self.launch_training(*args) for args in fold_args]
+               ~~~~~~~~~~~~~~~~~~~~^^^^^^^
+  File "/home/delete/nirs4all/nirs4all/nirs4all/controllers/models/base_model.py", line 1221, in launch_training
+    trained_model = self._train_model(
+        model, X_train_prep, y_train_prep, X_val_prep, y_val_prep,
+        **train_params
+    )
+  File "/home/delete/nirs4all/nirs4all/nirs4all/controllers/models/sklearn_model.py", line 279, in _train_model
+    trained_model.fit(X_train, y_fit)
+    ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^
+  File "/home/delete/nirs4all/nirs4all/bench/AOM/models.py", line 389, in fit
+    loss.backward()
+    ~~~~~~~~~~~~~^^
+  File "/home/delete/nirs4all/nirs4all/.venv/lib/python3.13/site-packages/torch/_tensor.py", line 630, in backward
+    torch.autograd.backward(
+    ~~~~~~~~~~~~~~~~~~~~~~~^
+        self, gradient, retain_graph, create_graph, inputs=inputs
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/delete/nirs4all/nirs4all/.venv/lib/python3.13/site-packages/torch/autograd/__init__.py", line 364, in backward
+    _engine_run_backward(
+    ~~~~~~~~~~~~~~~~~~~~^
+        tensors,
+        ^^^^^^^^
+    ...<5 lines>...
+        accumulate_grad=True,
+        ^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/delete/nirs4all/nirs4all/.venv/lib/python3.13/site-packages/torch/autograd/graph.py", line 865, in _engine_run_backward
+    return Variable._execution_engine.run_backward(  # Calls into the C++ engine to run the backward pass
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        t_outputs, *args, **kwargs
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )  # Calls into the C++ engine to run the backward pass
+    ^
+RuntimeError: adaptive_avg_pool2d_backward(): Expected grad_output to have non-zero size for non-batch dimensions, but grad_output has sizes [112, 32, 1, 0] with dimension 3 being empty
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/delete/nirs4all/nirs4all/nirs4all/pipeline/execution/executor.py", line 852, in _execute_single_step
+    step_result = self.step_runner.execute(
+        step=step,
+    ...<4 lines>...
+        prediction_store=prediction_store
+    )
+  File "/home/delete/nirs4all/nirs4all/nirs4all/pipeline/steps/step_runner.py", line 211, in execute
+    raise RuntimeError(f"Step execution failed: {str(e)}") from e
+RuntimeError: Step execution failed: adaptive_avg_pool2d_backward(): Expected grad_output to have non-zero size for non-batch dimensions, but grad_output has sizes [112, 32, 1, 0] with dimension 3 being empty
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/delete/nirs4all/nirs4all/nirs4all/pipeline/execution/executor.py", line 199, in execute
+    context = self._execute_steps(
+        steps,
+    ...<4 lines>...
+        all_artifacts
+    )
+  File "/home/delete/nirs4all/nirs4all/nirs4all/pipeline/execution/executor.py", line 547, in _execute_steps
+    context = self._execute_single_step(
+        step=step,
+    ...<5 lines>...
+        all_artifacts=all_artifacts
+    )
+  File "/home/delete/nirs4all/nirs4all/nirs4all/pipeline/execution/executor.py", line 929, in _execute_single_step
+    raise RuntimeError(f"Pipeline step {self.step_number} failed: {str(e)}") from e
+RuntimeError: Pipeline step 3 failed: Step execution failed: adaptive_avg_pool2d_backward(): Expected grad_output to have non-zero size for non-batch dimensions, but grad_output has sizes [112, 32, 1, 0] with dimension 3 being empty
+[X] Dataset 'lp_spxyg' failed: Pipeline step 3 failed: Step execution failed: adaptive_avg_pool2d_backward(): Expected grad_output to have non-zero size for non-batch dimensions, but grad_output has sizes [112, 32, 1, 0] with dimension 3 being empty
+  PHOSPHORUS/LP_spxyG Failed: Pipeline step 3 failed: Step execution failed: adaptive_avg_pool2d_backward(): Expected grad_output to have non-zero size for non-batch dimensions, but grad_output has sizes [112, 32, 1, 0] with dimension 3 being empty
+
+==================================================
+Running 8. DARTS PLS
+==================================================
+  AMYLOSE/Rice_Amylose_313_YbasedSplit: RMSE = 4.4231
+  BEER/Beer_OriginalExtract_60_KS: RMSE = 0.2697
+  PLUMS/Firmness_spxy70: RMSE = 0.3226
+  MILK/Milk_Lactose_1224_KS: RMSE = 0.1503
+  PHOSPHORUS/LP_spxyG: RMSE = 0.1553
+
+Benchmark complete. Report saved to bench/AOM/report.md

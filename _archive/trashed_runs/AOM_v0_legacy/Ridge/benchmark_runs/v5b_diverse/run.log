@@ -1,0 +1,17 @@
+[aomridge] 10 datasets, variants=v5b, cv=spxy(3)
+[aomridge] 10 datasets, variants=v5b, cv=spxy(3)
+[aomridge] ALPINE/ALPINE_P_291_KS +1 rows
+[aomridge] BEER/Beer_OriginalExtract_60_YbaseSplit +1 rows
+[aomridge] COLZA/N_woOutlier +1 rows
+[aomridge] ECOSIS_LeafTraits/Chla+b_spxyG_block2deg +1 rows
+[aomridge] 9 datasets, variants=v5b, cv=spxy(3)
+[aomridge] ALPINE/ALPINE_P_291_KS +0 rows
+[aomridge] BEER/Beer_OriginalExtract_60_YbaseSplit +0 rows
+[aomridge] COLZA/N_woOutlier +0 rows
+[aomridge] ECOSIS_LeafTraits/Chla+b_spxyG_block2deg +0 rows
+[aomridge] GRAPEVINES/grapevine_chloride_556_KS +1 rows
+[aomridge] GRAPEVINE_LeafTraits/An_spxyG70_30_byCultivar_NeoSpectra +1 rows
+[aomridge] IncombustibleMaterial/TIC_spxy70 +1 rows
+[aomridge] MANURE21/All_manure_MgO_SPXY_strat_Manure_type +1 rows
+[aomridge] MANURE21/All_manure_Total_N_SPXY_strat_Manure_type +1 rows
+[aomridge] wrote 5 rows -> bench/AOM_v0/Ridge/benchmark_runs/v5b_diverse/results.csv
