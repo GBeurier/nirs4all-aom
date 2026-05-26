@@ -67,8 +67,8 @@ bank to be screened inside the model while retaining original-wavelength
 coefficients.  Sample-adaptive or fitted corrections such as SNV, MSC, EMSC
 and ASLS remain fold-local branches, not absorbed into the algebra.
 
-The study uses the AOM benchmark cohort: 61 regression rows in the manifest
-and 17 classification rows.  On the main regression denominator ($N=32$),
+The study uses the AOM benchmark cohort: 61 regression rows and 17
+classification rows in the manifest.  On the main regression denominator ($N=32$),
 plain compact-bank AOM-PLS records median RMSEP ratios of 0.991 against
 PLS-default and 0.990 against PLS-HPO; the selected
 \texttt{ASLS-AOM-compact-cv5} branch records 0.985 and 1.002 on the same two
@@ -348,10 +348,12 @@ high-dimensional low-$n$ regimes.
 Table~\ref{tab:dataset_statistics} summarizes the cohort in the same compact
 form used for the companion benchmark inventory.  Regression contains 61 rows
 with median $n=402$ samples and median $p=1023$ spectral variables.
-Classification contains 17 rows with median $n=511$ and median $p=1951$; the
-median number of classes is two and the median largest-class share is 0.513.
-The complete per-dataset description is provided in the supplementary
-longtable.
+The classification manifest contains 17 rows, of which 16 are included in the
+benchmark analyses after one missing-file exclusion.  Across the 17 manifest
+rows, the median $n$ is 511 and the median $p$ is 1951; the median number of
+classes is two and the median largest-class share is 0.513.  The complete
+per-dataset manifest description is provided in the supplementary longtable,
+while all score tables below use their explicitly stated paired denominators.
 
 \begin{table}[t]
   \centering
@@ -630,12 +632,13 @@ paired denominator.
 
 \section*{Data and code availability}
 
-The public software entry point is \texttt{nirs4all} at
-\url{https://github.com/GBeurier/nirs4all}.  The experiment code for this
-paper will be released upon publication at \url{https://github.com/gbeurier/aom}.
-A portable PLS / NIRS engine with stable C ABI and first-class bindings for
-Python, R, MATLAB, JavaScript/WebAssembly and Android will be released at
-\url{https://github.com/gbeurier/pls4all}.
+The public software entry point for the methods, benchmark runners, result
+tables and manuscript artifacts reported here is \texttt{nirs4all-aom}
+\citep{beurier2026aomnirs} at
+\url{https://github.com/GBeurier/nirs4all-aom}.  The \texttt{nirs4all} project
+\citep{beurier2026nirs4all} is cited only for the NIRS instrumentation,
+acquisition and provenance context used to assemble local benchmark inputs; it
+is not the software entry point for the AOM methods reported in this paper.
 
 The reproducibility protocol is defined by the cohort denominators in
 Section~\ref{sec:datasets}, the fold-local model-selection rules in the
@@ -659,6 +662,16 @@ The supplementary material contains complete derivations, the cohort
 manifest, operator-bank diagnostics, non-selected AOM variants, alternative
 AOM-form explorations, per-dataset tables, classification details, seed
 stability, software artifacts and the AI-assistance statement.
+
+\section*{Declaration of Generative AI and AI-assisted technologies in the writing process}
+
+During the preparation of this work, the authors used Anthropic Claude and
+OpenAI Codex to assist with code review, implementation, repository
+organization, benchmark aggregation scripts, LaTeX editing and drafting or
+revision of explanatory text.  After using these tools, the authors reviewed,
+edited and verified the code, numerical results, references and manuscript
+content as needed, and take full responsibility for the content of the
+publication.
 
 \bibliographystyle{unsrtnat}
 \bibliography{references}

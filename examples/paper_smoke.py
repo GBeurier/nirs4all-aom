@@ -19,11 +19,17 @@ estimator but not to recover the cohort-level effect sizes.
 
 from __future__ import annotations
 
+from pathlib import Path
+import sys
 import time
 
 import numpy as np
 from sklearn.cross_decomposition import PLSRegression
 from sklearn.metrics import mean_squared_error
+
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 
 from aom_nirs.fast import FastAOMConfig, FastAOMPLSRidge
 from aom_nirs.pls import AOMPLSRegressor

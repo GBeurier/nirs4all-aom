@@ -1,4 +1,4 @@
-# aom-nirs tests
+# nirs4all-aom tests
 
 Suite organised by package. Run from the repo root.
 

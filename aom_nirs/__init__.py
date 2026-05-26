@@ -1,4 +1,4 @@
-"""aom-nirs: Adaptive Operator-Mixture PLS and Ridge for NIR spectroscopy.
+"""nirs4all-aom: Adaptive Operator-Mixture PLS and Ridge for NIR spectroscopy.
 
 Companion code for the Talanta paper *Operator-adaptive PLS and Ridge
 calibration for NIR spectroscopy*.

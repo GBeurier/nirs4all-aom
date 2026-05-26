@@ -1,6 +1,6 @@
 """Vendored SPXY K-fold splitter (formerly `nirs4all.operators.splitters.SPXYFold`).
 
-Breaks the circular dependency between aom-nirs and nirs4all. The
+Breaks the circular dependency between nirs4all-aom and nirs4all. The
 implementation mirrors `nirs4all/operators/splitters/splitters.py:670`
 (commit history preserved in nirs4all's git log; the algorithm itself
 is documented in Galvao et al. 2005, *Talanta*, 67, 736-740).

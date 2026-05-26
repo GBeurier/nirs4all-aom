@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to `aom-nirs` are documented here. Format based on
+All notable changes to `nirs4all-aom` are documented here. Format based on
 [Keep a Changelog](https://keepachangelog.com/) and Semantic Versioning.
 
 ## [Unreleased]
@@ -17,7 +17,7 @@ All notable changes to `aom-nirs` are documented here. Format based on
 - `pls4all` parity matrix as data tests in CI (once `pls4all` v1.0
   ships on PyPI).
 - Replace the in-tree vendored copy inside `nirs4all/operators/models/
-  _aom_nirs/` with a runtime `pip install aom-nirs` dependency.
+  _aom_nirs/` with a runtime `pip install nirs4all-aom` dependency.
 
 ## [0.1.0] — 2026-05-17
 
@@ -91,7 +91,7 @@ All notable changes to `aom-nirs` are documented here. Format based on
   pop_pls, pop_pls_classifier, aom_ridge, aom_fast}.py` that
   re-export from a vendored copy of `aom_nirs` at
   `nirs4all/operators/models/_aom_nirs/`. Mid-term plan: replace the
-  vendored copy with a runtime `aom-nirs` dependency once this
+  vendored copy with a runtime `nirs4all-aom` dependency once this
   package is on PyPI.
 - API changes vs the previous `nirs4all` pure-Python `AOMPLSRegressor`:
   `gate='sparsemax'`, `FFTBandpassOperator`, `WaveletProjectionOperator`,

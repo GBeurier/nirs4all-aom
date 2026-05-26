@@ -1,4 +1,4 @@
-# aom-nirs paper
+# nirs4all-aom paper
 
 Manuscript and supplement for the paper *Operator-adaptive PLS and
 Ridge calibration for NIR spectroscopy*.
@@ -42,7 +42,6 @@ paper's claims, audit the data, and migrate the code base if needed:
 - `paper_review.md` — internal review with weakness ranking and fix plan
 - `aom_code_inventory.md` — per-file inventory of every AOM source module
 - `aom_lib_migration_plan.md` — the three repo options that led to `aom_nirs`
-- `pls4all_integration_eval.md` — convergence path with the C++ engine
 - `final_stats.md` — current paired-stats numbers (Wilcoxon Holm, Friedman,
   Cliff's delta, runtimes, seed stability)
 - `v3_stats.md` — FastAOM-specific stats
@@ -69,11 +68,16 @@ emits the operator-frequency / failure-mode tables.
 
 After regeneration, rerun `bash build.sh` to refresh `main.pdf`.
 
-## Open paper blockers (carried over from `review/paper_review.md`)
+## arXiv v2 status
 
-1. **AOM-Ridge headline is single-seed.** Re-run Blender / AutoSelector
-   with seeds 1 and 2 (see `paper/review/paper_review.md` weakness #2).
-2. **HPO denominator gap.** Fill the PLS-TabPFN-HPO and Ridge-TabPFN-HPO
-   "not attempted" rows in `missing_datasets_per_variant.md`.
-3. **Code availability.** This repo is the answer: clone `gbeurier/aom`,
-   `pip install -e .`, run `examples/paper_smoke.py`.
+The current draft uses `aom_nirs` as the public software entry point:
+`https://github.com/GBeurier/nirs4all-aom`.  `nirs4all` is cited only for
+instrumentation, acquisition, and provenance context.  The main paired
+regression denominator is `N_cap = 32`; the supplement separates the full
+61+17 manifest from the 32-dataset per-score table.
+
+For an uploadable source bundle, use `paper/aom_arxiv_v2.tar.gz`.  The bundle
+keeps `main.tex` at archive root, includes `supplement.tex`, `references.bib`,
+referenced PDF figures, and referenced `.tex` tables, and excludes `.bbl`
+files, logs, generated PDFs, PNG previews, review scripts, caches, and previous
+archives.

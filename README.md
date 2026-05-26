@@ -1,4 +1,4 @@
-# aom-nirs
+# nirs4all-aom
 
 **Adaptive Operator-Mixture PLS and Ridge for near-infrared spectroscopy.**
 
@@ -13,13 +13,13 @@ This repository ships three sklearn-compatible model families plus benchmark run
 ## Installation
 
 ```bash
-pip install aom-nirs                # core
-pip install "aom-nirs[torch]"        # GPU NIPALS / SIMPLS / superblock
-pip install "aom-nirs[tabpfn]"       # TabPFN-residual experimental stacker
-pip install "aom-nirs[bench]"        # benchmark runners and reporting tools
+pip install nirs4all-aom                # core
+pip install "nirs4all-aom[torch]"        # GPU NIPALS / SIMPLS / superblock
+pip install "nirs4all-aom[tabpfn]"       # TabPFN-residual experimental stacker
+pip install "nirs4all-aom[bench]"        # benchmark runners and reporting tools
 ```
 
-`aom-nirs` is pure Python; no compilation is required. The optional `pybaselines` dependency drives `aom_nirs.pls.preprocessing.ASLSBaseline`.
+`nirs4all-aom` is pure Python; no compilation is required. The optional `pybaselines` dependency drives `aom_nirs.pls.preprocessing.ASLSBaseline`.
 
 ## Quick start
 
@@ -43,13 +43,12 @@ A full reproduction of one smoke dataset for AOM-PLS, AOM-Ridge, and FastAOM is 
 
 ## Relationship to other repos
 
-- **`nirs4all`** ([GitHub](https://github.com/GBeurier/nirs4all)) — production NIRS pipeline library. `nirs4all` currently vendors a copy of `aom-nirs` under `nirs4all/operators/models/_aom_nirs/`. Once `aom-nirs` reaches PyPI, the vendored copy becomes a runtime dependency.
-- **`pls4all`** ([GitHub](https://github.com/GBeurier/pls4all)) — C++ engine with a stable C ABI and Python bindings. Phase 6a-6f ships the AOM-PLS / POP-PLS *core* (global AOM-SIMPLS CV selection, POP per-component SIMPLS covariance selection) in C++. `aom-nirs` is the Python reference; `pls4all/parity/fixtures/synthetic_aom_*_v1.json` are bit-exact oracles. See `paper/review/pls4all_integration_eval.md`.
-- **`aompls`** ([GitHub](https://github.com/GBeurier/aompls)) — older multi-language port (C++/R/Julia/MATLAB/JS). Superseded by `aom-nirs` (Python) plus `pls4all` (C++).
+- **`nirs4all`** ([GitHub](https://github.com/GBeurier/nirs4all)) — NIRS instrumentation, acquisition, and provenance context for local benchmark inputs. The AOM methods, benchmark runners, result tables, and manuscript artifacts are distributed from this `nirs4all-aom` repository.
+- **`aompls`** ([GitHub](https://github.com/GBeurier/aompls)) — older multi-language prototype. Superseded by `nirs4all-aom` for the Python reference implementation used in the paper.
 
 ## Paper
 
-The manuscript and supplement live under `paper/`. The review dossier (`paper/review/`) contains the inventory, migration plan, and pls4all-integration evaluation that drove this code release. See `paper/review/aom_code_inventory.md` for the per-variant score evidence.
+The manuscript and supplement live under `paper/`. The review dossier (`paper/review/`) contains the inventory, migration plan, cohort coverage audit, and per-variant score evidence used for the arXiv draft.
 
 ## License
 
@@ -60,9 +59,9 @@ Dual-license: **AGPL-3.0-or-later** (default open-source) or commercial. See `LI
 ```bibtex
 @software{beurier_aom_nirs_2026,
   author = {Beurier, Gregory},
-  title  = {aom-nirs: Adaptive Operator-Mixture PLS and Ridge for NIR spectroscopy},
+  title  = {nirs4all-aom: Adaptive Operator-Mixture PLS and Ridge for NIR spectroscopy},
   year   = {2026},
-  url    = {https://github.com/GBeurier/aom-nirs},
+  url    = {https://github.com/GBeurier/nirs4all-aom},
   version = {0.1.0}
 }
 ```

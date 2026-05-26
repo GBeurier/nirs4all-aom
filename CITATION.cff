@@ -1,5 +1,5 @@
 cff-version: 1.2.0
-title: "aom-nirs: Adaptive Operator-Mixture PLS and Ridge for NIR spectroscopy"
+title: "nirs4all-aom: Adaptive Operator-Mixture PLS and Ridge for NIR spectroscopy"
 message: >-
   If you use this software, please cite both the software itself
   and the accompanying paper.
@@ -12,7 +12,7 @@ authors:
 identifiers:
   - description: "GitHub repository"
     type: url
-    value: "https://github.com/GBeurier/aom-nirs"
+    value: "https://github.com/GBeurier/nirs4all-aom"
 keywords:
   - chemometrics
   - NIRS
@@ -26,8 +26,8 @@ keywords:
 license: AGPL-3.0-or-later OR LicenseRef-Commercial
 version: 0.1.0
 date-released: "2026-05-17"
-repository-code: "https://github.com/GBeurier/aom-nirs"
-url: "https://github.com/GBeurier/aom-nirs"
+repository-code: "https://github.com/GBeurier/nirs4all-aom"
+url: "https://github.com/GBeurier/nirs4all-aom"
 abstract: >-
   Companion Python implementation for the paper
   "Operator-adaptive PLS and Ridge calibration for NIR spectroscopy".
@@ -46,15 +46,10 @@ references:
     title: "Operator-adaptive PLS and Ridge calibration for NIR spectroscopy"
     year: 2026
     notes: "Preprint; see paper/main.tex and paper/aom_arxiv_v2.tar.gz"
-    notes: "Submitted; see paper/main.tex"
   - type: software
     title: "nirs4all"
     repository-code: "https://github.com/GBeurier/nirs4all"
-    notes: "Companion NIRS pipeline library; vendors aom-nirs at nirs4all/operators/models/_aom_nirs/"
-  - type: software
-    title: "pls4all"
-    repository-code: "https://github.com/GBeurier/pls4all"
-    notes: "C++ engine with stable C ABI; Phase 6 implements AOM-PLS / POP-PLS core; aom-nirs is the Python parity reference"
+    notes: "NIRS instrumentation, acquisition, and benchmark provenance context"
 preferred-citation:
   type: article
   authors:

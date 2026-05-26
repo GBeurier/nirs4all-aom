@@ -19,4 +19,4 @@ build_tex supplement
 cp main.pdf AOM-paper.pdf
 cp supplement.pdf AOM-supplement.pdf
 
-echo "Built paper_aom/main.pdf and paper_aom/supplement.pdf"
+echo "Built paper/main.pdf and paper/supplement.pdf"
