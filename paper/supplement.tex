@@ -181,7 +181,7 @@ Diagnostic component-level routing.\\
 \code{SoftAOMChainPLSRidge} & Sparse non-negative chain mixture per component &
 Mixture-routing exploration.\\
 \code{SparseMultiKernelRidge} & Greedy sparse non-negative kernel mixture &
-Best FastAOM exploration family in the full60 table.\\
+Best FastAOM exploration family in the wide seed0 table.\\
 \code{FastAOMPLSRidge} & Orchestrator over bases, chains, SVD, screening and fit &
 Entry point used by the benchmark runner.\\
 \bottomrule
@@ -190,10 +190,14 @@ Entry point used by the benchmark runner.\\
 
 \section{Cohort Manifest}
 
-The refreshed manifest contains 61 regression rows and 17 classification rows.
-The main regression comparisons use the strict intersection
-$N_{\cap}=32$; the per-dataset long table below includes only those rows.
-The classification tables are paired within the classification cohort.
+The refreshed manifest contains 61 regression rows and 17 classification
+manifest rows.  One classification row is retained only as an excluded
+manifest record because the source files are missing, leaving 16
+classification rows included in benchmark analyses.  The overview longtable
+below lists the full manifest for provenance.  The per-dataset regression
+score table in Section~\ref{sec:sup_per_dataset_regression} is restricted to
+the strict main intersection $N_{\cap}=32$.  The classification tables report
+their own paired denominators.
 
 \begin{table}[h]
 \centering
@@ -298,7 +302,8 @@ space without fitting every chain as a full external pipeline.
 
 \begin{table}[h]
 \centering
-\caption{FastAOM full-variant summary from the full60 seed0 table.}
+\caption{FastAOM wide seed0 summary.  Each row reports its own available
+complete datasets and is not the main $N_{\cap}=32$ paired denominator.}
 \label{tab:sup_fastaom_variants}
 \small
 \input{tables/table_fastaom_variants.tex}
@@ -348,6 +353,7 @@ stable aggregate gain.  POP-style classification rows are kept in the full
 classification table, but POP is not part of the main result.
 
 \section{Per-Dataset Regression Results}
+\label{sec:sup_per_dataset_regression}
 
 The heatmap gives a compact per-dataset view, and the long table gives the
 underlying RMSEP values on the same $N_{\cap}=32$ regression rows used in the
@@ -410,7 +416,7 @@ runs.}
 AOM-PLS dataset-level RMSEP rankings are highly correlated across seeds, but
 some datasets change the winning member of the AOM-PLS family.  The top AOM
 Ridge rows are deterministic for the recorded split/random-state
-representation.  FastAOM was run on seed0 for the full60 exploration and
+representation.  FastAOM was run on seed0 for the wide exploration and
 should be read as chain-space evidence rather than split-resampling evidence.
 
 \section{Reproducibility and Software Artifacts}
@@ -424,11 +430,12 @@ should be read as chain-space evidence rather than split-resampling evidence.
 \end{table}
 
 All numerical claims in the main manuscript and in this supplement are
-computed from benchmark result tables produced by the public repositories
-announced in the main manuscript.  The regression cohort contains 61 manifest
-rows, and the main paired regression comparisons use $N_{\cap}=32$ rows.  The
-classification cohort contains 17 manifest rows and is summarized in the
-classification tables.
+computed from benchmark result tables distributed with the public
+\code{nirs4all-aom} repository announced in the main manuscript.  The regression
+cohort contains 61 manifest rows, and the main paired regression comparisons
+use $N_{\cap}=32$ rows.  The classification manifest contains 17 rows, with 16
+included in benchmark analyses after one missing-file exclusion, and is
+summarized in the classification tables.
 
 Multi-seed evidence is aggregated at dataset level before paired tests.
 AOM-PLS, PLS-default, Ridge-default, PLS-HPO and Ridge-HPO use seeds 0, 1 and
@@ -442,14 +449,17 @@ Classification comparisons use paired balanced-accuracy differences with the
 same family-wise correction.  The validation status of the software artifacts
 is summarized in Table~\ref{tab:sup_software}.
 
-\section{AI-Assistance Statement}
+\section{Declaration of Generative AI and AI-assisted technologies in the writing process}
 
-AI assistance was used to draft explanatory text and to generate
-manuscript-support scripts for aggregation, paired statistics and figure
-generation.  Every numerical claim in the main manuscript and in this
-supplement is computed from benchmark result tables; the assistance did not
-generate numerical results by itself.  The authors remain responsible for the
-study design, data interpretation, code review and final text.
+During the preparation of this work, the authors used Anthropic Claude and
+OpenAI Codex to assist with code review, implementation, repository
+organization, benchmark aggregation scripts, LaTeX editing and drafting or
+revision of explanatory text.  Every numerical claim in the main manuscript
+and in this supplement is computed from benchmark result tables; the
+AI-assisted tools did not generate numerical results by themselves.  After
+using these tools, the authors reviewed, edited and verified the code,
+numerical results, references and manuscript content as needed, and take full
+responsibility for the content of the publication.
 
 \nocite{geladi1986partial,wold2001pls,dejong1993simpls,hoerl1970ridge,rinnan2009review,savitzky1964smoothing,barnes1989standard,geladi1985linearization}
 

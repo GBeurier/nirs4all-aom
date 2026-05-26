@@ -9,10 +9,16 @@ typically a few times faster than the global AOM-PLS CV path in example 01.
 
 from __future__ import annotations
 
+from pathlib import Path
+import sys
 import time
 
 import numpy as np
 from sklearn.metrics import mean_squared_error
+
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 
 from aom_nirs.fast import FastAOMConfig, FastAOMPLSRidge
 

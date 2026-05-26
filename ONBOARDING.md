@@ -1,4 +1,4 @@
-# Onboarding — aom-nirs
+# Onboarding — nirs4all-aom
 
 **You are picking up an in-flight research codebase.** This document is the
 single place where the project's history, science, code architecture,
@@ -31,7 +31,7 @@ the manuscript and `final_stats.md` are the sources of truth.
 
 ## 1. The 30-second pitch
 
-`aom-nirs` is the citation repository for the paper
+`nirs4all-aom` is the citation repository for the paper
 *"Operator-adaptive PLS and Ridge calibration for NIR spectroscopy"*. It
 ships three Python packages plus the manuscript:
 
@@ -129,7 +129,7 @@ and `paper/review/missing_datasets_per_variant.md`.
 ```
 aom_nirs/
 ├── README.md, LICENSE, CHANGELOG.md, CITATION.cff, MANIFEST.in
-├── pyproject.toml                           # name=aom-nirs, version=0.1.0
+├── pyproject.toml                           # name=nirs4all-aom, version=0.1.0
 ├── ONBOARDING.md                            # this file
 │
 ├── aom_nirs/                                # the Python package
@@ -649,8 +649,8 @@ Full version: `docs/reproducibility.md`. Critical-path commands:
 
 ```bash
 # 0. clone
-git clone https://github.com/GBeurier/aom-nirs.git aom-nirs
-cd aom-nirs
+git clone https://github.com/GBeurier/nirs4all-aom.git nirs4all-aom
+cd nirs4all-aom
 
 # 1. install
 pip install -e .[bench]
@@ -682,7 +682,7 @@ python benchmarks/pls/run_aompls_benchmark.py --cohort benchmarks/pls/cohort_reg
   `nirs4all/operators/models/sklearn/{aom_pls,aom_pls_classifier,
   pop_pls,pop_pls_classifier,aom_ridge,aom_fast}.py` give
   `nirs4all` users the same API. Mid-term plan: replace the vendored
-  copy with a runtime `pip install aom-nirs` dependency.
+  copy with a runtime `pip install nirs4all-aom` dependency.
 
 - **`GBeurier/pls4all`** — C++17 PLS engine with stable C ABI.
   Phase 6 (shipped through 6f) implements AOM-PLS core in C++:
@@ -851,7 +851,7 @@ $ bash paper/build.sh
     tests retained; dropped tests for sparsemax / FFT / Wavelet /
     OPLS prefilter / torch in-fit / prefix / n_orth / operator_index).
 - **The migration plan and three repo options** (everything in
-  `nirs4all`, dedicated `aom-nirs` Python repo, `pls4all`
+  `nirs4all`, dedicated `nirs4all-aom` Python repo, `pls4all`
   bindings/python subdir) are documented in
   `paper/review/aom_lib_migration_plan.md`. Option B (dedicated
   Python repo) was chosen. Option C (`pls4all` hosting) remains the

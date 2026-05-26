@@ -1,0 +1,1 @@
+16 pages, 9 figures; supplementary material included in source (34 pages, 4 figures). Code and benchmark artifacts: https://github.com/GBeurier/nirs4all-aom

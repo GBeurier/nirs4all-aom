@@ -56,8 +56,14 @@ def ridge_gcv_lambda(
     best = (None, np.inf)
     for lam in lambdas:
         denom = eigvals + lam
-        # Hat matrix in eigenbasis: diag(eigvals / denom)
-        hat_diag = (eigvals / denom)
+        # Hat matrix in eigenbasis: diag(eigvals / denom).  Zero eigenvalues
+        # at lambda=0 contribute zero leverage, not a runtime warning.
+        hat_diag = np.divide(
+            eigvals,
+            denom,
+            out=np.zeros_like(eigvals),
+            where=denom > 0.0,
+        )
         yhat = eigvecs @ (hat_diag * z)
         residual = y - yhat
         trace_term = (1.0 - hat_diag.sum() / n)

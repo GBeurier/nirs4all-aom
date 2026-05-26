@@ -1,4 +1,4 @@
-# aom-nirs benchmarks
+# nirs4all-aom benchmarks
 
 This directory holds the cohort runners that produced the paper's results,
 the cohort manifests, and the paper-tied result CSVs.
@@ -65,7 +65,7 @@ under `benchmarks/runs/` and produces the LaTeX tables and figures under
 ## Data dependency
 
 The runners require the NIR datasets themselves, which are not shipped with
-`aom-nirs` (they live in `nirs4all/sample_data/` and external sources).
+`nirs4all-aom` (they live in `nirs4all/sample_data/` and external sources).
 The paper-tied result CSVs under `benchmarks/runs/` are the artefacts that
 allow stats / figures to be regenerated without re-running the (multi-hour)
 benchmark.
