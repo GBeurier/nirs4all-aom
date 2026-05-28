@@ -1,0 +1,52 @@
+{% set version = "0.1.0" %}
+
+package:
+  name: aompls
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/a/aompls/aompls-{{ version }}.tar.gz
+  sha256: REPLACE_WITH_PYPI_SDIST_SHA256
+
+build:
+  number: 0
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  skip: true  # [py<39]
+
+requirements:
+  build:
+    - {{ compiler('cxx') }}
+  host:
+    - python
+    - pip
+    - setuptools >=64
+    - wheel
+    - pybind11 >=2.10
+    - numpy
+  run:
+    - python
+    - numpy
+    - scikit-learn >=1.0
+
+test:
+  imports:
+    - aompls
+  commands:
+    - python -c "from aompls import AOMPLSCompact; import numpy as np; AOMPLSCompact(max_components=3).fit(np.random.rand(50,30), np.random.rand(50))"
+  requires:
+    - pytest
+
+about:
+  home: https://github.com/REPLACE_OWNER/aompls
+  license: CECILL-2.1
+  license_family: OTHER
+  license_file: LICENSE
+  summary: AOM-PLS compact (PLS1) — C++ core with Python, R, MATLAB, Julia, and JS bindings
+  description: |
+    Adaptive Operator Mixture Partial Least Squares regression (PLS1) with a
+    compact 9-operator bank and materialized SIMPLS engine. Validated against
+    the upstream nirs4all reference to machine precision.
+
+extra:
+  recipe-maintainers:
+    - REPLACE_GITHUB_HANDLE
