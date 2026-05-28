@@ -1,0 +1,112 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+# Cancel previous runs on the same ref.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  cpp-parity:
+    name: C++ parity gate
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compile parity tests
+        run: |
+          cd cpp
+          mkdir -p build
+          c++ -std=c++17 -O2 -DEIGEN_NO_DEBUG -DEIGEN_DONT_PARALLELIZE \
+              -Wno-maybe-uninitialized -Wno-unused-parameter -Wno-unused-variable \
+              -I include tests/test_operators.cpp -o build/test_operators
+          c++ -std=c++17 -O2 -DEIGEN_NO_DEBUG -DEIGEN_DONT_PARALLELIZE \
+              -Wno-maybe-uninitialized -Wno-unused-parameter -Wno-unused-variable \
+              -I include tests/test_parity_kfold.cpp -o build/test_parity_kfold
+      - name: Run unit tests
+        run: cd cpp && ./build/test_operators
+      - name: Run parity gate
+        run: cd cpp && ./build/test_parity_kfold tests/reference
+
+  python-parity:
+    name: Python parity gate (${{ matrix.os }}, py${{ matrix.python-version }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        python-version: ["3.10", "3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install pybind11 numpy scikit-learn pytest
+          python -m pip install -e python/
+      - name: Pytest
+        run: cd python && pytest tests/ -v
+
+  r-parity:
+    name: R parity gate (${{ matrix.config.os }} R-${{ matrix.config.r }})
+    runs-on: ${{ matrix.config.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        config:
+          - { os: ubuntu-latest,  r: 'release' }
+          - { os: macos-latest,   r: 'release' }
+          - { os: windows-latest, r: 'release' }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          r-version: ${{ matrix.config.r }}
+          use-public-rspm: true
+      - uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          working-directory: r/aompls
+          extra-packages: |
+            any::testthat
+            any::jsonlite
+            any::Rcpp
+            any::rcmdcheck
+      - name: Sync vendored headers
+        shell: bash
+        run: ./scripts/sync_headers.sh
+      - name: Install package
+        shell: bash
+        run: R CMD INSTALL r/aompls
+      - name: Run parity gate
+        shell: bash
+        run: |
+          AOMPLS_REF_DIR="$(pwd)/cpp/tests/reference" \
+            Rscript -e "library(aompls); library(testthat); test_dir('r/aompls/tests/testthat', reporter='progress')"
+
+  r-cmd-check:
+    name: R CMD check --as-cran
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: r-lib/actions/setup-r@v2
+        with: { use-public-rspm: true }
+      - uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          working-directory: r/aompls
+          extra-packages: any::rcmdcheck
+      - run: ./scripts/sync_headers.sh
+      - uses: r-lib/actions/check-r-package@v2
+        with:
+          working-directory: r/aompls
+          args: 'c("--no-manual", "--as-cran")'
