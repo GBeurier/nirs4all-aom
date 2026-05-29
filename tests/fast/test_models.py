@@ -22,7 +22,7 @@ from aom_nirs.fast.models import (
     HardAOMChainPLSRidge,
     SingleChainPLSRidge,
     SoftAOMChainPLSRidge,
-    SparseMultiKernelRidge,
+    SparseChainPLSRidge,
 )
 from aom_nirs.fast.operator_chain import OperatorChain
 from aom_nirs.fast.screening import diversity_topk, fast_covariance_screen
@@ -178,10 +178,10 @@ def test_hard_aom_chain_records_per_component_chain() -> None:
         assert 0 <= comp.base_index < len(bases)
 
 
-def test_sparse_multi_kernel_ridge_fits_and_predicts() -> None:
+def test_sparse_chain_pls_ridge_fits_and_predicts() -> None:
     X_tr, X_te, y_tr, y_te = _make_data()
     bases, lowrank, finalists, cand_pairs = _make_candidates(X_tr, y_tr, X_tr.shape[1])
-    model = SparseMultiKernelRidge(
+    model = SparseChainPLSRidge(
         bases=bases,
         lowrank_bases=lowrank,
         candidates=cand_pairs,
@@ -240,7 +240,7 @@ def test_fast_aom_pls_ridge_meta_estimator_default() -> None:
     assert est.diagnostics_["n_finalists"] > 0
 
 
-def test_sparse_mkr_does_not_infinite_loop_on_redundant_candidates() -> None:
+def test_sparse_chains_does_not_infinite_loop_on_redundant_candidates() -> None:
     """When NNLS-refit zeroes out a freshly selected chain, that chain must be
     blacklisted; otherwise the greedy loop re-selects it forever."""
     rng = np.random.default_rng(123)
@@ -256,7 +256,7 @@ def test_sparse_mkr_does_not_infinite_loop_on_redundant_candidates() -> None:
         for w in (5, 7, 9, 11, 15, 21)
     ]
     cand_pairs = [(0, ch) for ch in chains]
-    model = SparseMultiKernelRidge(
+    model = SparseChainPLSRidge(
         bases=bases,
         lowrank_bases=lowrank,
         candidates=cand_pairs,
@@ -269,7 +269,7 @@ def test_sparse_mkr_does_not_infinite_loop_on_redundant_candidates() -> None:
     assert model.theta_.size <= len(chains)
 
 
-@pytest.mark.parametrize("model", ["single_chain", "soft_aom_chain", "sparse_mkr"])
+@pytest.mark.parametrize("model", ["single_chain", "soft_aom_chain", "sparse_chains"])
 def test_fast_aom_pls_ridge_supports_all_models(model: str) -> None:
     X_tr, X_te, y_tr, y_te = _make_data()
     cfg = FastAOMConfig(
@@ -281,7 +281,7 @@ def test_fast_aom_pls_ridge_supports_all_models(model: str) -> None:
         top_per_base=10,
         top_per_family=2,
         n_components=4,
-        sparse_mkr_max_chains=3,
+        sparse_chains_max_chains=3,
         soft_max_mixture_size=2,
         soft_rho=0.05,
     )

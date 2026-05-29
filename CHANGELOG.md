@@ -5,12 +5,49 @@ All notable changes to `nirs4all-aom` are documented here. Format based on
 
 ## [Unreleased]
 
+### Changed
+
+- **Renamed `SparseMultiKernelRidge` → `SparseChainPLSRidge`** (file
+  `sparse_multi_kernel_ridge.py` → `sparse_chain_pls_ridge.py`; FastAOM model id
+  `"sparse_mkr"` → `"sparse_chains"`; config `sparse_mkr_max_chains` →
+  `sparse_chains_max_chains`). The method is a sparse non-negative combination of
+  strict-linear operator-*chain* kernels; the previous "multi-kernel" name
+  invited the multi-kernel-learning reading the paper explicitly avoids.
+  **Breaking** for any code/config using the old names (no compatibility shim).
+- Benchmarks no longer import from `nirs4all` (removed the reversed dependency):
+  the ASLS preprocessing path now uses the vendored
+  `aom_nirs.pls.preprocessing.ASLSBaseline`, and the dead
+  `nirs4all_aom`/`nirs4all_pop` "external" call-through comparator variants were
+  dropped from the PLS runners. (The optional, import-guarded bit-exact parity
+  test against the nirs4all production copy is kept; it skips when nirs4all is
+  absent.)
+
+### Removed
+
+- Five pre-paper audit scenario configs under `benchmarks/ridge/scenarios/`
+  (`audit20_d_a_001_no_asl`, `da002_bigN_guarded`, `da002_canonical_atoms`,
+  `da003_local_knn50_bigN`, `da009_local_knn_sweep`) — exploratory definitions
+  not referenced by any paper run.
+
+### Added
+
+- `benchmarks/runs/PAPER_MANIFEST.txt` — authoritative whitelist of the
+  paper-tied result directories (everything else under `benchmarks/runs/` is
+  scratch / exploratory).
+
+### Fixed
+
+- `paper/review/selector_seed_stability.csv` was a malformed 1-byte file; it is
+  now a valid header-only CSV. The table is empty by construction — the
+  AutoSelect/Blender selectors were run at a single seed, so there is no
+  cross-seed variation to report (determinism is shown by
+  `table_seed_determinism.tex`).
+
 ### Planned (post-submission)
 
 - Fill the HPO denominator gap for PLS-TabPFN-HPO and Ridge-TabPFN-HPO
   (see `paper/review/missing_datasets_per_variant.md`).
 - External-split / instrument-transfer demonstration.
-- Conventional PLS+SNV+SG+derivative baseline.
 - `pls4all` parity matrix as data tests in CI (once `pls4all` v1.0
   ships on PyPI).
 - Replace the in-tree vendored copy inside `nirs4all/operators/models/

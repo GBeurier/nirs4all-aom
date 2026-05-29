@@ -15,7 +15,7 @@ python examples/01_aom_pls_quickstart.py
 |------|--------------|------------------|
 | `01_aom_pls_quickstart.py` | `AOMPLSRegressor` with the compact bank and 5-fold CV. Prints test RMSE and the selected operator(s). | Section 3 (AOM-PLS, global selection). |
 | `02_aom_ridge_blender.py`  | `AOMRidgeBlender` with the 8 HEADLINE candidate variants. Prints the convex blend weights and the dominant candidate. | Section 4 / Table 2 (best empirical result: median RMSEP ratio 0.918 vs Ridge-default, Wilcoxon Holm-corrected p = 2.6e-4). |
-| `03_fastaom_quickstart.py` | `FastAOMPLSRidge(model="sparse_mkr", primitive_bank="compact")`. Prints RMSE, fit time, and screening statistics. | Section 5 (FastAOM speed champion: ratio 1.022 at ~2.5 s per fit). |
+| `03_fastaom_quickstart.py` | `FastAOMPLSRidge(model="sparse_chains", primitive_bank="compact")`. Prints RMSE, fit time, and screening statistics. | Section 5 (FastAOM speed champion: ratio 1.022 at ~2.5 s per fit). |
 | `paper_smoke.py`           | Side-by-side comparison of `PLSRegression`, `AOMPLSRegressor`, `ASLSBaseline -> AOMPLSRegressor`, `AOMRidgeRegressor(selection="global")`, `AOMRidgeBlender`, and `FastAOMPLSRidge`. Prints a markdown-style table with RMSE, fit time, and wins vs. the PLS baseline. | manuscript Tables 1 and 2; benchmark protocol in `paper/`. |
 
 ## Expected runtime

@@ -66,7 +66,6 @@ SMOKE_VARIANTS = [
     {"label": "SPXY-AOM-family-pruned-cv3-numpy", "kind": "regression", "selection": "global", "engine": "nipals_adjoint", "operator_bank": "family_pruned", "backend": "numpy", "preproc": "none+asls+none", "criterion_override": "cv", "cv_override": 3, "cv_splitter_factory": _spxy_factory(3)},
     {"label": "SPXY-AOM-response-dedup-cv3-numpy", "kind": "regression", "selection": "global", "engine": "nipals_adjoint", "operator_bank": "response_dedup", "backend": "numpy", "preproc": "none+asls+none", "criterion_override": "cv", "cv_override": 3, "cv_splitter_factory": _spxy_factory(3)},
     # Production reference
-    {"label": "nirs4all-AOM-PLS-default", "kind": "regression", "selection": "external", "engine": "nirs4all_aom", "operator_bank": "production_default", "backend": "numpy"},
 ]
 
 

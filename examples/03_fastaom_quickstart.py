@@ -2,7 +2,7 @@
 
 FastAOM enumerates millions of preprocessing chains, screens them with
 adjoint-only covariance scores, and fits one of four AOM-style models on the
-surviving pool. The ``sparse_mkr`` model is the speed champion in the paper
+surviving pool. The ``sparse_chains`` model is the speed champion in the paper
 (FastAOM-sparse-mkr-compact: median ratio 1.022, ~2.5 s per fit). This is
 typically a few times faster than the global AOM-PLS CV path in example 01.
 """
@@ -57,13 +57,13 @@ def main() -> None:
     X_train, X_test = X[:n_train], X[n_train:]
     y_train, y_test = y[:n_train], y[n_train:]
 
-    # FastAOM-sparse-mkr-compact: sparse_mkr model over the compact primitive bank.
+    # FastAOM-sparse-mkr-compact: sparse_chains model over the compact primitive bank.
     cfg = FastAOMConfig(
-        model="sparse_mkr",
+        model="sparse_chains",
         primitive_bank="compact",
         max_chain_depth=3,
         top_global=60,
-        sparse_mkr_max_chains=8,
+        sparse_chains_max_chains=8,
         random_state=0,
     )
     model = FastAOMPLSRidge(config=cfg)

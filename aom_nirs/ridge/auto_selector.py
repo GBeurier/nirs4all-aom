@@ -54,8 +54,7 @@ def _resolve_outer_cv(
     ``cv`` may be an integer (number of splits) or any object exposing
     ``split(X, y)``. When integer, ``kind`` decides:
 
-    - ``"spxy"``: ``SPXYFold`` from nirs4all (single repeat) when
-      available, else ``KFold(shuffle=True)``;
+    - ``"spxy"``: the vendored ``SPXYFold`` (single repeat);
     - ``"kfold"``: shuffled ``KFold``;
     - ``"spxy_repeated"``: ``RepeatedSPXYFold`` with ``repeats`` repeats.
 

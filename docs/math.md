@@ -328,9 +328,9 @@ the low-rank bases:
 | `SingleChainPLSRidge` | Best chain only, PLS-then-Ridge. |
 | `HardAOMChainPLSRidge` | One chain per PLS component. |
 | `SoftAOMChainPLSRidge` | Sparse non-negative chain mixture per component. |
-| `SparseMultiKernelRidge` | Greedy NNLS over chain kernels `K_θ = Σ_s θ_s K_s` with `θ_s ≥ 0`. |
+| `SparseChainPLSRidge` | Greedy NNLS over chain kernels `K_θ = Σ_s θ_s K_s` with `θ_s ≥ 0`. |
 
-The `SparseMultiKernelRidge` greedy step picks the chain whose kernel
+The `SparseChainPLSRidge` greedy step picks the chain whose kernel
 best aligns with the current residual:
 `score(s) = (y_res^T K_s y_res) / sqrt(trace(K_s K_s) + ε)`, then
 refits `θ` via projected-gradient NNLS and `α` by GCV.

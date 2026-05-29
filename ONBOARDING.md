@@ -97,8 +97,8 @@ matrix-vector products on `X^T y` (a `p`-vector), not on `X` (a
    screening prunes them; truncated SVD turns the survivors into
    low-rank kernels. Four sklearn-style models consume the kernels:
    `SingleChainPLSRidge`, `HardAOMChainPLSRidge`,
-   `SoftAOMChainPLSRidge`, `SparseMultiKernelRidge`. The paper's
-   FastAOM headline is `SparseMultiKernelRidge` with the compact
+   `SoftAOMChainPLSRidge`, `SparseChainPLSRidge`. The paper's
+   FastAOM headline is `SparseChainPLSRidge` with the compact
    primitive bank (`FastAOM-sparse-mkr-compact`): median rel-RMSEP
    **1.022**, median fit **2.48 s**, Friedman rank 3.18 on the
    common 50-dataset subset.
@@ -449,7 +449,7 @@ from aom_nirs.fast import (
     # models
     FastAOMPLSRidge, FastAOMConfig,
     SingleChainPLSRidge, HardAOMChainPLSRidge,
-    SoftAOMChainPLSRidge, SparseMultiKernelRidge,
+    SoftAOMChainPLSRidge, SparseChainPLSRidge,
     # bases
     RawBase, AbsorbanceBase, SNVBase, MSCBase, EMSCBase, ASLSBase,
     OSCBase, SNVOSCBase, WhittakerBaseLine, BaseTransform, build_base_bank,
@@ -475,7 +475,7 @@ from aom_nirs.fast import (
 5. `fit_lowrank_bases` computes truncated-SVD `B(X) = U Σ V^T` once
    per base; survivor kernels become `K_s ≈ U C_s U^T`.
 6. Pick a model (`single_chain`, `hard_aom_chain`, `soft_aom_chain`,
-   `sparse_mkr`) → fit Ridge.
+   `sparse_chains`) → fit Ridge.
 
 The `FastAOMPLSRidge` orchestrator wraps everything behind one
 sklearn-style `fit/predict`.
@@ -500,8 +500,8 @@ Source of truth: `paper/review/aom_code_inventory.md` §8 +
 | AOM-Ridge simple (`global-compact-none`) | `AOMRidgeRegressor(selection='global')` | ratio 0.974 vs Ridge-default, p_Holm=0.007 |
 | **AOM-Ridge best (`Blender-headline-spxy3`)** | `AOMRidgeBlender(...)` | **ratio 0.918, p_Holm=2.6e-4, 27/32 wins (single seed)** |
 | AOM-Ridge AutoSelector | `AOMRidgeAutoSelector(...)` | ratio 0.963 vs Ridge-HPO, 22/32 wins (current p_Holm=0.741) |
-| FastAOM-sparse-mkr-supervised | `FastAOMPLSRidge(model='sparse_mkr', supervised=True)` | ratio 1.009, Friedman rank 3.08 (N=50) |
-| FastAOM-sparse-mkr-compact | `FastAOMPLSRidge(model='sparse_mkr', primitive_bank='compact')` | ratio 1.022, fit 2.48 s, rank 3.18 |
+| FastAOM-sparse-mkr-supervised | `FastAOMPLSRidge(model='sparse_chains', supervised=True)` | ratio 1.009, Friedman rank 3.08 (N=50) |
+| FastAOM-sparse-mkr-compact | `FastAOMPLSRidge(model='sparse_chains', primitive_bank='compact')` | ratio 1.022, fit 2.48 s, rank 3.18 |
 
 ### 7.2 ABLATION — kept in code, reported in supplement only
 
@@ -618,7 +618,7 @@ models/_common.py    Shared utilities for the four models
 models/single_chain_pls_ridge.py
 models/hard_aom_chain_pls_ridge.py
 models/soft_aom_chain_pls_ridge.py
-models/sparse_multi_kernel_ridge.py
+models/sparse_chain_pls_ridge.py
 models/fast_aom_pls_ridge.py    Orchestrator
 IMPLEMENTATION_NOTES.md         Round-by-round fix log
 PACKAGE_README.md               Original FastAOM README
@@ -816,7 +816,7 @@ print(m.weights_)
 
 # Fit the paper's headline FastAOM
 from aom_nirs.fast import FastAOMPLSRidge, FastAOMConfig
-m = FastAOMPLSRidge(config=FastAOMConfig(model="sparse_mkr", primitive_bank="compact"))
+m = FastAOMPLSRidge(config=FastAOMConfig(model="sparse_chains", primitive_bank="compact"))
 m.fit(X_train, y_train); m.predict(X_test)
 
 # Re-aggregate paper stats from shipped CSVs
