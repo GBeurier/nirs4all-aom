@@ -1444,7 +1444,7 @@ def build_dataset_diversity() -> None:
         zorder=3,
     )
     inset.set_xticks(np.arange(len(counts)))
-    inset.set_xticklabels(counts.index, rotation=35, ha="right", fontsize=6.5)
+    inset.set_xticklabels(counts.index, rotation=20, ha="right", fontsize=6.0)
     inset.set_ylabel("Rows", fontsize=7.0)
     inset.tick_params(axis="y", labelsize=6.5, length=2)
     inset.tick_params(axis="x", length=2)
@@ -1704,11 +1704,14 @@ def build_paired_rmsep_scatter(rows: list[dict], dfs: dict[str, pd.DataFrame]) -
     fig, axes = plt.subplots(
         2,
         2,
-        figsize=(7.2, 7.4),
+        figsize=(7.2, 8.4),
         sharex=False,
         sharey=False,
         constrained_layout=True,
     )
+    # Extra inter-row/col padding so subplot titles never collide with the
+    # x-axis labels of the row above (TODO B7 re-layout).
+    fig.set_constrained_layout_pads(h_pad=0.12, w_pad=0.08, hspace=0.10, wspace=0.06)
     for ax, (title, cand_df, cand_variant, ref_df, ref_variant, stat_label) in zip(axes.flat, specs, strict=True):
         cand = _series_for_variant(cand_df, cand_variant, "rmsep")
         ref = _series_for_variant(ref_df, ref_variant, "rmsep")
