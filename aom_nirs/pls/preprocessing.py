@@ -28,7 +28,7 @@ from sklearn.preprocessing import StandardScaler as _SklearnStandardScaler
 from sklearn.utils.validation import check_is_fitted
 
 
-class StandardNormalVariate(BaseEstimator, TransformerMixin):
+class StandardNormalVariate(TransformerMixin, BaseEstimator):
     """Standard Normal Variate normalization (per-sample, non-linear)."""
 
     def fit(self, X: np.ndarray, y=None) -> StandardNormalVariate:
@@ -45,7 +45,7 @@ class StandardNormalVariate(BaseEstimator, TransformerMixin):
         return self.transform(X)
 
 
-class MultiplicativeScatterCorrection(BaseEstimator, TransformerMixin):
+class MultiplicativeScatterCorrection(TransformerMixin, BaseEstimator):
     """MSC normalization fit on a reference spectrum (per-sample affine fit)."""
 
     def __init__(self) -> None:
@@ -74,7 +74,7 @@ class MultiplicativeScatterCorrection(BaseEstimator, TransformerMixin):
         return self.fit(X).transform(X)
 
 
-class OrthogonalSignalCorrection(BaseEstimator, TransformerMixin):
+class OrthogonalSignalCorrection(TransformerMixin, BaseEstimator):
     """Direct OSC (DOSC) — supervised linear projector.
 
     OSC removes the variance in `X` that is orthogonal to `y`. For each
@@ -311,7 +311,7 @@ class ASLSBaseline(TransformerMixin, BaseEstimator):
         return {"allow_nan": False, "stateless": True}
 
 
-class LocalSNV(BaseEstimator, TransformerMixin):
+class LocalSNV(TransformerMixin, BaseEstimator):
     """Windowed Standard Normal Variate (per-sample, per-window).
 
     Standard SNV normalises each spectrum globally (one mean / std for the

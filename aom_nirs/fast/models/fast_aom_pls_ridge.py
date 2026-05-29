@@ -113,7 +113,7 @@ class FastAOMConfig:
         _validate_positive_int("sparse_mkr_max_chains", self.sparse_mkr_max_chains)
 
 
-class FastAOMPLSRidge(BaseEstimator, RegressorMixin):
+class FastAOMPLSRidge(RegressorMixin, BaseEstimator):
     """End-to-end FastAOM PLS-Ridge regressor.
 
     The estimator exposes the standard sklearn interface ``fit /

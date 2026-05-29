@@ -160,7 +160,7 @@ def _solve_simplex_qp(
 # ----------------------------------------------------------------------
 
 
-class AOMRidgeBlender(BaseEstimator, RegressorMixin):
+class AOMRidgeBlender(RegressorMixin, BaseEstimator):
     """Convex non-negative blender of AOM-Ridge variant OOF predictions.
 
     For each candidate variant: compute outer-CV out-of-fold predictions,

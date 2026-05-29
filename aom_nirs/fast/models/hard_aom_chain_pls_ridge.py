@@ -65,7 +65,7 @@ def _chain_transform_test(
     return chain.transform(cache[base_idx])
 
 
-class HardAOMChainPLSRidge(BaseEstimator, RegressorMixin):
+class HardAOMChainPLSRidge(RegressorMixin, BaseEstimator):
     def __init__(
         self,
         bases: Sequence[BaseTransform],

@@ -1,0 +1,14 @@
+\begin{tabularx}{\linewidth}{Xrrrrl}
+\toprule
+Variant (paper label / runner key) & Complete & Error & Not attempted & Total available & Dominant reason for absence \\
+\midrule
+PLS-\allowbreak{}default (\code{pls-default-cv5}) & 57 & 3 & 1 & 60 & NaN in source data \\
+Ridge-\allowbreak{}default (\code{ridge-default-cv5}) & 58 & 2 & 1 & 60 & NaN in source data \\
+PLS-\allowbreak{}HPO (\code{pls-tabpfn-hpo-25trials}) & 36 & 2 & 23 & 38 & Compute budget (not attempted) \\
+Ridge-\allowbreak{}HPO (\code{ridge-tabpfn-hpo-60trials}) & 35 & 2 & 24 & 37 & Compute budget (not attempted) \\
+AOM-\allowbreak{}PLS (simple, \code{AOM-compact-cv5}) & 55 & 0 & 6 & 55 & Workspace scope (not attempted) \\
+AOM-\allowbreak{}PLS (best, \code{ASLS-AOM-compact-cv5}) & 53 & 2 & 6 & 55 & ASLS divergence / not attempted \\
+AOM-\allowbreak{}Ridge (simple, \code{AOMRidge-global-compact-none}) & 53 & 0 & 8 & 53 & Workspace scope (not attempted) \\
+AOM-\allowbreak{}Ridge (best, \code{AOMRidge-Blender-headline-spxy3}) & 53 & 0 & 8 & 53 & Workspace scope (not attempted) \\
+\bottomrule
+\end{tabularx}

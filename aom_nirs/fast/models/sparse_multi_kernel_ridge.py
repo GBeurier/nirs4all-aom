@@ -73,7 +73,7 @@ def _projected_gradient_nnls_kernels(
     return theta
 
 
-class SparseMultiKernelRidge(BaseEstimator, RegressorMixin):
+class SparseMultiKernelRidge(RegressorMixin, BaseEstimator):
     def __init__(
         self,
         bases: Sequence[BaseTransform],

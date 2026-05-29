@@ -83,7 +83,7 @@ def _nonneg_lasso_cd(
     return a
 
 
-class SoftAOMChainPLSRidge(BaseEstimator, RegressorMixin):
+class SoftAOMChainPLSRidge(RegressorMixin, BaseEstimator):
     def __init__(
         self,
         bases: Sequence[BaseTransform],

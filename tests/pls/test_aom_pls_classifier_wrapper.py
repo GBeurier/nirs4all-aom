@@ -172,5 +172,6 @@ class TestSklearnCompat:
         assert "AOMPLSClassifier" in r or "AOMPLSDAClassifier" in r
 
     def test_estimator_type(self):
+        from sklearn.base import is_classifier
         model = AOMPLSClassifier()
-        assert model._estimator_type == "classifier"
+        assert is_classifier(model)

@@ -78,7 +78,7 @@ class _OOFOutputs:
     sigma_r: float
 
 
-class AOMRidgeResidualTabPFN(BaseEstimator, RegressorMixin):
+class AOMRidgeResidualTabPFN(RegressorMixin, BaseEstimator):
     """Residual stacking estimator AOMRidge + TabPFN-2.5.
 
     Parameters

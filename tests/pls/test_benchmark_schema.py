@@ -13,8 +13,8 @@ import pytest
 import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from benchmarks.build_cohorts import build_classification_cohort, build_regression_cohort
-from benchmarks.run_aompls_benchmark import RESULT_COLUMNS
+from benchmarks.pls.build_cohorts import build_classification_cohort, build_regression_cohort
+from benchmarks.pls.run_aompls_benchmark import RESULT_COLUMNS
 
 
 def test_master_schema_columns_present():

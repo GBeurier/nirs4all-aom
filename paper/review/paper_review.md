@@ -1,5 +1,85 @@
 # Talanta-targeted review dossier for the AOM manuscript
 
+> **Status — 2026-05-28 (revised after benchmark audit).**  This dossier was
+> authored on 2026-05-17 against an earlier manuscript revision and an
+> incomplete view of the available benchmark workspaces.  After auditing
+> `nirs4all-aom/benchmarks/runs/` *and* `nirs4all-aom/_archive/trashed_runs/`
+> plus the cross-project master CSV `nirs4all-lab/benchmark_master_results.csv`
+> (35 930 rows), several "blocker" items turn out to be **data-aggregation
+> issues, not missing compute**.  Updated per-item status:
+>
+> - §4.1 *Denominator 61→32* — **partially resolved.**  `N_{\cap}=32` is now
+>   explicit in abstract, §3.2 (`main.tex:381`), and table captions.  The
+>   missingness audit `missing_datasets_per_variant.md` is still internal,
+>   not promoted to a supplement table with reason codes (NaN, fit error,
+>   not attempted).
+> - §4.2 *AOM-Ridge headline single-seed* — **DATA EXISTS, NOT YET AGGREGATED,
+>   but the framing must be nuanced.**  Both `AOMRidge-Blender-headline-spxy3`
+>   and `AOMRidge-AutoSelect-headline-spxy3` were run with seeds 0/1/2 on a
+>   union of 26 datasets in
+>   `_archive/trashed_runs/AOM_v0_legacy/Ridge/benchmark_runs/da001_audit20_seeds012/`
+>   and `.../da001_partial_fast12_seeds012/`.  RMSEP is identical across
+>   seeds 0/1/2 in every dataset.  **Caveat (Codex 2026-05-28):**
+>   `SPXYFold` only consumes `random_state` when `pca_components` is set;
+>   with SPXY3 in its current configuration the split itself is deterministic,
+>   so "zero seed-variance" is mostly a *protocol determinism* result, not a
+>   robustness-to-repeated-partitions result.  In addition, the union covers
+>   **26 of the strict N_cap=32 datasets** — the remaining 6 still need
+>   either a re-run or an explicit "multi-seed audit on N=26 subset" caption.
+>   The two workspaces also overlap on some datasets; dedupe by
+>   `(dataset, variant, seed)` before computing summary stats so common
+>   datasets are not double-counted.
+>   *Action: re-point `aggregate_stats.py` at these archived workspaces,
+>   dedupe, fill the 6 missing rows or scope the claim to N=26, and add a
+>   table entry phrased as "zero variance observed across seeds 0/1/2 on
+>   N=26 audit subset; SPXY3 split deterministic by protocol".  Avoid the
+>   stronger "headline survives seeds" wording.*
+> - §4.3 *Strong conventional baseline (PLS + SNV + SG + 1st derivative,
+>   tuned components)* — **LARGELY ADDRESSED, with framing caveat.**
+>   `pls-tabpfn-hpo-25trials` (already in the paper) does HPO over
+>   `norm ∈ {none, snv}`, `smooth ∈ {Savitzky-Golay multiple windows/orders,
+>   Gaussian}`, `baseline ∈ {detrend, ASLS, none}`, `osc ∈ {osc_1, osc_3}`
+>   and `n_components`, driven by 25 TabPFN-guided trials.  That covers the
+>   strong-conventional space **under HPO**, not as a fixed-recipe baseline.
+>   Frame it as *"strong conventional preprocessing search under HPO"* in
+>   the paper (not as *"fixed SNV+SG+OSC recipe applied systematically"*).
+>   The remaining edit is making the paper text explicit about what the HPO
+>   search space covers (`main.tex:398-410` currently glosses over this).
+>   A reviewer who insists on a fixed-recipe baseline in addition can be
+>   answered by reporting the *most-frequently-selected* HPO configuration
+>   across datasets as the de-facto fixed recipe.
+> - §4.5 *Code availability* — **resolved.**  Repo URL at `main.tex:638`.
+>   Reproducibility smoke-test still to verify by clean clone.
+> - §4.6 *Auditability/redeployment claims* — unchanged.
+> - §4.7 *Compact-bank derivation* — unchanged.
+> - §4.8 *Classification underpowered (N=13)* — unchanged.
+> - §4.9 *Failure-mode table* — **NOT resolved.**  `failure_mode_table.csv`
+>   still not promoted into the supplement.
+> - §4.10 *Math exposition density* — unchanged.
+> - §4.11 *Figure 5 layout* — **NOT resolved.**  Layout pending.
+> - §6 *Missing literature (SPORT / PORTO / PROSAC, Mishra, Engel,
+>   Cawley-Talbot, Varma-Simon, Bergstra-Bengio, Roger-Mallet-Marini
+>   aquaphotomics)* — **NOT resolved.**  `references.bib` still missing
+>   these entries.
+>
+> **Revised Talanta-readiness summary.**  arXiv v2 is uploadable as-is.  For
+> Talanta, all remaining work is *writing / aggregation / citations / one
+> figure relayout*: no new benchmark runs are required.  Estimated total
+> effort ≈ 2-3 human-days, ≈ 0 additional compute:
+> (a) re-aggregate Blender/AutoSelect seeds 0/1/2 from archived workspaces;
+> (b) write the empirical-determinism note in the supplement;
+> (c) promote the missingness audit and the failure-mode table into the
+>     supplement;
+> (d) add SPORT/PORTO/PROSAC + ML-bias citations and related-work paragraphs;
+> (e) relayout Figure 5;
+> (f) clarify the HPO search space in main text §3.2;
+> (g) verify clean-clone smoke test.
+>
+> The 2026-05-17 review text below remains authoritative for everything not
+> flagged in this header.  The "missing experiments" list in §5 of the
+> original review is **largely obsolete** — the AOM-Ridge multi-seed and
+> the strong-conventional-baseline experiments already exist.
+
 ## 1. Executive summary
 
 The manuscript claims that strict linear spectral preprocessing can be moved inside PLS and Ridge calibration, replacing much of the external preprocessing search by an operator-adaptive model that is faster, auditable, and broadly competitive on heterogeneous NIRS regression and classification datasets. The claim is scientifically plausible and, if positioned carefully, is a good fit for Talanta because it addresses a recurring analytical-chemistry workflow problem: how to select preprocessing without turning calibration into a large, unstable grid-search exercise.

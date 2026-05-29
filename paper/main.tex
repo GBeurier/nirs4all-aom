@@ -27,6 +27,7 @@
 \newcommand{\T}{\mathbf{T}}
 \newcommand{\R}{\mathbb{R}}
 \newcommand{\transpose}{^{\mathsf T}}
+\newcommand{\code}[1]{\nolinkurl{#1}}
 
 \title{\textbf{Reframing preprocessing selection as model-internal calibration in near-infrared spectroscopy}\\
 \large A large-scale benchmark of operator-adaptive PLS and Ridge models}
@@ -111,9 +112,13 @@ the same combinations across ten trials, giving 3000 and 6000 candidate fits
 per dataset/seed before the final refit.  Repeating this search on small
 calibration sets can also make the selected pipeline unstable: the chosen
 preprocessing is the winner of a multiplicative loop over folds, operators and
-model hyperparameters.  A single operator-adaptive linear fit is easier to
-audit because the selected geometry is part of one calibration object with
-coefficients recovered on the original wavelength axis.
+model hyperparameters.  This is the model-selection-bias regime familiar from
+the machine-learning literature
+\citep{varma2006bias,cawley2010overfitting,bergstra2012random}, where a large
+inner search consumes calibration variance and inflates apparent skill.  A
+single operator-adaptive linear fit is easier to audit because the selected
+geometry is part of one calibration object with coefficients recovered on the
+original wavelength axis.
 
 This paper focuses on the part of preprocessing that has a simple algebraic
 answer.  If a preprocessing step is a fixed linear operator on the wavelength
@@ -159,7 +164,20 @@ include Savitzky--Golay smoothing and derivatives
 penalized baseline smoothers \citep{eilers2003perfect,zhang2010baseline}.
 Reviews emphasize that these transformations remove different nuisance
 structures and should be chosen with the analytical setting in mind
-\citep{rinnan2009review}.
+\citep{rinnan2009review,engel2013breaking,roger2022aquaphotomics}.  A
+recurring observation in this literature is that no single preprocessing wins
+across datasets, so any practical workflow has to choose among a family of
+candidates, often through an outer cross-validated search.
+
+Several authors have proposed combining multiple preprocessed blocks rather
+than selecting one.  Sequential Preprocessing through Orthogonalization
+(SPORT) \citep{roger2020sport}, Parallel Orthogonalized Partial Least Squares
+(PORTO) \citep{mishra2021porto} and PROSAC \citep{mishra2022prosac} use
+multiblock PLS to fuse several preprocessed views of the same spectra; a
+broader ensemble framing is given in
+\citet{mishra2020ensemble}.  These methods keep preprocessing outside the
+model and stack the alternatives downstream, which is a complementary
+strategy to the one explored here.
 
 PLS remains the reference linear method for many NIRS calibration problems
 \citep{geladi1986partial,wold2001pls}.  NIPALS and SIMPLS offer two useful
@@ -170,9 +188,12 @@ the sample Gram matrix, which makes preprocessing a change of kernel geometry
 \citep{scholkopf2002learning,hastie2009elements}.
 
 This work combines these two lines.  It keeps the chemometric interpretability
-of linear calibration, but treats strict preprocessing alternatives as
-operators that can be selected inside the model rather than as independent
-outer-loop pipelines.
+of linear calibration, but, in contrast with SPORT, PORTO and PROSAC, it
+treats strict preprocessing alternatives as fixed linear operators that can
+be screened algebraically inside one PLS or Ridge calibration rather than
+fused across multiple separately fitted preprocessed blocks.  The result is a
+single deployable linear model whose spectral coefficients live on the
+original wavelength grid.
 
 \section{Linear-operator scope}
 
@@ -399,8 +420,23 @@ accuracy.  Paired tests use one-sided Wilcoxon signed-rank tests with Holm
 correction within the displayed family.
 
 The cartesian-HPO baselines are intentionally strong and expensive.  They
-enumerate 600 preprocessing combinations.  PLS-HPO uses five trials per
-combination; Ridge-HPO uses ten trials per combination.
+search the conventional NIRS preprocessing grid
+$\textit{norm}\times\textit{smooth}\times\textit{baseline}\times\textit{osc}\times n_{\mathrm{components}}$
+where
+$\textit{norm}\in\{\text{none},\text{SNV},\text{MSC},\text{EMSC}_{2}\}$,
+$\textit{smooth}$ ranges over Savitzky--Golay smoothers and derivatives at
+multiple window/polynomial-order settings plus Gaussian smoothers,
+$\textit{baseline}\in\{\text{none},\text{detrend},\text{ASLS}\}$,
+$\textit{osc}\in\{\text{none},\text{osc}_1,\text{osc}_2,\text{osc}_3\}$ and
+$n_{\mathrm{components}}$ varies through the range relevant for each dataset.
+This is the same space a chemometrician would screen by hand when assembling a
+strong conventional baseline (PLS or Ridge after SNV/MSC, Savitzky--Golay
+smoothing/derivatives and ASLS or detrend baseline correction); the most
+frequently selected configuration across datasets behaves as a de-facto
+fixed-recipe baseline.  The grid contains 600 preprocessing combinations.
+PLS-HPO drives the search with TabPFN-guided proposals at five trials per
+combination and Ridge-HPO at ten, for a total of 3000 and 6000 candidate fits
+per dataset/seed before the final refit.
 
 The eight paper labels correspond to the following runner keys:
 PLS-default (\texttt{pls-default-cv5}), PLS-HPO
@@ -410,7 +446,9 @@ PLS-default (\texttt{pls-default-cv5}), PLS-HPO
 (\texttt{ridge-default-cv5}), Ridge-HPO
 (\texttt{ridge-tabpfn-hpo-60trials}), AOM-Ridge (simple)
 (\texttt{AOMRidge-global-compact-none}) and AOM-Ridge (best)
-(\texttt{AOMRidge-Blender-headline-spxy3}).
+(\texttt{AOMRidge-Blender-headline-spxy3}).  These runner keys are kept
+visible to bridge artifacts and tables; a paper-facing mapping table is given
+in the supplement.
 
 \section{Results}
 
@@ -566,6 +604,34 @@ external pipeline loop.
   AOM-PLS and AOM-Ridge boxes show selector fit time plus prediction overhead.}
   \label{fig:runtime}
 \end{figure}
+
+\subsection{Failure modes}
+\label{sec:failure_modes}
+
+The headline ratios summarize medians; they hide a small number of datasets
+where AOM does not win.  Two manifest rows
+(\code{FinalScore\_grp70\_30\_scoreQ} and \code{Tleaf\_grp70\_30}) contain
+NaN values in the source spectra and fail under every linear regressor,
+including the PLS and Ridge baselines, so they are excluded from paired
+comparisons by construction rather than by AOM failure.  Among the rows where
+RMSEPs are finite, AOM-PLS is weaker than the PLS-HPO winner on the
+\code{Brix\_spxy70} berry split, on the \code{Rice\_Amylose\_313\_YbasedSplit}
+amylose row, on the colza \code{C\_woOutlier} row and on the
+\code{brix\_groupSampleID\_stratDateVar\_balRows} strawberry-puree row.  These
+are datasets where SNV, MSC or a fitted baseline correction carries most of
+the calibration value and the strict linear bank captures only part of it;
+they are also the rows that drive the upper tail of the paired ratio
+distribution for \code{ASLS-AOM-compact-cv5}.  Three further datasets
+(\code{LMA\_spxyG70\_30\_byCultivar\_ASD}, \code{N\_wOutlier},
+\code{N\_woOutlier}) are included in the supplementary failure-modes table
+not because the selected AOM-PLS variant loses on them --- it does not --- but
+because the POP-PLS family records substantially higher RMSEP than the
+covariance-space AOM-PLS rows on the same datasets, which is the diagnostic
+evidence that motivates dropping POP-PLS from the headline.  The
+supplementary \textit{Failure modes} table reports the finite-RMSEP range
+across all nine logged AOM-PLS and POP-PLS variants for both classes of row,
+and the supplementary \textit{Per-dataset prediction quality} section gives
+the per-dataset gain figure that visualizes the same picture.
 
 \section{Discussion}
 

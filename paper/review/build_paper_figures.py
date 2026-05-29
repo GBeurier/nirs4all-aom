@@ -1701,7 +1701,14 @@ def build_paired_rmsep_scatter(rows: list[dict], dfs: dict[str, pd.DataFrame]) -
             "AOMRidge-Blender vs Ridge-TabPFN-HPO",
         ),
     ]
-    fig, axes = plt.subplots(2, 2, figsize=(7.2, 6.5), sharex=False, sharey=False)
+    fig, axes = plt.subplots(
+        2,
+        2,
+        figsize=(7.2, 7.4),
+        sharex=False,
+        sharey=False,
+        constrained_layout=True,
+    )
     for ax, (title, cand_df, cand_variant, ref_df, ref_variant, stat_label) in zip(axes.flat, specs, strict=True):
         cand = _series_for_variant(cand_df, cand_variant, "rmsep")
         ref = _series_for_variant(ref_df, ref_variant, "rmsep")
@@ -1754,8 +1761,15 @@ def build_paired_rmsep_scatter(rows: list[dict], dfs: dict[str, pd.DataFrame]) -
         style_grid(ax, axis="both")
     handles, labels = axes.flat[0].get_legend_handles_labels()
     if handles:
-        fig.legend(handles, labels, loc="lower center", ncol=min(6, len(labels)), frameon=True, title="Domain", title_fontsize=8.0)
-        fig.subplots_adjust(bottom=0.13)
+        fig.legend(
+            handles,
+            labels,
+            loc="outside lower center",
+            ncol=min(6, len(labels)),
+            frameon=True,
+            title="Domain",
+            title_fontsize=8.0,
+        )
     save_fig(fig, "fig_paired_rmsep_scatter")
 
 

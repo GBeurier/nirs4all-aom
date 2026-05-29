@@ -139,7 +139,7 @@ def _select_alpha_with_one_se(
 # ----------------------------------------------------------------------
 
 
-class AOMMultiKernelRidge(BaseEstimator, RegressorMixin):
+class AOMMultiKernelRidge(RegressorMixin, BaseEstimator):
     """Multi-kernel Ridge with explicit per-block weights (mkR).
 
     Parameters

@@ -28,7 +28,7 @@ from sklearn.model_selection import KFold
 from ._common import center_y, extract_pls_scores, ridge_on_scores
 
 
-class SingleChainPLSRidge(BaseEstimator, RegressorMixin):
+class SingleChainPLSRidge(RegressorMixin, BaseEstimator):
     """PLS-Ridge on a single preprocessing chain over a single base.
 
     Attributes (after :meth:`fit`):
