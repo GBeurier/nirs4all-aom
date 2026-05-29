@@ -19,6 +19,7 @@ COHORT = f"{LAB}/cohort_selection/cohort_regression.csv"
 RUNS = "/home/delete/nirs4all/nirs4all-aom/benchmarks/runs"
 OUTCSV = "/home/delete/nirs4all/nirs4all-aom/paper/repro/reviewer_insurance/fixed_recipe_results.csv"
 OUTTEX = "/home/delete/nirs4all/nirs4all-papers/aom_talanta_26/manuscript/tables/table_fixed_recipe.tex"
+RIDGE_RUN = f"{RUNS}/ridge/all54_headline/results.csv"
 RMSE = lambda a, b: float(mean_squared_error(a, b) ** 0.5)
 
 def snv_sg(X):
@@ -60,10 +61,14 @@ def run_one(row):
         return {"dataset": d, "status": f"err:{type(e).__name__}"}
 
 def main():
-    coh = pd.read_csv(COHORT)
-    coh = coh[coh["status"] == "ok"] if "status" in coh.columns else coh
-    res = pd.DataFrame([run_one(r) for _, r in coh.iterrows()])
-    res.to_csv(OUTCSV, index=False)
+    if os.path.exists(OUTCSV):                       # reuse the (expensive) fixed-recipe fits
+        res = pd.read_csv(OUTCSV)
+        print(f"[cache] loaded {OUTCSV}")
+    else:
+        coh = pd.read_csv(COHORT)
+        coh = coh[coh["status"] == "ok"] if "status" in coh.columns else coh
+        res = pd.DataFrame([run_one(r) for _, r in coh.iterrows()])
+        res.to_csv(OUTCSV, index=False)
     ok = res[res["status"] == "ok"].copy()
     print(f"fixed-recipe computed: {len(ok)}/{len(res)} ok; skipped: {res[res.status!='ok'].dataset.tolist()}")
 
@@ -85,6 +90,15 @@ def main():
     rows.append(ratios(pf, pls_std, "PLS-fixed-recipe vs PLS-standard"))
     # AOM-PLS vs PLS-fixed (the key reviewer question)
     rows.append(ratios(aom, pf, "AOM-PLS (compact-cv5) vs PLS-fixed-recipe"))
+
+    # Ridge twin from the headline run: AOM-Ridge (simple global) and plain Ridge-raw
+    rg = pd.read_csv(RIDGE_RUN)
+    rg = rg[rg.get("status", "ok") == "ok"]
+    medv = lambda v: rg[rg["variant"] == v].groupby("dataset")["rmsep"].median()
+    ridge_raw, aom_ridge = medv("Ridge-raw"), medv("AOMRidge-global-compact-none")
+    rf = ok["rmsep_ridge_fixed"]
+    rows.append(ratios(rf, ridge_raw, "Ridge-fixed-recipe vs Ridge-raw"))
+    rows.append(ratios(aom_ridge, rf, "AOM-Ridge (global) vs Ridge-fixed-recipe"))
     for lab, n, m, w in rows:
         print(f"  {lab}: N={n}  median ratio={m:.3f}  wins={w}/{n}")
 
