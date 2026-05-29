@@ -1,25 +1,15 @@
+# Standard slim source distribution: the installable package + test suite +
+# project metadata. Heavy reproduction artifacts (benchmark result CSVs, paper
+# PDFs/sources, rendered docs, examples) are NOT shipped on PyPI — they live in
+# the GitHub repository and are reached via REPRODUCTION.md.
 include README.md
 include LICENSE
 include CHANGELOG.md
 include CITATION.cff
-include pyproject.toml
 
 recursive-include aom_nirs *.py
 recursive-include tests *.py
-recursive-include examples *.py *.md
-recursive-include docs *.md
-recursive-include benchmarks *.py *.csv *.json *.md
 
-# Paper: include manuscript sources but not heavy PDFs (kept in repo but
-# excluded from the sdist to keep the wheel slim).
-recursive-include paper *.tex *.bib *.sh *.md *.py
-recursive-include paper/figures *.pdf
-recursive-include paper/tables *.tex
-
-# Exclude pyc/cache/workspace
 global-exclude __pycache__
 global-exclude *.py[cod]
 global-exclude .DS_Store
-prune _archive
-prune .git
-prune .pytest_cache

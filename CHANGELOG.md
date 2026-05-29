@@ -48,6 +48,18 @@ All notable changes to `nirs4all-aom` are documented here. Format based on
   `paper/review/regen_paired_rmsep_scatter.py` regenerates this figure
   without running the rest of the figure pipeline.
 
+### Packaging
+
+- Synced `aom_nirs.__version__` to `0.1.1` (was lagging at `0.1.0`).
+- Slimmed the source distribution to the standard set — package + test
+  suite + project metadata. The benchmark result CSVs (~17 MB), paper
+  PDFs/sources, rendered docs and examples are no longer bundled in the
+  sdist; they remain in the GitHub repository as the reproduction
+  artifact (see `REPRODUCTION.md`). The wheel was already package-only.
+- Added `.github/workflows/publish-pypi.yml` (PyPI Trusted Publishing via
+  OIDC; build + `twine check`, then a publish job gated on the `pypi`
+  environment).
+
 ### Paper (manuscript revision)
 
 - Added SPORT/PORTO/PROSAC + preprocessing-ensemble citations
