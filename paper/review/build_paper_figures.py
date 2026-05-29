@@ -1527,14 +1527,14 @@ def build_runtime_distribution(dfs: dict[str, pd.DataFrame]) -> None:
     series = []
     labels = []
     specs = [
-        ("PLS-default total", dfs["default"], "pls-default-cv5", "total_time_s"),
-        ("PLS-HPO total", dfs["pls_hpo"], "pls-tabpfn-hpo-25trials", "total_time_s"),
-        ("AOM-PLS (simple) fit", dfs["aompls"], "AOM-compact-cv5-numpy", "total_time_s"),
-        ("AOM-PLS (best) fit", dfs["aompls"], "ASLS-AOM-compact-cv5-numpy", "total_time_s"),
-        ("Ridge-default total", dfs["default"], "ridge-default-cv5", "total_time_s"),
-        ("Ridge-HPO total", dfs["ridge_hpo"], "ridge-tabpfn-hpo-60trials", "total_time_s"),
-        ("AOM-Ridge (simple) fit", dfs["ridge_head"], "AOMRidge-global-compact-none", "total_time_s"),
-        ("AOM-Ridge (best) fit", dfs["ridge_head"], "AOMRidge-Blender-headline-spxy3", "total_time_s"),
+        ("PLS-default", dfs["default"], "pls-default-cv5", "total_time_s"),
+        ("PLS-HPO", dfs["pls_hpo"], "pls-tabpfn-hpo-25trials", "total_time_s"),
+        ("AOM-PLS (simple)", dfs["aompls"], "AOM-compact-cv5-numpy", "total_time_s"),
+        ("AOM-PLS (best)", dfs["aompls"], "ASLS-AOM-compact-cv5-numpy", "total_time_s"),
+        ("Ridge-default", dfs["default"], "ridge-default-cv5", "total_time_s"),
+        ("Ridge-HPO", dfs["ridge_hpo"], "ridge-tabpfn-hpo-60trials", "total_time_s"),
+        ("AOM-Ridge (simple)", dfs["ridge_head"], "AOMRidge-global-compact-none", "total_time_s"),
+        ("AOM-Ridge (best)", dfs["ridge_head"], "AOMRidge-Blender-headline-spxy3", "total_time_s"),
     ]
     for label, df, variant, col in specs:
         vals = df[df["variant"].astype("string").str.lower() == variant.lower()][col].dropna().to_numpy()
@@ -1963,7 +1963,7 @@ def build_operator_heatmap() -> None:
     def _short(name: str, n: int = 38) -> str:
         return name if len(name) <= n else name[: n - 1] + "…"
 
-    y_labels = [f"{domain.get(d, 'other')} : {_short(d)}" for d in datasets]
+    y_labels = [f"{domain.get(d, 'other').title()} : {_short(d)}" for d in datasets]
 
     # Height scaled for ~0.22 inch per row so 7pt labels remain readable.
     row_h = 0.22
@@ -2086,7 +2086,7 @@ def build_dataset_variant_heatmap(dfs: dict[str, pd.DataFrame]) -> None:
     ax.set_title("Per-dataset RMSEP ratios vs PLS-standard")
     cbar = fig.colorbar(im, ax=ax, fraction=0.028, pad=0.012, aspect=40,
                         ticks=[0.70, 0.85, 1.00, 1.15, 1.30])
-    cbar.set_label("RMSEP ratio  (blue = win,  red = loss; clipped to [0.70, 1.30])", fontsize=8.5)
+    cbar.set_label("RMSEP ratio (blue = win, red = loss; clipped to [0.70, 1.30])", fontsize=8.5)
     cbar.ax.tick_params(labelsize=7.5, width=0.5, length=2.5)
     if cbar.outline is not None:
         cbar.outline.set_linewidth(0.5)  # type: ignore[operator]  # matplotlib stubs are imprecise
