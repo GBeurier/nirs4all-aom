@@ -11,7 +11,7 @@ Bundles the four-stage pipeline:
 
 The class is sklearn-style with ``fit`` and ``predict``. The model
 choice is controlled by ``model``: ``"single_chain"``,
-``"hard_aom_chain"``, ``"soft_aom_chain"``, or ``"sparse_mkr"``.
+``"hard_aom_chain"``, ``"soft_aom_chain"``, or ``"sparse_chains"``.
 """
 
 from __future__ import annotations
@@ -36,11 +36,11 @@ from aom_nirs.fast.screening import (
 
 from .hard_aom_chain_pls_ridge import HardAOMChainPLSRidge
 from .single_chain_pls_ridge import SingleChainPLSRidge
-from .sparse_multi_kernel_ridge import SparseMultiKernelRidge
+from .sparse_chain_pls_ridge import SparseChainPLSRidge
 from .soft_aom_chain_pls_ridge import SoftAOMChainPLSRidge
 
 
-ModelChoice = Literal["single_chain", "hard_aom_chain", "soft_aom_chain", "sparse_mkr"]
+ModelChoice = Literal["single_chain", "hard_aom_chain", "soft_aom_chain", "sparse_chains"]
 
 
 def _validate_positive_int(name: str, value: int) -> None:
@@ -68,7 +68,7 @@ class FastAOMConfig:
         component_shrinkage_gamma: Component-wise shrinkage exponent
             (``lambda_h = lambda_0 * h ** gamma``).
         soft_rho: L1 strength for the soft-AOM variant.
-        sparse_mkr_max_chains: Maximum number of chains for sparse
+        sparse_chains_max_chains: Maximum number of chains for sparse
             multi-kernel Ridge.
         use_raw / use_absorbance / use_snv / use_msc / use_emsc / asls_grid:
             Toggles for the nonlinear base bank.
@@ -88,7 +88,7 @@ class FastAOMConfig:
     component_shrinkage_gamma: Optional[float] = None
     soft_rho: float = 0.05
     soft_max_mixture_size: Optional[int] = 4
-    sparse_mkr_max_chains: int = 8
+    sparse_chains_max_chains: int = 8
     use_raw: bool = True
     use_absorbance: bool = False
     use_snv: bool = True
@@ -110,7 +110,7 @@ class FastAOMConfig:
         _validate_positive_int("rank", self.rank)
         _validate_positive_int("top_global", self.top_global)
         _validate_positive_int("max_chain_depth", self.max_chain_depth)
-        _validate_positive_int("sparse_mkr_max_chains", self.sparse_mkr_max_chains)
+        _validate_positive_int("sparse_chains_max_chains", self.sparse_chains_max_chains)
 
 
 class FastAOMPLSRidge(RegressorMixin, BaseEstimator):
@@ -251,12 +251,12 @@ class FastAOMPLSRidge(RegressorMixin, BaseEstimator):
                 max_mixture_size=cfg.soft_max_mixture_size,
             )
             model.fit(X_train=X, y_train=y)
-        elif cfg.model == "sparse_mkr":
-            model = SparseMultiKernelRidge(
+        elif cfg.model == "sparse_chains":
+            model = SparseChainPLSRidge(
                 bases=bases,
                 lowrank_bases=lowrank,
                 candidates=cand_pairs,
-                max_chains=cfg.sparse_mkr_max_chains,
+                max_chains=cfg.sparse_chains_max_chains,
                 lambdas=cfg.lambdas,
             )
             model.fit(X_train=X, y_train=y)

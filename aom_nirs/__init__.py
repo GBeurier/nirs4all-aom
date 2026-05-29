@@ -16,7 +16,7 @@ Subpackages
   ``AOMLocalRidge``.
 - :mod:`aom_nirs.fast` — FastAOM chain-screening framework with
   ``SingleChainPLSRidge``, ``HardAOMChainPLSRidge``,
-  ``SoftAOMChainPLSRidge``, ``SparseMultiKernelRidge``, and the
+  ``SoftAOMChainPLSRidge``, ``SparseChainPLSRidge``, and the
   ``FastAOMPLSRidge`` orchestrator.
 """
 

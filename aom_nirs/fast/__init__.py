@@ -20,7 +20,7 @@ naively fitting one model per chain, by:
        - :class:`HardAOMChainPLSRidge` — one chain per latent component.
        - :class:`SoftAOMChainPLSRidge` — sparse non-negative chain mixture
          per latent component.
-       - :class:`SparseMultiKernelRidge` — sparse non-negative kernel mixture
+       - :class:`SparseChainPLSRidge` — sparse non-negative kernel mixture
          ``K_θ = Σ θ_s K_s`` with Ridge.
 
 The package is a sibling of ``bench/AOM_v0/aompls`` and reuses its
@@ -69,7 +69,7 @@ try:  # pragma: no cover - import-time guard
         SingleChainPLSRidge,
         HardAOMChainPLSRidge,
         SoftAOMChainPLSRidge,
-        SparseMultiKernelRidge,
+        SparseChainPLSRidge,
         FastAOMConfig,
         FastAOMPLSRidge,
     )
@@ -111,7 +111,7 @@ __all__ = [
     "SingleChainPLSRidge",
     "HardAOMChainPLSRidge",
     "SoftAOMChainPLSRidge",
-    "SparseMultiKernelRidge",
+    "SparseChainPLSRidge",
     "FastAOMConfig",
     "FastAOMPLSRidge",
 ]

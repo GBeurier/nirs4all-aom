@@ -21,7 +21,7 @@ bench/AOM_v0/FastAOM/
 │   ├── single_chain_pls_ridge.py   # Single chain + PLS-Ridge
 │   ├── hard_aom_chain_pls_ridge.py # One chain per latent component (greedy)
 │   ├── soft_aom_chain_pls_ridge.py # Sparse non-neg mixture per component
-│   ├── sparse_multi_kernel_ridge.py# K_θ = Σ θ_s K_s with greedy selection
+│   ├── sparse_chain_pls_ridge.py# K_θ = Σ θ_s K_s with greedy selection
 │   └── fast_aom_pls_ridge.py       # End-to-end orchestrator
 ├── benchmarks/
 │   ├── run_fast_aom_benchmark.py   # CLI runner (mirrors aompls runner)
@@ -55,7 +55,7 @@ row spectra as `transform(X) = X @ A.T`. The user's preprocessing notation
 | `SingleChainPLSRidge` | Top-1 chain from screening | Baseline; equivalent to "best preprocessing + PLS-Ridge" |
 | `HardAOMChainPLSRidge` | One chain per latent component (greedy argmax) | Faithful AOM-on-chains; early-stop when train loss plateaus |
 | `SoftAOMChainPLSRidge` | Sparse non-negative LASSO mixture per component | Coordinate descent (0.5-loss convention) |
-| `SparseMultiKernelRidge` | K_θ = Σ θ_s K_s with greedy chain selection | Projected-gradient NNLS for θ, GCV for λ |
+| `SparseChainPLSRidge` | K_θ = Σ θ_s K_s with greedy chain selection | Projected-gradient NNLS for θ, GCV for λ |
 | `FastAOMPLSRidge` | End-to-end orchestrator (`FastAOMConfig`) | Bases → chains → SVD → screen → diversity → fit |
 
 ## Usage
@@ -108,7 +108,7 @@ python bench/AOM_v0/FastAOM/benchmarks/compare_to_baselines.py \
 | `FastAOM-hard-chain-compact-d4` | hard_aom_chain | compact | 4 | 160 | Deeper chains |
 | `FastAOM-hard-chain-default` *(opt-in)* | hard_aom_chain | default (100 ops) | 2 | 200 | Larger primitive bank. Excluded from the default variant list because the 100-op bank pushes fit time past 5 minutes per dataset on large-p NIRS; enable with `--variants FastAOM-hard-chain-default`. |
 | `FastAOM-soft-chain-compact` | soft_aom_chain | compact | 3 | 80 | Sparse mixture per component |
-| `FastAOM-sparse-mkr-compact` | sparse_mkr | compact | 3 | 60 | Multi-kernel Ridge |
+| `FastAOM-sparse-mkr-compact` | sparse_chains | compact | 3 | 60 | Sparse linear-chain combination |
 | `FastAOM-hard-chain-shrinkage` | hard_aom_chain | compact | 3 | 120 | λ_h = λ_0 · h component shrinkage |
 | `FastAOM-hard-chain-multibase` | hard_aom_chain | compact | 3 | 160 | + SNV / MSC / EMSC bases |
 

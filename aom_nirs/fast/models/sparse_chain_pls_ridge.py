@@ -1,10 +1,13 @@
-"""Sparse Multi-Kernel Ridge.
+"""Sparse linear-chain combination (PLS/Ridge).
 
-A multi-kernel Ridge with sparse non-negative kernel weights:
+A Ridge over a sparse non-negative combination of strict-linear operator-chain
+kernels (a sparse linear-chain combination, NOT multi-kernel learning):
 
     K_theta = sum_s theta_s K_s,  theta_s >= 0
     alpha   = (K_theta + lambda I)^{-1} y_centred
     yhat    = K_theta alpha + y_mean
+
+where each ``K_s`` is the Gram matrix of one strict-linear operator chain.
 
 Selection of the chains is greedy:
 
@@ -73,7 +76,7 @@ def _projected_gradient_nnls_kernels(
     return theta
 
 
-class SparseMultiKernelRidge(RegressorMixin, BaseEstimator):
+class SparseChainPLSRidge(RegressorMixin, BaseEstimator):
     def __init__(
         self,
         bases: Sequence[BaseTransform],
@@ -110,7 +113,7 @@ class SparseMultiKernelRidge(RegressorMixin, BaseEstimator):
             train_cache[key] = Xt
         return Xt @ (Xt.T @ v)
 
-    def fit(self, X_train: Optional[np.ndarray] = None, y_train: Optional[np.ndarray] = None) -> "SparseMultiKernelRidge":
+    def fit(self, X_train: Optional[np.ndarray] = None, y_train: Optional[np.ndarray] = None) -> "SparseChainPLSRidge":
         y_centred = self.lowrank_bases[0].y_centred
         n = y_centred.shape[0]
         if not self.candidates:
@@ -181,7 +184,7 @@ class SparseMultiKernelRidge(RegressorMixin, BaseEstimator):
                 theta_active = np.asarray(kept_theta, dtype=float) if kept_theta else np.zeros(0)
 
         if not selected:
-            raise RuntimeError("SparseMultiKernelRidge selected no chains")
+            raise RuntimeError("SparseChainPLSRidge selected no chains")
 
         # Memory guard: the kernel matrix K_theta is dense ``n × n``. For
         # very large ``n`` (typical NIRS cohorts cap around 40k samples) this
@@ -190,7 +193,7 @@ class SparseMultiKernelRidge(RegressorMixin, BaseEstimator):
         # than crashing the entire process via OOM.
         if n > 8000:
             raise RuntimeError(
-                f"SparseMultiKernelRidge: n={n} exceeds dense-kernel guard (8000); "
+                f"SparseChainPLSRidge: n={n} exceeds dense-kernel guard (8000); "
                 "skip this variant on very large datasets"
             )
 
@@ -226,7 +229,7 @@ class SparseMultiKernelRidge(RegressorMixin, BaseEstimator):
 
     def predict(self, X: np.ndarray) -> np.ndarray:
         if not hasattr(self, "selected_candidates_"):
-            raise RuntimeError("SparseMultiKernelRidge.predict called before fit")
+            raise RuntimeError("SparseChainPLSRidge.predict called before fit")
         X = np.asarray(X, dtype=float)
         n_test = X.shape[0]
         n_train = self.alpha_.shape[0]

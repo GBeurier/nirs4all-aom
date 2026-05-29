@@ -83,8 +83,6 @@ REGRESSION_VARIANTS = [
     {"label": "Superblock-simpls-numpy", "kind": "regression", "selection": "superblock", "engine": "simpls_covariance", "operator_bank": "compact", "backend": "numpy"},
     {"label": "AOM-soft-simpls-covariance-numpy", "kind": "regression", "selection": "soft", "engine": "simpls_covariance", "operator_bank": "compact", "backend": "numpy", "experimental": True},
     # Production nirs4all baselines (call-through; not AOM_v0 code)
-    {"label": "nirs4all-AOM-PLS-default", "kind": "regression", "selection": "external", "engine": "nirs4all_aom", "operator_bank": "production_default", "backend": "numpy"},
-    {"label": "nirs4all-POP-PLS-default", "kind": "regression", "selection": "external", "engine": "nirs4all_pop", "operator_bank": "production_compact", "backend": "numpy"},
 ]
 
 CLASSIFICATION_VARIANTS = [
@@ -371,15 +369,6 @@ def _build_estimator(variant: Dict, criterion: str, max_components: int, cv: int
     variant_kmax = int(variant.get("max_components_override", max_components))
     # Use variant_kmax in place of the global max_components from here on.
     max_components = variant_kmax
-    # External: call-through to the production nirs4all estimators.
-    if selection == "external":
-        if engine == "nirs4all_aom":
-            from nirs4all.operators.models.sklearn.aom_pls import AOMPLSRegressor as _NirsAOM
-            return _NirsAOM(n_components=max_components, gate="hard")
-        if engine == "nirs4all_pop":
-            from nirs4all.operators.models.sklearn.pop_pls import POPPLSRegressor as _NirsPOP
-            return _NirsPOP(n_components=max_components, auto_select=True)
-        raise ValueError(f"unknown external engine: {engine}")
     # Operator explorer — build active bank from training data, then run AOM-global on top.
     if selection == "explorer_global":
         from aom_nirs.pls.operator_explorer import build_active_bank_from_training
@@ -497,7 +486,7 @@ def _build_hpo_estimator(variant: Dict, params: Dict, max_components_default: in
     elif norm == "msc":
         pp = MultiplicativeScatterCorrection()
     elif norm == "asls":
-        from nirs4all.operators.transforms.nirs import ASLSBaseline as _ASLS
+        from aom_nirs.pls.preprocessing import ASLSBaseline as _ASLS
         pp = _ASLS(
             lam=float(params.get("asls_lambda", 1e6)),
             p=float(params.get("asls_p", 0.01)),

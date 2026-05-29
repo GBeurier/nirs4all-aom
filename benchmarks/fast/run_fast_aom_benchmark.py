@@ -13,7 +13,7 @@ Variants implemented (all numpy):
     FastAOM-hard-chain-compact-d4           # HardAOMChainPLSRidge, depth=4
     FastAOM-hard-chain-default              # HardAOMChainPLSRidge, primitive_bank=default
     FastAOM-soft-chain-compact              # SoftAOMChainPLSRidge
-    FastAOM-sparse-mkr-compact              # SparseMultiKernelRidge
+    FastAOM-sparse-mkr-compact              # SparseChainPLSRidge
     FastAOM-hard-chain-shrinkage            # HardAOMChainPLSRidge w/ component-wise λ_h = λ_0 h
     FastAOM-hard-chain-multibase            # adds SNV / MSC / EMSC bases
 
@@ -71,7 +71,7 @@ def _base_config(
     component_shrinkage_gamma: Optional[float] = None,
     soft_rho: float = 0.05,
     soft_max_mixture_size: Optional[int] = 4,
-    sparse_mkr_max_chains: int = 8,
+    sparse_chains_max_chains: int = 8,
     use_raw: bool = True,
     use_absorbance: bool = False,
     use_snv: bool = True,
@@ -102,7 +102,7 @@ def _base_config(
             component_shrinkage_gamma=component_shrinkage_gamma,
             soft_rho=soft_rho,
             soft_max_mixture_size=soft_max_mixture_size,
-            sparse_mkr_max_chains=sparse_mkr_max_chains,
+            sparse_chains_max_chains=sparse_chains_max_chains,
             use_raw=use_raw,
             use_absorbance=use_absorbance,
             use_snv=use_snv,
@@ -169,10 +169,10 @@ REGRESSION_VARIANTS: List[Dict[str, object]] = [
     ),
     _base_config(
         "FastAOM-sparse-mkr-compact",
-        model="sparse_mkr",
+        model="sparse_chains",
         primitive_bank="compact",
         max_chain_depth=3,
-        sparse_mkr_max_chains=6,
+        sparse_chains_max_chains=6,
         top_global=60,
         notes="multiple-kernel Ridge",
     ),
@@ -260,12 +260,12 @@ REGRESSION_VARIANTS: List[Dict[str, object]] = [
     ),
     _base_config(
         "FastAOM-sparse-mkr-supervised",
-        model="sparse_mkr",
+        model="sparse_chains",
         primitive_bank="compact",
         max_chain_depth=3,
         n_components=15,
         top_global=160,
-        sparse_mkr_max_chains=8,
+        sparse_chains_max_chains=8,
         use_raw=True,
         use_snv=True,
         use_msc=False,

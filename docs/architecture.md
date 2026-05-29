@@ -132,7 +132,7 @@ four sklearn-style AOM models on the surviving chains.
 | `models/single_chain_pls_ridge.py` | `SingleChainPLSRidge`: best chain only, PLS-then-Ridge. |
 | `models/hard_aom_chain_pls_ridge.py` | `HardAOMChainPLSRidge`: one chain per PLS component. |
 | `models/soft_aom_chain_pls_ridge.py` | `SoftAOMChainPLSRidge`: sparse non-negative chain mixture per component. |
-| `models/sparse_multi_kernel_ridge.py` | `SparseMultiKernelRidge`: greedy NNLS over chain kernels `K_theta = sum_s theta_s K_s`. |
+| `models/sparse_chain_pls_ridge.py` | `SparseChainPLSRidge`: greedy NNLS over chain kernels `K_theta = sum_s theta_s K_s`. |
 | `models/fast_aom_pls_ridge.py` | `FastAOMPLSRidge` orchestrator + `FastAOMConfig` (driver that wires grammar / generation / screening / low-rank / final fit). |
 
 Class hierarchy:
@@ -155,7 +155,7 @@ sklearn BaseEstimator + RegressorMixin
 ├── SingleChainPLSRidge
 ├── HardAOMChainPLSRidge
 ├── SoftAOMChainPLSRidge
-└── SparseMultiKernelRidge       <- all four are orchestrated by FastAOMPLSRidge
+└── SparseChainPLSRidge       <- all four are orchestrated by FastAOMPLSRidge
 ```
 
 ## Training dataflow

@@ -49,8 +49,6 @@ EXT_REG_VARIANTS = [
     {"label": "Superblock-raw-simpls-numpy", "kind": "regression", "selection": "superblock", "engine": "simpls_covariance", "operator_bank": "compact", "backend": "numpy"},
     {"label": "AOM-explorer-simpls-numpy", "kind": "regression", "selection": "explorer_global", "engine": "simpls_covariance", "operator_bank": "explorer", "backend": "numpy"},
     # Production baselines
-    {"label": "nirs4all-AOM-PLS-default", "kind": "regression", "selection": "external", "engine": "nirs4all_aom", "operator_bank": "production_default", "backend": "numpy"},
-    {"label": "nirs4all-POP-PLS-default", "kind": "regression", "selection": "external", "engine": "nirs4all_pop", "operator_bank": "production_compact", "backend": "numpy"},
     # Better-criterion variants on the compact bank only (PRESS/CV on the
     # 100-op default bank is impractically slow — 14s/dataset on Beer).
     {"label": "AOM-compact-press-numpy", "kind": "regression", "selection": "global", "engine": "nipals_adjoint", "operator_bank": "compact", "backend": "numpy", "criterion_override": "approx_press"},

@@ -7,7 +7,7 @@ This script compares six calibrations on a single synthetic NIR-like dataset:
   3. AOM-PLS-best        -- ``ASLSBaseline`` -> ``AOMPLSRegressor``.
   4. AOM-Ridge-global    -- ``AOMRidgeRegressor(selection="global")``.
   5. AOM-Ridge-Blender   -- ``AOMRidgeBlender()`` (paper's best result).
-  6. FastAOM-sparse-mkr  -- ``FastAOMPLSRidge(model="sparse_mkr")``.
+  6. FastAOM-sparse-mkr  -- ``FastAOMPLSRidge(model="sparse_chains")``.
 
 This is a *synthetic* smoke. The numerical claims of the paper hold on the
 32-NIRS-dataset benchmark cohort; a real reproduction needs those datasets and
@@ -133,8 +133,8 @@ def main() -> None:
     results.append(_evaluate(
         "FastAOM-sparse-mkr-compact",
         lambda: FastAOMPLSRidge(config=FastAOMConfig(
-            model="sparse_mkr", primitive_bank="compact",
-            max_chain_depth=3, top_global=60, sparse_mkr_max_chains=8,
+            model="sparse_chains", primitive_bank="compact",
+            max_chain_depth=3, top_global=60, sparse_chains_max_chains=8,
             random_state=0,
         )),
         X_train, y_train, X_test, y_test,

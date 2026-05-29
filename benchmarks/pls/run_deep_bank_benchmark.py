@@ -52,8 +52,6 @@ DEEP_VARIANTS = [
      "engine": "simpls_covariance", "operator_bank": "deep3", "backend": "numpy"},
     {"label": "AOM-explorer-deep3-numpy", "kind": "regression", "selection": "explorer_global",
      "engine": "simpls_covariance", "operator_bank": "explorer", "backend": "numpy"},
-    {"label": "nirs4all-AOM-PLS-default", "kind": "regression", "selection": "external",
-     "engine": "nirs4all_aom", "operator_bank": "production_default", "backend": "numpy"},
 ]
 
 

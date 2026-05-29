@@ -54,7 +54,7 @@ After the first batch of edits, an independent Codex review flagged:
 |---|---|---|
 | CRITICAL | `screening.py` numerator used `adjoint_vec` instead of `apply_cov` | Switched to `apply_cov(g_0)` |
 | HIGH | `operator_chain.simplify` dropped trailing detrend after derivative — but zero-padded SG/FD derivatives don't annihilate boundary trends, so this discarded valid candidates | Removed the aggressive simplification |
-| HIGH | `SparseMultiKernelRidge` greedy selection used stale `K_s @ y_centred` against the residual instead of refreshing `K_s @ residual` | Compute `Kr = K_s @ residual` fresh each step |
+| HIGH | `SparseChainPLSRidge` greedy selection used stale `K_s @ y_centred` against the residual instead of refreshing `K_s @ residual` | Compute `Kr = K_s @ residual` fresh each step |
 | HIGH | Constant-y fold crashed the orchestrator (empty finalists) | Added constant-y guard in `FastAOMPLSRidge.fit` that falls back to a mean predictor |
 | MINOR | Soft-LASSO threshold convention | Documented `0.5 * ||y - U a||^2 + rho * ||a||_1` as the canonical objective |
 
@@ -67,21 +67,21 @@ After the benchmark runner was added:
 | HIGH | `_run_variant` forced `n_components = max_components`, overriding variants that explicitly chose smaller values (e.g. soft-chain at 12) | Now uses `min(cfg.n_components, max_components)` |
 | HIGH | aompls' "cv" mode auto-picks `n_components`; FastAOM uses fixed — comparisons conflate model and selection policy | Documented in README; HardAOM relies on `early_stop_patience=3` to stop adding components when train loss plateaus |
 | HIGH | `DetrendProjectionOperator` builds dense `p × p` matrix — RAM risk on very large `p` | OK for the 11-dataset cohort (max `p = 2177` → 37 MB per matrix); flagged in README |
-| MINOR | `sparse_mkr` didn't log `theta` weights in per-component diagnostics | Added `theta` to the diagnostic dict |
+| MINOR | `sparse_chains` didn't log `theta` weights in per-component diagnostics | Added `theta` to the diagnostic dict |
 | MINOR | RESULT_COLUMNS evolves across runs; old CSV headers stay in place | Documented; users should clear the CSV before adding columns |
 
 ## Codex review fixes (round 3 — caught at runtime)
 
 | Severity | Issue | Fix |
 |---|---|---|
-| CRITICAL | `SparseMultiKernelRidge` infinite loop when NNLS zeroes the freshly selected chain: the chain is dropped, residual unchanged, same chain re-selected next iteration, NNLS still drops it, forever. Manifested as the smoke benchmark stalling indefinitely on the 6th variant. | Added a `blacklisted` set: any chain whose NNLS theta drops to zero is permanently rejected so the greedy outer loop can converge. Regression test in `tests/test_models.py::test_sparse_mkr_does_not_infinite_loop_on_redundant_candidates`. |
+| CRITICAL | `SparseChainPLSRidge` infinite loop when NNLS zeroes the freshly selected chain: the chain is dropped, residual unchanged, same chain re-selected next iteration, NNLS still drops it, forever. Manifested as the smoke benchmark stalling indefinitely on the 6th variant. | Added a `blacklisted` set: any chain whose NNLS theta drops to zero is permanently rejected so the greedy outer loop can converge. Regression test in `tests/test_models.py::test_sparse_chains_does_not_infinite_loop_on_redundant_candidates`. |
 
 ## Codex review fixes (round 4)
 
 | Severity | Issue | Fix |
 |---|---|---|
 | HIGH | `OperatorChain.simplify` had a dormant "consecutive same-family smoother collapse" rule that would silently drop the narrower smoother. The grammar currently rejects two consecutive same-family smoothers, so the rule never fired, but a future grammar change could activate it and discard valid candidates. | Removed the rule — the simplifier now only applies the parent `aompls.canonicalize` (identity drops + consecutive detrend collapse). Documented the explicit non-rules in the docstring. |
-| MINOR | `FastAOMConfig.n_components` and the other shape-like ints had no validation; passing `0` or negative would silently misbehave downstream (the benchmark runner's ceiling fix would clip to `max_components`). | Added `__post_init__` with `_validate_positive_int` for `n_components`, `rank`, `top_global`, `max_chain_depth`, and `sparse_mkr_max_chains`. |
+| MINOR | `FastAOMConfig.n_components` and the other shape-like ints had no validation; passing `0` or negative would silently misbehave downstream (the benchmark runner's ceiling fix would clip to `max_components`). | Added `__post_init__` with `_validate_positive_int` for `n_components`, `rank`, `top_global`, `max_chain_depth`, and `sparse_chains_max_chains`. |
 
 ## Train/test consistency in AOM models
 
@@ -103,7 +103,7 @@ The same pattern is used in `SoftAOMChainPLSRidge` for the mixed direction.
 Initial implementations mixed the SVD low-rank kernel approximation (used in
 fit) with the exact kernel (used in predict's cross-kernel). This caused
 silent mis-predictions. Both `HardAOMChainPLSRidge` and
-`SparseMultiKernelRidge` now use the **exact** `K_s = X_centred A^T A X_centred^T`
+`SparseChainPLSRidge` now use the **exact** `K_s = X_centred A^T A X_centred^T`
 representation throughout fit and predict; the SVD low-rank machinery is
 reserved for the upstream screening stage only (where the approximation is
 inherent to the score's purpose).
@@ -132,7 +132,7 @@ On Beef_Marbling (`n = 554, p = 331`):
 | hard_aom_chain (compact d3) | 13.4 s | 120 | 145 |
 | hard_aom_chain (compact d4) | 13.8 s | 120 | 145 |
 | soft_aom_chain | 16.9 s | 80 | 145 |
-| sparse_mkr | ~20 s | 60 | 145 |
+| sparse_chains | ~20 s | 60 | 145 |
 | hard_aom_chain (default bank, d2) | ~268 s | 200 | ~3000 (with 100-op bank) |
 
 The Python loop in `aompls.operators._xcorr_zero_pad` is the dominant

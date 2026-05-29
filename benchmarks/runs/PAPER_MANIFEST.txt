@@ -1,0 +1,32 @@
+# Paper-tied benchmark runs — the authoritative whitelist of result directories
+# consumed by the manuscript (paper/repro/*.py, paper/review/final_stats.md) and
+# included in the reproduction release. Every directory below contains a
+# results.csv. Anything under benchmarks/runs/ NOT listed here is scratch /
+# exploratory and is not part of the paper (benchmarks/runs/local/ is git-ignored).
+#
+# Format: one path per line, relative to benchmarks/runs/
+
+# --- AOM-PLS ---
+scenarios/paper_aom_aompls_seeds012            # AOM-PLS main, 55 ds, seeds 0/1/2
+scenarios/paper_aom_aompls_seed0
+scenarios/paper_aom_aompls_seed1
+scenarios/paper_aom_aompls_seed2
+pls/paper_aom_aompls_da_seeds012               # AOM-PLS-DA classification, 16 ds, seeds 0/1/2
+
+# --- AOM-Ridge ---
+ridge/all54_headline                           # AOM-Ridge headline (Blender/AutoSelect/global), 53 ds, seed 0
+ridge/paper_aom_aomridge_seeds012              # AOM-Ridge secondary (split-aware, Local), 25 ds, seeds 0/1/2
+ridge/paper_aom_aomridge_cls_seeds012          # AOM-Ridge classifiers, 14 ds, seeds 0/1/2
+
+# --- FastAOM ---
+scenarios/paper_aom_fastaom_seed0              # FastAOM main, 10 ds, seed 0
+scenarios/paper_aom_fastaom_full60_seed0       # FastAOM extended, 26 ds, seed 0
+
+# --- Linear baselines (default + full-HPO) ---
+scenarios/paper_aom_linear_hpo_full_cartesian_default_cv5_all
+scenarios/paper_aom_linear_hpo_full_cartesian_pls-tabpfn-hpo-25trials_seed0
+scenarios/paper_aom_linear_hpo_full_cartesian_pls-tabpfn-hpo-25trials_seed1
+scenarios/paper_aom_linear_hpo_full_cartesian_pls-tabpfn-hpo-25trials_seed2
+scenarios/paper_aom_linear_hpo_full_cartesian_ridge-tabpfn-hpo-60trials_seed0
+scenarios/paper_aom_linear_hpo_full_cartesian_ridge-tabpfn-hpo-60trials_seed1
+scenarios/paper_aom_linear_hpo_full_cartesian_ridge-tabpfn-hpo-60trials_seed2

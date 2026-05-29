@@ -5,9 +5,9 @@ AOM-PLS benchmark tooling), filters to a small representative subset (or the
 full cohort), and runs every requested AOM-Ridge variant on every dataset and
 seed. Results are appended row-by-row so the runner is fully resumable.
 
-Cross-validation defaults to ``SPXYFold`` from nirs4all when available, which
-is the standard NIRS-aware splitter for AOM_v0; the user can override with a
-plain ``KFold`` via ``--cv-kind kfold``.
+Cross-validation defaults to the vendored ``SPXYFold``, which is the standard
+NIRS-aware splitter for AOM_v0; the user can override with a plain ``KFold``
+via ``--cv-kind kfold``.
 
 Usage:
 
