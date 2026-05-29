@@ -14,6 +14,14 @@ literally fixed preprocessing recipe applied uniformly.
 > it on a multi-core box / cluster, not interactively.
 
 ## A4-res — pre-registered fixed conventional recipe (do this first; cheap)
+
+> **Result (computed, `fixed_recipe.py`, 58/60 datasets):** the fixed recipe gives no systematic gain
+> over plain PLS/Ridge — median paired RMSEP ratio 1.003 (PLS, 25/53) and 1.017 (Ridge, 22/52).
+> Operator-adaptive AOM beats the same fixed recipe: AOM-PLS 0.980 (31/53), AOM-Ridge-global 0.949
+> (34/52). Emitted to `table_fixed_recipe.tex`; integrated in the supplement + main §3.5. The two
+> skipped datasets (`FinalScore_grp70_30_scoreQ`, `Tleaf_grp70_30`) have non-finite spectra. Re-running
+> the script reuses `fixed_recipe_results.csv` (cache) so only the aggregation/table is regenerated.
+
 Apply ONE preprocessing recipe to every cohort dataset, tuning only `n_components` by 5-fold CV — no
 preprocessing search. **Pre-register the recipe before looking at scores:**
 
