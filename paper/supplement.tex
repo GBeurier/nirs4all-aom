@@ -208,6 +208,36 @@ their own paired denominators.
 
 \input{tables/table_dataset_overview_supp.tex}
 
+\subsection{Missingness audit}
+\label{sec:sup_missingness}
+
+The strict paired denominator $N_{\cap}=32$ used in the main text is the
+intersection of dataset/seed rows available for every paper variant.
+Table~\ref{tab:sup_missingness} reports, for each variant, how many of the
+60--61 attempted regression rows produced complete results, how many failed
+with a fit error and how many were not attempted in the current workspace.
+The two recurring error datasets,
+\code{FinalScore\_grp70\_30\_scoreQ} and \code{Tleaf\_grp70\_30}, contain NaN
+entries in the source spectra and fail under every linear regressor; they are
+therefore not specific to any variant.  The remaining absences are dominated
+by the HPO rows, where the cartesian preprocessing grid was not run on the
+full cohort because of compute cost rather than dataset incompatibility.
+This is the conservative direction: the comparators that AOM is benchmarked
+against are the variants with the largest unfilled cohort, so the strict
+intersection narrows the comparison toward datasets where HPO had its best
+chance to win.
+
+\begin{table}[h]
+\centering
+\caption{Per-variant cohort coverage and absence reasons.  ``Complete'' counts
+datasets with finite RMSEP across the requested seed budget; ``Error'' counts
+datasets where the fit raised an exception (almost always NaN in the source
+spectra); ``Not attempted'' counts datasets the workspace did not schedule.}
+\label{tab:sup_missingness}
+\small
+\input{tables/table_missingness_audit.tex}
+\end{table}
+
 \section{Operator Bank Exploration}
 
 The compact bank contains nine operators:
@@ -371,6 +401,7 @@ main manuscript.
 \input{tables/table_supplement_long_results.tex}
 
 \section{Per-dataset prediction quality}
+\label{sec:sup_gain_per_dataset}
 
 Figure~\ref{fig:sup_gain_per_dataset} shows the per-dataset RMSEP reduction
 for the selected AOM-PLS and AOM-Ridge variants against default and HPO
@@ -384,6 +415,40 @@ references.
   higher RMSEP.}
   \label{fig:sup_gain_per_dataset}
 \end{figure}
+
+\section{Failure modes}
+\label{sec:sup_failure_modes}
+
+Table~\ref{tab:sup_failure_modes} reports the datasets where the AOM-PLS
+family does not produce a clear improvement.  Two manifest rows
+(\code{FinalScore\_grp70\_30\_scoreQ} and \code{Tleaf\_grp70\_30}) cannot be
+fit by any of the nine logged variants because the source spectra contain
+NaN entries; they are kept here for transparency rather than as a comparison.
+The remaining rows are datasets where at least one AOM-PLS variant has
+elevated RMSEP relative to the headline figures in the main text: rice
+amylose, brix on the strawberry-puree split with sample-ID grouping, the
+colza C dataset and the seven dataset block from \code{N\_*} and the
+\code{Brix\_spxy70} berry split.  These are the datasets that drive the
+selected ASLS-AOM-compact-cv5 paired ratio away from its overall median, and
+they are where a domain expert would expect SNV, MSC or a fitted baseline
+correction to play a larger role than a strict linear bank can.  POP-PLS
+variants are particularly weak on this subset (RMSEPs in the range 1.39--5.32
+on rows where the linear references stay below 2.0), confirming the main-text
+observation that per-component preprocessing flexibility hurts more than it
+helps when the calibration set is small.  The per-dataset gain figure
+(Section~\ref{sec:sup_gain_per_dataset}) shows the same picture as a bar
+chart.
+
+\begin{table}[h]
+\centering
+\caption{Datasets where at least one AOM-PLS variant has elevated RMSEP or
+where every variant fails because of NaN inputs.  ``Variants logged'' counts
+the nine AOM-PLS and POP-PLS rows checked; ``Finite RMSEP rows'' counts how
+many produced a finite test RMSEP.}
+\label{tab:sup_failure_modes}
+\small
+\input{tables/table_failure_modes.tex}
+\end{table}
 
 \section{Classification Full Results}
 
@@ -418,6 +483,52 @@ some datasets change the winning member of the AOM-PLS family.  The top AOM
 Ridge rows are deterministic for the recorded split/random-state
 representation.  FastAOM was run on seed0 for the wide exploration and
 should be read as chain-space evidence rather than split-resampling evidence.
+
+\paragraph{Empirical determinism of the AOM-Ridge headline.}
+The main-text AOM-Ridge headline
+(\code{AOMRidge-Blender-headline-spxy3} and
+\code{AOMRidge-AutoSelect-headline-spxy3}) is reported on the deterministic
+random-state-0 run, while AOM-PLS, PLS-default, Ridge-default, PLS-HPO and
+Ridge-HPO use seeds 0/1/2.  Two archived audit workspaces re-ran Blender and
+AutoSelect under seeds 0, 1 and 2 on a partial cohort
+(\code{da001\_audit20\_seeds012} and
+\code{da001\_partial\_fast12\_seeds012}); deduplicated by
+$(\text{dataset},\text{variant},\text{seed})$, their union covers 26
+datasets, of which 18 are in the strict main-text denominator $N_{\cap}=32$.
+The two workspaces overlap on 6 datasets; on the 36 cross-workspace
+$(\text{dataset},\text{variant},\text{seed})$ triples present in both files
+the maximum absolute RMSEP difference is $0$ (assertion enforced in
+\code{aggregate\_ridge\_seed\_audit.py}, tolerance $10^{-8}$), so the
+dedup is on values that agree byte-for-byte rather than within numerical
+tolerance.  On every one of the 18 overlap datasets the recorded RMSEP is
+likewise byte-identical across seeds 0, 1 and 2 for both Blender and
+AutoSelect (Table~\ref{tab:sup_ridge_seed_audit}).  The remaining 14
+datasets of $N_{\cap}=32$ were not included in the archived audit workspaces
+and are outside the scope of this check; whether their RMSEP would also be
+seed-invariant cannot be asserted from the present evidence.  This identity is largely a
+consequence of the protocol: the \code{SPXY3} split used for the headline
+only consumes \code{random\_state} when a PCA pre-projection is requested,
+and the Blender/AutoSelect inner selectors then condition on the
+deterministic split.  The observation should therefore be read as
+\emph{protocol determinism}, not as evidence of robustness to repeated
+train/test partitions.  The main text uses ``comparable to'' or ``improves
+over'' rather than ``robust across seeds'' when discussing the AOM-Ridge
+headline ratios for this reason.  A repeated partition sensitivity check on a
+stratified subset of datasets is listed as an open extension in the main-text
+discussion.
+
+\begin{table}[h]
+\centering
+\caption{AOM-Ridge headline seed audit on the 18-dataset overlap between
+$N_{\cap}=32$ and the archived
+\code{da001\_audit20\_seeds012}/\code{da001\_partial\_fast12\_seeds012}
+workspaces.  ``Max RMSEP span across seeds'' is the per-dataset maximum
+$\max_s\text{RMSEP}(s)-\min_s\text{RMSEP}(s)$, aggregated as the row maximum.
+Both selectors record identical RMSEP at seeds 0, 1 and 2 on every dataset.}
+\label{tab:sup_ridge_seed_audit}
+\small
+\input{tables/table_ridge_seed_audit.tex}
+\end{table}
 
 \section{Reproducibility and Software Artifacts}
 

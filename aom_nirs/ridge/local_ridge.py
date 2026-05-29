@@ -401,7 +401,7 @@ class _FittedBranchState:
     Xb_views: list[np.ndarray]
 
 
-class AOMLocalRidge(BaseEstimator, RegressorMixin):
+class AOMLocalRidge(RegressorMixin, BaseEstimator):
     """Local Ridge in AOM score space.
 
     For each test sample, find the k nearest training samples (in the

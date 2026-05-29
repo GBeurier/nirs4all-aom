@@ -115,7 +115,7 @@ def _fit_temperature(
     return 0.5 * (a + b)
 
 
-class AOMRidgeClassifier(BaseEstimator, ClassifierMixin):
+class AOMRidgeClassifier(ClassifierMixin, BaseEstimator):
     """AOM-Ridge classifier (PLS-DA-style).
 
     Wraps :class:`AOMRidgeRegressor` on a class-balanced one-hot encoding of

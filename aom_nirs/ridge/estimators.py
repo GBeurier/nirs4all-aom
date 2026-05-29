@@ -49,7 +49,7 @@ OperatorBankSpec = str | Sequence[LinearSpectralOperator]
 _VALID_SELECTIONS = ("superblock", "global", "active_superblock", "branch_global", "mkl")
 
 
-class AOMRidgeRegressor(BaseEstimator, RegressorMixin):
+class AOMRidgeRegressor(RegressorMixin, BaseEstimator):
     """Adaptive Operator-Mixture Ridge regressor (dual / kernel).
 
     The Ridge solution is computed via a dual / kernel formulation that never

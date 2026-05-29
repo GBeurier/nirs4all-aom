@@ -1,0 +1,45 @@
+name: Publish to PyPI
+
+# Trusted Publishing (OIDC) — no API token stored in the repo.
+# Configure the matching publisher on PyPI:
+#   Owner = GBeurier · Repository = nirs4all-aom
+#   Workflow name = publish-pypi.yml · Environment name = pypi
+# Triggered by publishing a GitHub Release (tag e.g. v0.1.1), or manually.
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build sdist + wheel
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Build and check distributions
+        run: |
+          python -m pip install --upgrade build twine
+          python -m build
+          twine check dist/*
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+  publish:
+    name: Publish to PyPI
+    needs: build
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      id-token: write          # mandatory for OIDC trusted publishing
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+      - uses: pypa/gh-action-pypi-publish@release/v1

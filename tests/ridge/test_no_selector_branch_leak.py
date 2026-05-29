@@ -139,8 +139,9 @@ def test_selection_universe_is_exhaustively_classified() -> None:
     from pathlib import Path
 
     runner_path = (
-        Path(__file__).resolve().parents[1]
+        Path(__file__).resolve().parents[2]
         / "benchmarks"
+        / "ridge"
         / "run_aomridge_benchmark.py"
     )
     source = runner_path.read_text()

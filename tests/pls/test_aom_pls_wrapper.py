@@ -295,6 +295,10 @@ class TestIdentityBankRecovery:
 
     def test_identity_bank_matches_pls(self):
         """With only identity operator, AOM-PLS should match SIMPLS."""
+        SIMPLS = pytest.importorskip(
+            "nirs4all.operators.models.sklearn.simpls",
+            reason="nirs4all SIMPLS not installed",
+        ).SIMPLS
         rng = np.random.RandomState(42)
         X = rng.randn(80, 50)
         y = X[:, :5].sum(axis=1) + 0.1 * rng.randn(80)
@@ -312,7 +316,6 @@ class TestIdentityBankRecovery:
         preds_aom = aom.predict(X)
 
         # SIMPLS (same predictions as NIPALS for univariate y)
-        from nirs4all.operators.models.sklearn.simpls import SIMPLS
         simpls = SIMPLS(n_components=10, scale=True, center=True, backend="numpy")
         simpls.fit(X, y)
         preds_simpls = simpls.predict(X)
@@ -357,8 +360,9 @@ class TestSklearnCompat:
         assert "10" in r
 
     def test_estimator_type(self):
+        from sklearn.base import is_regressor
         model = AOMPLSRegressor()
-        assert model._estimator_type == "regressor"
+        assert is_regressor(model)
 
 # =============================================================================
 # Deterministic Output Tests

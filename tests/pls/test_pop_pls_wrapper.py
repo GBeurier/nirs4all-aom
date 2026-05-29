@@ -244,8 +244,9 @@ class TestSklearnCompat:
         assert "10" in r
 
     def test_estimator_type(self):
+        from sklearn.base import is_regressor
         model = POPPLSRegressor()
-        assert model._estimator_type == "regressor"
+        assert is_regressor(model)
 
 # =============================================================================
 # Determinism Tests
@@ -372,8 +373,9 @@ class TestPOPPLSClassifier:
         assert len(ops) > 0
 
     def test_estimator_type(self):
+        from sklearn.base import is_classifier
         model = POPPLSClassifier()
-        assert model._estimator_type == "classifier"
+        assert is_classifier(model)
 
     def test_clone(self):
         model = POPPLSClassifier(n_components=10, max_components=15)

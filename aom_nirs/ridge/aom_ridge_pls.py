@@ -154,7 +154,7 @@ def _per_component_lambda(
 # ----------------------------------------------------------------------
 
 
-class AOMRidgePLS(BaseEstimator, RegressorMixin):
+class AOMRidgePLS(RegressorMixin, BaseEstimator):
     """Adaptive Operator-Mixture Ridge-PLS regressor.
 
     The model is a PLS decomposition on a multi-block AOM superblock followed
@@ -611,7 +611,7 @@ def _superblock_test_from_state(state: dict, X_va: np.ndarray) -> np.ndarray:
     return (Z_te - state["z_mean"]) / state["z_scale"]
 
 
-class AOMRidgePLSCV(BaseEstimator, RegressorMixin):
+class AOMRidgePLSCV(RegressorMixin, BaseEstimator):
     """K-fold CV wrapper that selects ``(n_components, ridge_alpha)`` for AOMRidgePLS.
 
     The wrapper performs a fold-local grid search over the cartesian product of

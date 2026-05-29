@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "nirs4all-aom"
-version = "0.1.0"
+version = "0.1.1"
 description = "Adaptive Operator-Mixture PLS and Ridge for near-infrared spectroscopy: companion code for the paper."
 readme = "README.md"
 license = { text = "AGPL-3.0-or-later OR Commercial" }
@@ -47,7 +47,7 @@ torch = ["torch>=2.0"]
 tabpfn = ["tabpfn>=0.1"]
 bench = [
     "pandas>=2.0",
-    "matplotlib>=3.7",
+    "matplotlib>=3.9",
     "pyarrow>=12",
 ]
 dev = [

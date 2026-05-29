@@ -417,7 +417,7 @@ def _score_candidate(
 # ----------------------------------------------------------------------
 
 
-class AOMRidgeAutoSelector(BaseEstimator, RegressorMixin):
+class AOMRidgeAutoSelector(RegressorMixin, BaseEstimator):
     """Outer-CV variant selector over a list of AOM-Ridge candidates.
 
     For each candidate variant in ``candidates``, run K-fold outer CV

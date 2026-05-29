@@ -7,9 +7,6 @@ All notable changes to `nirs4all-aom` are documented here. Format based on
 
 ### Planned (post-submission)
 
-- Run AOM-Ridge Blender / AutoSelector with seeds 1 and 2 (the current
-  paper headline is single-seed; see `paper/review/paper_review.md`
-  weakness #2).
 - Fill the HPO denominator gap for PLS-TabPFN-HPO and Ridge-TabPFN-HPO
   (see `paper/review/missing_datasets_per_variant.md`).
 - External-split / instrument-transfer demonstration.
@@ -18,6 +15,60 @@ All notable changes to `nirs4all-aom` are documented here. Format based on
   ships on PyPI).
 - Replace the in-tree vendored copy inside `nirs4all/operators/models/
   _aom_nirs/` with a runtime `pip install nirs4all-aom` dependency.
+
+## [0.1.1] — 2026-05-28
+
+### Fixed
+
+- sklearn ≥ 1.6 / 1.8 compatibility: swapped inheritance order to
+  `RegressorMixin/ClassifierMixin/TransformerMixin, BaseEstimator` on
+  20 production estimator and transformer classes in `aom_nirs/pls/`,
+  `aom_nirs/ridge/` and `aom_nirs/fast/`. Under the previous order
+  `BaseEstimator.__sklearn_tags__` returned `estimator_type=None` and
+  `sklearn.base.is_regressor` / `is_classifier` returned `False` for
+  every AOM model.
+- Test suite: corrected `benchmarks.pls.*` import paths in
+  `tests/pls/test_benchmark_schema.py`, the `parents[2]` runner-path
+  lookup in `tests/ridge/test_no_selector_branch_leak.py`, and added
+  `pytest.importorskip` guards for optional `nirs4all` imports in
+  `tests/pls/test_aom_pls_wrapper.py` and
+  `tests/ridge/test_ridge_branch_global.py`. Sklearn-1.8 `_estimator_type`
+  attribute assertions replaced with `is_regressor` / `is_classifier`.
+- Clean-clone smoke test now reports 571 passed, 26 skipped, 0 failed
+  (was 1 collection error + 7 failures before the sweep).
+
+### Changed
+
+- Bumped `matplotlib` floor in the `[bench]` extra from `>=3.7` to
+  `>=3.9` (required by `loc="outside ..."` legend positioning used by
+  the regenerated paired-RMSEP scatter figure).
+- Re-laid out `paper/figures/fig_paired_rmsep_scatter.pdf` with
+  `constrained_layout=True` and `figsize=(7.2, 7.4)` so subplot titles
+  and x-axis labels no longer collide. New helper
+  `paper/review/regen_paired_rmsep_scatter.py` regenerates this figure
+  without running the rest of the figure pipeline.
+
+### Paper (manuscript revision)
+
+- Added SPORT/PORTO/PROSAC + preprocessing-ensemble citations
+  (Engel 2013, Mishra 2020/2021/2022, Roger 2020/2022) to Related Work
+  and model-selection-bias citations (Varma-Simon 2006,
+  Cawley-Talbot 2010, Bergstra-Bengio 2012) to the Introduction.
+- Clarified the cartesian-HPO search space in §3.2
+  (norm × smooth × baseline × osc × n_components) and the framing as
+  "strong conventional preprocessing search under HPO".
+- Promoted the missingness audit and the failure-modes diagnostic to
+  the supplement (`table_missingness_audit.tex`,
+  `table_failure_modes.tex`). New main-text *Failure modes*
+  subsection enumerates datasets where ASLS-AOM trails PLS-HPO and
+  the rows that drive the POP-PLS drop.
+- Added empirical-determinism note for the AOM-Ridge headline in the
+  supplement, with a new `aggregate_ridge_seed_audit.py` script that
+  unions the two archived seeds-0/1/2 workspaces, asserts
+  cross-workspace agreement, and produces
+  `table_ridge_seed_audit.tex` (18 N_cap=32 overlap datasets,
+  byte-identical RMSEP across seeds 0/1/2 for both Blender and
+  AutoSelect).
 
 ## [0.1.0] — 2026-05-17
 

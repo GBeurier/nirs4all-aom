@@ -32,7 +32,7 @@ class _SubsampleSpec:
     row_indices: np.ndarray | None
 
 
-class TabPFNCandidate(BaseEstimator, RegressorMixin):
+class TabPFNCandidate(RegressorMixin, BaseEstimator):
     """sklearn wrapper around :class:`tabpfn.TabPFNRegressor`.
 
     Parameters

@@ -409,7 +409,7 @@ def cross_branch_kernel(
 # ----------------------------------------------------------------------
 
 
-class AOMMultiBranchMKL(BaseEstimator, RegressorMixin):
+class AOMMultiBranchMKL(RegressorMixin, BaseEstimator):
     """Soft Multi-Branch Kernel Ridge regressor (AOM-Ridge Phase H4).
 
     For each branch ``b`` in ``branches`` and each operator ``a`` in

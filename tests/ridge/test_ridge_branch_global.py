@@ -14,6 +14,7 @@ reference) fitted on the training fold only. These tests verify:
 from __future__ import annotations
 
 import numpy as np
+import pytest
 from aom_nirs.pls.operators import IdentityOperator
 from aom_nirs.pls.preprocessing import MultiplicativeScatterCorrection
 from aom_nirs.ridge.branches import make_branch_preproc
@@ -505,9 +506,13 @@ def test_branch_global_10branches_no_leak(monkeypatch):
     from aom_nirs.pls.preprocessing import ASLSBaseline as _ASLSAdapter
     from aom_nirs.pls.preprocessing import StandardNormalVariate
 
-    from nirs4all.operators.transforms.nirs import (
-        ASLSBaseline,
-        ExtendedMultiplicativeScatterCorrection,
+    nirs_transforms = pytest.importorskip(
+        "nirs4all.operators.transforms.nirs",
+        reason="nirs4all transforms not installed",
+    )
+    ASLSBaseline = nirs_transforms.ASLSBaseline
+    ExtendedMultiplicativeScatterCorrection = (
+        nirs_transforms.ExtendedMultiplicativeScatterCorrection
     )
 
     rng = np.random.default_rng(31)
