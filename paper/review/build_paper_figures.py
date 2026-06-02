@@ -1482,7 +1482,10 @@ def build_accuracy_time(rows: list[dict], dfs: dict[str, pd.DataFrame]) -> None:
         ("AOM-Ridge (simple)", by_label["AOMRidge-global-compact-none vs Ridge-default"]["stats"]["median"], "AOM-Ridge", "s"),
         ("AOM-Ridge (best)", by_label["AOMRidge-Blender vs Ridge-default"]["stats"]["median"], "AOM-Ridge", "o"),
     ]
+    annotation_offsets = {}
+    labels_to_skip = {"PLS-default", "Ridge-default"}
     fig, ax = plt.subplots(figsize=FIGSIZE_WIDE)
+    fig.subplots_adjust(right=0.74)
     for label, ratio, family, marker in points:
         x = time_lookup.get(label, float("nan"))
         if not (np.isfinite(x) and np.isfinite(ratio)):
@@ -1497,7 +1500,18 @@ def build_accuracy_time(rows: list[dict], dfs: dict[str, pd.DataFrame]) -> None:
             label=family,
             zorder=3,
         )
-        ax.annotate(label, (x, ratio), xytext=(5, 4), textcoords="offset points", fontsize=7.0, color=COLOR_AXIS)
+        if label not in labels_to_skip:
+            dx, dy, ha, va = annotation_offsets.get(label, (5, 4, "left", "bottom"))
+            ax.annotate(
+                label,
+                (x, ratio),
+                xytext=(dx, dy),
+                textcoords="offset points",
+                fontsize=7.0,
+                color=COLOR_AXIS,
+                ha=ha,
+                va=va,
+            )
     family_handles = [
         Line2D([0], [0], marker="o", linestyle="", markersize=5.5,
                markerfacecolor=FAMILY_COLORS[fam], markeredgecolor=COLOR_AXIS,
@@ -1509,11 +1523,25 @@ def build_accuracy_time(rows: list[dict], dfs: dict[str, pd.DataFrame]) -> None:
         Line2D([0], [0], marker="s", linestyle="", color=COLOR_AXIS, markersize=5.5, label="Simple"),
         Line2D([0], [0], marker="o", linestyle="", color=COLOR_AXIS, markersize=5.5, label="Best"),
     ]
-    leg1 = ax.legend(family_handles, [h.get_label() for h in family_handles], loc="lower left",
-                     title="Model family", title_fontsize=8.0)
+    leg1 = ax.legend(
+        family_handles,
+        [h.get_label() for h in family_handles],
+        loc="upper left",
+        bbox_to_anchor=(1.02, 1.0),
+        borderaxespad=0.0,
+        title="Model family",
+        title_fontsize=8.0,
+    )
     ax.add_artist(leg1)
-    ax.legend(role_handles, [h.get_label() for h in role_handles], loc="upper right",
-              title="Role", title_fontsize=8.0)
+    ax.legend(
+        role_handles,
+        [h.get_label() for h in role_handles],
+        loc="upper left",
+        bbox_to_anchor=(1.02, 0.52),
+        borderaxespad=0.0,
+        title="Role",
+        title_fontsize=8.0,
+    )
     ax.axhline(1.0, color=COLOR_REFERENCE, linewidth=0.7, linestyle=(0, (4, 3)), zorder=1)
     ax.set_xscale("log")
     ax.set_xlabel(r"Median total fit/search time (s, log scale)")
