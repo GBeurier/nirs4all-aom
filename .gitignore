@@ -61,3 +61,6 @@ benchmarks/runs/local/
 # Pre-paper workspace cache (1.3 GB, kept on disk for inspection — not in git)
 _archive/pre_paper_drafts/workspace/
 benchmarks/data
+
+# local code-intelligence index
+.codegraph/
