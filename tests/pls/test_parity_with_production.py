@@ -31,10 +31,12 @@ small-n vs large-n, low-noise vs noisy, derivative-friendly vs scatter-friendly.
 
 from __future__ import annotations
 
+import inspect
+from pathlib import Path
+
 import numpy as np
 import pandas as pd
 import pytest
-from pathlib import Path
 
 PARITY_DATASETS = [
     ("BEER/Beer_OriginalExtract_60_KS", 1, 0.2042),
@@ -115,7 +117,10 @@ def test_aom_v0_default_bank_size_matches_production():
     except ImportError:
         pytest.skip("nirs4all not installed")
     bank_mine = default_bank(p=576)
-    bank_prod = default_operator_bank()
+    if "p" in inspect.signature(default_operator_bank).parameters:
+        bank_prod = default_operator_bank(p=576)
+    else:
+        bank_prod = default_operator_bank()
     assert len(bank_mine) == len(bank_prod), (
         f"bank size mismatch: mine={len(bank_mine)} prod={len(bank_prod)}"
     )

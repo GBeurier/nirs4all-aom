@@ -24,22 +24,42 @@ pip install "nirs4all-aom[bench]"        # benchmark runners and reporting tools
 ## Quick start
 
 ```python
-from sklearn.cross_decomposition import PLSRegression
 from sklearn.model_selection import KFold
 from aom_nirs.pls import AOMPLSRegressor
 from aom_nirs.ridge import AOMRidgeRegressor, AOMRidgeBlender
 
+inner_cv = KFold(n_splits=5, shuffle=True, random_state=0)
+outer_cv = KFold(n_splits=5, shuffle=True, random_state=1)
+
 # AOM-PLS, paper "simple" preset
-aom_pls = AOMPLSRegressor(bank="compact", criterion="cv", cv=5)
+aom_pls = AOMPLSRegressor(
+    operator_bank="compact",
+    criterion="cv",
+    cv=inner_cv.get_n_splits(),
+    cv_splitter=inner_cv,
+)
 aom_pls.fit(X_train, y_train)
 y_pred = aom_pls.predict(X_test)
 
-# AOM-Ridge, paper "best" preset
-aom_ridge = AOMRidgeBlender()        # convex non-negative blend of Ridge candidates
+# AOM-Ridge, fast single-estimator preset
+aom_ridge = AOMRidgeRegressor(
+    selection="global",
+    operator_bank="compact",
+    cv=inner_cv,
+)
 aom_ridge.fit(X_train, y_train)
+
+# AOM-Ridge, paper "best" preset
+aom_blender = AOMRidgeBlender(
+    outer_cv=outer_cv,
+    inner_cv=inner_cv,
+)  # convex non-negative blend of Ridge candidates
+aom_blender.fit(X_train, y_train)
 ```
 
 A full reproduction of one smoke dataset for AOM-PLS, AOM-Ridge, and FastAOM is in `examples/paper_smoke.py`.
+For a user-facing split-aware tour of the full AOM family, run `examples/04_aom_panoply.py`.
+See `docs/aom_panoply.md` for the standalone AOM splitter guide.
 
 ## Relationship to other repos
 
@@ -65,6 +85,6 @@ and [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).
   title  = {nirs4all-aom: Adaptive Operator-Mixture PLS and Ridge for NIR spectroscopy},
   year   = {2026},
   url    = {https://github.com/GBeurier/nirs4all-aom},
-  version = {0.1.0}
+  version = {0.10.1}
 }
 ```

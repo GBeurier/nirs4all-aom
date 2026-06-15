@@ -31,7 +31,7 @@ pip install -e .[dev]      # pytest, pytest-cov, ruff, mypy
 Expected output prefix:
 
 ```
-Successfully installed nirs4all-aom-0.1.0 ...
+Successfully installed nirs4all-aom-0.10.1 ...
 ```
 
 ## Section 1. Validate the install

@@ -39,4 +39,24 @@ try:  # pragma: no cover - import-time guard
 except ImportError:  # pragma: no cover
     pass
 
-__version__ = "0.1.0"
+__version__ = "0.10.1"
+
+__all__ = [
+    "AOMPLSDAClassifier",
+    "AOMPLSRegressor",
+    "ComposedOperator",
+    "DetrendProjectionOperator",
+    "ExplicitMatrixOperator",
+    "FiniteDifferenceOperator",
+    "IdentityOperator",
+    "LinearSpectralOperator",
+    "NorrisWilliamsOperator",
+    "POPPLSDAClassifier",
+    "POPPLSRegressor",
+    "SavitzkyGolayOperator",
+    "WhittakerOperator",
+    "bank_by_name",
+    "compact_bank",
+    "default_bank",
+    "extended_bank",
+]
