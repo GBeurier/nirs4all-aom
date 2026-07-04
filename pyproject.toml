@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "nirs4all-aom"
-version = "0.10.2"
+version = "0.10.3"
 description = "Adaptive Operator-Mixture PLS and Ridge for near-infrared spectroscopy: companion code for the paper."
 readme = "README.md"
 license = { text = "CeCILL-2.1 OR AGPL-3.0-or-later" }
