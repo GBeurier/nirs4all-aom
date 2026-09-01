@@ -3,9 +3,9 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Inspect a nirs4all dataset and compare cross-validated raw PLS with AOM-PLS entirely in WebAssembly.">
+  <meta name="description" content="Load NIR calibration data and compare PLS and Ridge defaults, preprocessing HPO and AOM entirely in WebAssembly.">
   <meta name="theme-color" content="#0d9488">
-  <title>AOM-PLS · interactive paper companion</title>
+  <title>AOM · interactive paper companion</title>
   <link rel="icon" href="assets/nirs4all-ui/brands/nirs4all-formats/icon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="assets/nirs4all-ui/styles/nirs4all-default.css">
   <link rel="stylesheet" href="assets/nirs4all-ui/viz.css">
@@ -39,7 +39,7 @@
       <span id="activity-progress-bar" style="width: 5%"></span>
     </div>
     <ol class="activity-phases" aria-label="Experiment stages">
-      <li data-phase="data">1 · Data</li><li data-phase="baseline">2 · Raw PLS</li><li data-phase="aom">3 · AOM-PLS</li><li data-phase="results">4 · Results</li>
+      <li data-phase="data">1 · Data</li><li data-phase="pls">2 · PLS</li><li data-phase="aom-pls">3 · AOM-PLS</li><li data-phase="ridge">4 · Ridge</li><li data-phase="aom-ridge">5 · AOM-Ridge</li><li data-phase="results">6 · Results</li>
     </ol>
     <a id="activity-action" href="#results" hidden>View results ↓</a>
   </section>
@@ -47,9 +47,9 @@
   <main>
     <section class="hero" aria-labelledby="page-title">
       <div>
-        <p class="kicker">AOM-PLS browser demonstration</p>
-        <h1 id="page-title">Interactive comparison of raw PLS and AOM-PLS</h1>
-        <p class="hero-copy">Bring separate calibration and validation <code>X</code>/<code>y</code> files, inspect them, then run both methods on the same split. The page reports the only modelling difference: AOM-PLS screens a linear spectral operator before fitting PLS. A documented example is available when you do not have files at hand.</p>
+        <p class="kicker">AOM paper companion</p>
+        <h1 id="page-title">Compare PLS and Ridge calibration strategies on your spectra</h1>
+        <p class="hero-copy">Bring separate calibration and validation <code>X</code>/<code>y</code> files, inspect them, then compare three routes for both model families: a raw-spectrum reference, conventional preprocessing HPO and AOM. A documented example is available when you do not have files at hand.</p>
         <div class="hero-actions">
           <a class="n4-button" href="#upload-card">Load my data</a>
           <a class="text-action" href="#bundled-datasets">Try an example</a>
@@ -60,8 +60,8 @@
         <p class="overline">How to use this page</p>
         <ol class="workflow-overview">
           <li><span>1</span><div><strong>Load your data</strong><small>Provide separate X/y files for calibration and validation, then inspect them.</small></div></li>
-          <li><span>2</span><div><strong>Set the comparison</strong><small>Choose folds, component budget and the AOM operator bank.</small></div></li>
-          <li><span>3</span><div><strong>Run and compare</strong><small>Follow progress, then read metrics and diagnostics on held-out rows.</small></div></li>
+          <li><span>2</span><div><strong>Set the search</strong><small>Choose folds, up to 25 PLS components and the shared operator bank.</small></div></li>
+          <li><span>3</span><div><strong>Run and compare</strong><small>Follow all six fits, then compare PLS and Ridge on held-out rows.</small></div></li>
         </ol>
         <p class="privacy-note">No data are sent to a server.</p>
       </aside>
@@ -137,46 +137,49 @@
 
     <section id="experiment" class="section-block" aria-labelledby="experiment-title">
       <div class="section-heading">
-        <div><span class="section-number">02</span><p class="kicker">Experiment</p><h2 id="experiment-title">Configure and run both approaches</h2></div>
-        <p>The response and held-out rows are identical. Only the calibration route changes. Lower cross-validation and validation RMSE is better.</p>
+        <div><span class="section-number">02</span><p class="kicker">Experiment</p><h2 id="experiment-title">Configure one fair comparison</h2></div>
+        <p>Every route sees the same response, folds and untouched validation rows. PLS-HPO and AOM-PLS share the enabled operator bank; AOM-Ridge uses its documented compact blender.</p>
       </div>
 
       <div class="experiment-layout">
         <aside class="config-card n4-surface">
           <div class="card-head"><div><p class="overline">Configuration</p><h3>Experiment controls</h3></div><span class="n4-badge">Editable</span></div>
           <label class="field">Maximum PLS components
-            <select id="components"><option>2</option><option>3</option><option selected>5</option><option>7</option><option>10</option><option>15</option></select>
-            <small>Both routes may use from 1 up to this budget.</small>
+            <select id="components"><option>5</option><option>10</option><option>15</option><option>20</option><option selected>25</option></select>
+            <small>PLS routes screen every count from 1 to this limit; the effective limit is safely clamped to the data.</small>
           </label>
           <label class="field">Contiguous CV folds
             <select id="folds"><option>3</option><option selected>5</option><option>6</option><option>8</option></select>
             <small>The same deterministic fold assignment is used.</small>
           </label>
           <fieldset>
-            <legend>Strict-linear AOM bank</legend>
+            <legend>Shared strict-linear operator bank</legend>
             <div id="operator-controls" class="operator-controls"></div>
           </fieldset>
-          <button id="run" class="n4-button run-button" type="button" disabled><span>Compare raw PLS and AOM-PLS</span><small>local WebAssembly</small></button>
+          <button id="run" class="n4-button run-button" type="button" disabled><span>Run PLS and Ridge comparison</span><small>six local WebAssembly fits</small></button>
           <p id="run-note" class="form-status" aria-live="polite">Loading the data and WebAssembly engine.</p>
         </aside>
 
         <div class="routes">
-          <article class="route-card baseline n4-surface">
-            <div class="route-label"><span>A</span><div><p>Conventional reference</p><h3>Raw-spectrum PLS</h3></div></div>
-            <div class="route-flow"><span>raw X</span><b>→</b><span>CV selects components</span><b>→</b><span>PLS</span><b>→</b><span>ŷ test</span></div>
-            <p>No spectral operator is applied. Component count is chosen by CV, then PLS is refitted on every calibration row.</p>
-          </article>
-          <div class="versus"><span>versus</span><i></i></div>
-          <article class="route-card adaptive n4-surface">
-            <div class="route-label"><span>B</span><div><p>Proposed method</p><h3>AOM-PLS</h3></div></div>
-            <div class="route-flow"><span>raw X</span><b>→</b><span>CV screens bank + components</span><b>→</b><span>one operator + PLS</span><b>→</b><span>ŷ test</span></div>
-            <p>The winner is folded back to the original feature grid. Deployment predicts directly from raw X; no preprocessing pipeline must be replayed.</p>
-          </article>
-          <div class="comparison-definition n4-surface">
-            <div><strong>Kept identical</strong><span>X, y, calibration rows, validation rows, folds and maximum PLS components</span></div>
-            <div><strong>Changed</strong><span>Raw PLS uses X directly; AOM-PLS selects one operator using calibration CV</span></div>
+          <div class="route-matrix">
+            <article class="route-card baseline n4-surface">
+              <div class="route-label"><span>1</span><div><p>Reference route</p><h3>Raw spectrum</h3></div></div>
+              <p>PLS selects its component count by CV. Ridge selects its regularisation strength by CV. No spectral operator is tested.</p>
+            </article>
+            <article class="route-card hpo n4-surface">
+              <div class="route-label"><span>2</span><div><p>Conventional search</p><h3>Preprocessing HPO</h3></div></div>
+              <p>External CV screens every enabled operator with every PLS component count or Ridge regularisation value, then refits the winning pipeline.</p>
+            </article>
+            <article class="route-card adaptive n4-surface">
+              <div class="route-label"><span>3</span><div><p>Proposed route</p><h3>AOM</h3></div></div>
+              <p>AOM-PLS performs its native operator/component selection. AOM-Ridge fits the compact simplex blender. Both deploy directly on raw spectra.</p>
+            </article>
           </div>
-          <div class="fairness-strip"><strong>Fairness lock</strong><span id="fairness-text">Same calibration rows · same held-out rows · same component budget</span></div>
+          <div class="comparison-definition n4-surface">
+            <div><strong>Two model families</strong><span>PLS screens 1–H components; Ridge screens a logarithmic α grid</span></div>
+            <div><strong>Three calibration routes</strong><span>Raw reference, external preprocessing HPO and native AOM</span></div>
+          </div>
+          <div class="fairness-strip"><strong>Fairness lock</strong><span id="fairness-text">Same calibration rows · same held-out rows · same folds and search bank</span></div>
         </div>
       </div>
     </section>
@@ -184,43 +187,59 @@
     <section id="results" class="section-block" aria-labelledby="results-title">
       <div class="section-heading results-heading">
         <div><span class="section-number">03</span><p class="kicker">Results</p><h2 id="results-title">Held-out comparison</h2></div>
-        <p id="result-summary">Run the comparison to populate the operator audit, performance table and diagnostic plots.</p>
+        <p id="result-summary">Run the comparison to populate six held-out results, selected settings and diagnostic plots.</p>
       </div>
 
       <div class="selection-banner n4-surface">
-        <div><p class="overline">AOM selection</p><strong id="operator">—</strong><small id="operator-detail">The selected operator will appear here.</small></div>
-        <div class="selection-arrow" aria-hidden="true">→</div>
-        <div><p class="overline">Independent validation delta</p><strong id="rmse-delta">—</strong><small id="delta-detail">relative RMSE versus raw PLS</small></div>
+        <div><p class="overline">AOM-PLS selection</p><strong id="operator">—</strong><small id="operator-detail">The selected operator will appear here.</small></div>
+        <div><p class="overline">PLS · AOM vs HPO</p><strong id="rmse-delta">—</strong><small id="delta-detail">held-out RMSE difference</small></div>
+        <div><p class="overline">Ridge · AOM vs HPO</p><strong id="ridge-rmse-delta">—</strong><small id="ridge-delta-detail">held-out RMSE difference</small></div>
       </div>
 
       <div class="results-table-wrap n4-surface">
-        <table class="results-table">
-          <thead><tr><th scope="col">Held-out metric</th><th scope="col"><span class="method-dot baseline"></span>Raw PLS</th><th scope="col"><span class="method-dot adaptive"></span>AOM-PLS</th><th scope="col">AOM difference</th></tr></thead>
+        <table class="results-table method-results">
+          <thead><tr><th scope="col">Family</th><th scope="col">Calibration route</th><th scope="col">Selected setting</th><th scope="col">RMSE ↓</th><th scope="col">MAE ↓</th><th scope="col">R² ↑</th><th scope="col">Local compute time*</th></tr></thead>
           <tbody>
-            <tr><th scope="row">RMSE <small>lower is better</small></th><td id="pls-rmse">—</td><td id="aom-rmse">—</td><td id="rmse-change">—</td></tr>
-            <tr><th scope="row">MAE <small>lower is better</small></th><td id="pls-mae">—</td><td id="aom-mae">—</td><td id="mae-change">—</td></tr>
-            <tr><th scope="row">R² <small>higher is better</small></th><td id="pls-r2">—</td><td id="aom-r2">—</td><td id="r2-change">—</td></tr>
-            <tr><th scope="row">Calibration selection <small>contiguous CV</small></th><td id="pls-cv">—</td><td id="aom-cv">—</td><td id="selection-note">—</td></tr>
-            <tr><th scope="row">Browser fit time <small>indicative wall time</small></th><td id="pls-time">—</td><td id="aom-time">—</td><td id="time-change">—</td></tr>
+            <tr data-family="pls"><th scope="row" rowspan="3">PLS</th><td><span class="method-dot baseline"></span>Raw reference</td><td id="pls-default-selection">—</td><td id="pls-default-rmse">—</td><td id="pls-default-mae">—</td><td id="pls-default-r2">—</td><td id="pls-default-time">—</td></tr>
+            <tr data-family="pls"><td><span class="method-dot hpo"></span>Preprocessing HPO</td><td id="pls-hpo-selection">—</td><td id="pls-hpo-rmse">—</td><td id="pls-hpo-mae">—</td><td id="pls-hpo-r2">—</td><td id="pls-hpo-time">—</td></tr>
+            <tr data-family="pls" class="aom-row"><td><span class="method-dot adaptive"></span>AOM-PLS</td><td id="aom-pls-selection">—</td><td id="aom-pls-rmse">—</td><td id="aom-pls-mae">—</td><td id="aom-pls-r2">—</td><td id="aom-pls-time">—</td></tr>
+            <tr data-family="ridge"><th scope="row" rowspan="3">Ridge</th><td><span class="method-dot baseline"></span>Raw reference</td><td id="ridge-default-selection">—</td><td id="ridge-default-rmse">—</td><td id="ridge-default-mae">—</td><td id="ridge-default-r2">—</td><td id="ridge-default-time">—</td></tr>
+            <tr data-family="ridge"><td><span class="method-dot hpo"></span>Preprocessing HPO</td><td id="ridge-hpo-selection">—</td><td id="ridge-hpo-rmse">—</td><td id="ridge-hpo-mae">—</td><td id="ridge-hpo-r2">—</td><td id="ridge-hpo-time">—</td></tr>
+            <tr data-family="ridge" class="aom-row"><td><span class="method-dot adaptive"></span>AOM-Ridge Blender</td><td id="aom-ridge-selection">—</td><td id="aom-ridge-rmse">—</td><td id="aom-ridge-mae">—</td><td id="aom-ridge-r2">—</td><td id="aom-ridge-time">—</td></tr>
           </tbody>
         </table>
+        <p class="table-note">* Times measure this compact browser run and depend on your device. The paper's runtime comparison is AOM against the much larger preprocessing-HPO protocol—not against the raw reference.</p>
       </div>
 
       <div class="diagnostic-grid">
-        <article class="chart-panel prediction-panel n4-surface">
-          <div class="chart-title"><div><p class="overline">Independent validation</p><h3>Measured vs predicted</h3></div><div class="legend"><span class="legend-key pls"></span>Raw PLS <span class="legend-key aom"></span>AOM-PLS</div></div>
-          <svg id="prediction-chart" class="n4viz" viewBox="0 0 700 420" role="img" aria-label="Measured versus predicted validation responses"></svg>
+        <article class="chart-panel performance-panel n4-surface">
+          <div class="chart-title"><div><p class="overline">Independent validation</p><h3>RMSE by family and calibration route</h3></div><div class="legend"><span class="legend-key baseline"></span>Raw <span class="legend-key hpo"></span>HPO <span class="legend-key aom"></span>AOM</div></div>
+          <svg id="rmse-chart" class="n4viz" viewBox="0 0 1280 420" role="img" aria-label="Validation RMSE for six PLS and Ridge calibration routes"></svg>
         </article>
-        <article class="chart-panel n4-surface">
+        <article class="chart-panel prediction-panel n4-surface">
+          <div class="chart-title"><div><p class="overline">PLS · independent validation</p><h3>Measured vs predicted</h3></div><div class="legend"><span class="legend-key baseline"></span>Raw <span class="legend-key hpo"></span>HPO <span class="legend-key aom"></span>AOM</div></div>
+          <svg id="pls-prediction-chart" class="n4viz" viewBox="0 0 620 420" role="img" aria-label="Measured versus predicted PLS responses"></svg>
+        </article>
+        <article class="chart-panel prediction-panel n4-surface">
+          <div class="chart-title"><div><p class="overline">Ridge · independent validation</p><h3>Measured vs predicted</h3></div><div class="legend"><span class="legend-key baseline"></span>Raw <span class="legend-key hpo"></span>HPO <span class="legend-key aom"></span>AOM</div></div>
+          <svg id="ridge-prediction-chart" class="n4viz" viewBox="0 0 620 420" role="img" aria-label="Measured versus predicted Ridge responses"></svg>
+        </article>
+        <article class="chart-panel operator-panel n4-surface">
           <div class="chart-title"><div><p class="overline">Treatment difference</p><h3 id="operator-preview-title">Raw vs selected operator view</h3></div></div>
           <svg id="operator-chart" class="n4viz" viewBox="0 0 560 420" role="img" aria-label="A representative raw spectrum compared with its AOM-selected transformed view"></svg>
           <p id="operator-explanation" class="chart-footnote">AOM will select one operator from the configured bank.</p>
         </article>
         <article class="chart-panel coefficients-panel n4-surface">
-          <div class="chart-title"><div><p class="overline">Deployable model</p><h3>Coefficients on the original spectral grid</h3></div><div class="legend"><span class="legend-key pls"></span>Raw PLS <span class="legend-key aom"></span>AOM-PLS</div></div>
+          <div class="chart-title"><div><p class="overline">Deployable PLS model</p><h3>Coefficients on the original spectral grid</h3></div><div class="legend"><span class="legend-key baseline"></span>Raw PLS <span class="legend-key aom"></span>AOM-PLS</div></div>
           <svg id="coefficient-chart" class="n4viz" viewBox="0 0 1280 360" role="img" aria-label="Raw PLS and AOM-PLS regression coefficients on the original feature grid"></svg>
           <p class="chart-footnote">Both coefficient vectors align with the input columns. AOM folds its selected linear operator into a single raw-input model.</p>
         </article>
+      </div>
+      <div class="paper-context n4-surface">
+        <div><p class="overline">Paper benchmark · 32 datasets</p><h3>Interpret one local result in the aggregate context</h3></div>
+        <p><strong>AOM-PLS</strong> wins 22/32 comparisons against PLS-default and remains near parity with PLS-HPO (median RMSEP ratio 0.990).</p>
+        <p><strong>AOM-Ridge Blender</strong> wins 25/32 comparisons against Ridge-HPO (median RMSEP ratio 0.966; Holm-adjusted p = 0.033).</p>
+        <p><strong>Runtime claim.</strong> The paper compares the full HPO protocol (median 710.81 s; 3000 trial fits) with the compact AOM search (1.18–1.63 s; 45 search units). This browser fixture is illustrative, not that benchmark.</p>
       </div>
       <div class="guided-next n4-surface">
         <div><span>Next step</span><strong>Keep the comparison reproducible</strong><small>When you have reviewed the held-out metrics and plots, copy the matching Python or R setup for your project.</small></div>
@@ -231,17 +250,17 @@
     <section id="reproduce" class="section-block reproduce" aria-labelledby="reproduce-title">
       <div class="section-heading">
         <div><span class="section-number">04</span><p class="kicker">Scope</p><h2 id="reproduce-title">Reproducibility and limits</h2></div>
-        <p>This companion is deliberately narrower than the paper benchmark. It makes one complete calibration auditable and portable.</p>
+        <p>This companion runs a compact six-route experiment. It makes one complete held-out comparison auditable and portable.</p>
       </div>
       <div class="audit-grid">
         <article class="n4-surface"><span>01</span><h3>Traceable inputs</h3><p>The bundled snapshots point to their exact nirs4all source. Uploaded files are parsed locally and never transmitted.</p></article>
-        <article class="n4-surface"><span>02</span><h3>Comparable models</h3><p>Both routes see the same X, y, folds and validation rows. The displayed metrics come only from the held-out partition.</p></article>
-        <article class="n4-surface"><span>03</span><h3>Native browser fit</h3><p>AOM selection calls the n4m native C ABI compiled to WebAssembly; raw PLS uses the same portable engine.</p></article>
+        <article class="n4-surface"><span>02</span><h3>Comparable routes</h3><p>All six routes see the same X, y, folds and validation rows. Displayed metrics come only from the held-out partition.</p></article>
+        <article class="n4-surface"><span>03</span><h3>Native browser fit</h3><p>PLS, Ridge and both AOM methods call the n4m native C ABI compiled to WebAssembly.</p></article>
         <article class="n4-surface"><span>04</span><h3>Deployable outcome</h3><p>AOM returns original-grid coefficients and an intercept, so raw spectra can be predicted without replaying preprocessing.</p></article>
       </div>
       <div class="technical-note n4-surface">
         <div><p class="overline">Scope note</p><h3>Illustration, not a benchmark claim</h3></div>
-        <p>The included datasets were generated to exercise nirs4all formats and spectral metadata. Results can favor either route and should not be generalized. See the paper and supplementary material for the multi-dataset evaluation.</p>
+        <p>The included datasets were generated to exercise nirs4all formats and spectral metadata. Any one dataset can favor raw, HPO or AOM. Use the paper and supplementary material—not a selected fixture—for the multi-dataset claims.</p>
       </div>
     </section>
 
@@ -259,16 +278,18 @@
         </div>
 
         <div id="panel-python" class="code-panel" role="tabpanel" aria-labelledby="tab-python">
-          <div class="code-intro"><div><p class="overline">Python package</p><h3>Reproduce the held-out comparison</h3></div><p>The sklearn-compatible package selects the AOM operator and component count by calibration CV, then predicts your untouched validation rows.</p></div>
+          <div class="code-intro"><div><p class="overline">Python package</p><h3>Run PLS and Ridge from your script</h3></div><p>The sklearn-compatible package exposes AOM-PLS and AOM-Ridge Blender. The complete preprocessing-HPO protocol used by the paper remains available in the GitHub benchmark code.</p></div>
           <div class="install-row"><code id="python-install">python -m pip install nirs4all-aom pandas scikit-learn</code><button class="copy-button" type="button" data-copy-target="python-install">Copy install</button></div>
           <div class="code-frame">
             <div class="code-frame-head"><span>compare_aom.py</span><button class="copy-button" type="button" data-copy-target="python-code">Copy code</button></div>
             <pre><code id="python-code">import numpy as np
 import pandas as pd
 from sklearn.cross_decomposition import PLSRegression
+from sklearn.linear_model import Ridge
 from sklearn.metrics import mean_squared_error
 from sklearn.model_selection import GridSearchCV, KFold
 from aom_nirs.pls import AOMPLSRegressor
+from aom_nirs.ridge import AOMRidgeBlender
 
 def read_x(path):
     return pd.read_csv(path, sep=None, engine="python").to_numpy(float)
@@ -279,7 +300,8 @@ def read_y(path):
 Xcal, ycal = read_x("Xcal.csv"), read_y("Ycal.csv")
 Xval, yval = read_x("Xval.csv"), read_y("Yval.csv")
 cv = KFold(n_splits=5, shuffle=False)
-budget = range(1, min(15, Xcal.shape[1], len(Xcal) - 1) + 1)
+budget = range(1, min(25, Xcal.shape[1], len(Xcal) - 1) + 1)
+alpha_grid = [1e-8, 1e-6, 1e-4, 1e-2, 1, 1e2, 1e4]
 
 raw = GridSearchCV(
     PLSRegression(scale=False), {"n_components": budget},
@@ -292,13 +314,28 @@ aom = AOMPLSRegressor(
     cv_splitter=cv, random_state=0
 ).fit(Xcal, ycal)
 
-for name, model in {"Raw PLS": raw, "AOM-PLS": aom}.items():
+raw_ridge = GridSearchCV(
+    Ridge(), {"alpha": alpha_grid}, cv=cv,
+    scoring="neg_root_mean_squared_error"
+).fit(Xcal, ycal)
+
+aom_ridge = AOMRidgeBlender(
+    outer_cv=5, inner_cv=5, outer_cv_kind="kfold",
+    regularizer=0.01, random_state=0, n_jobs=-1
+).fit(Xcal, ycal)
+
+models = {
+    "Raw PLS": raw, "AOM-PLS": aom,
+    "Raw Ridge": raw_ridge, "AOM-Ridge": aom_ridge,
+}
+for name, model in models.items():
     pred = np.asarray(model.predict(Xval)).ravel()
     rmsep = np.sqrt(mean_squared_error(yval, pred))
-    print(f"{name:8s} RMSEP = {rmsep:.4g}")
+    print(f"{name:10s} RMSEP = {rmsep:.4g}")
 
 print("AOM operator:", aom.selected_operators_)
-print("AOM components:", aom.n_components_)</code></pre>
+print("AOM components:", aom.n_components_)
+print("AOM-Ridge weights:", aom_ridge.weights_)</code></pre>
           </div>
           <p class="code-note">If your files do not contain a header row, add <code>header=None</code> to each <code>read_csv</code> call.</p>
         </div>
@@ -318,7 +355,7 @@ ycal &lt;- read_y("Ycal.csv")
 
 aom &lt;- aom_pls(
   Xcal, ycal,
-  max_components = 15L,
+	  max_components = 25L,
   n_operators = 9L,
   cv = 5L
 )
@@ -346,7 +383,7 @@ plot(aom$rmse_curves, type = "l", xlab = "Candidate", ylab = "CV RMSE")</code></
   </main>
 
   <footer>
-    <div><img src="assets/nirs4all-ui/brands/nirs4all-methods/horizontal.svg" alt="nirs4all-methods"><p>AOM-PLS browser companion</p></div>
+    <div><img src="assets/nirs4all-ui/brands/nirs4all-methods/horizontal.svg" alt="nirs4all-methods"><p>AOM browser companion · PLS and Ridge</p></div>
     <div class="footer-links"><a href="https://pypi.org/project/nirs4all-aom/">Python · PyPI</a><a href="https://github.com/GBeurier/nirs4all-methods">Portable engine · GitHub</a><a href="https://github.com/GBeurier/nirs4all-aom">Demo source · GitHub</a></div>
     <p class="license-note">No analytics · no data upload · open source under the repository license.</p>
   </footer>

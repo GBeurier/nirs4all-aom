@@ -1,6 +1,8 @@
 import {
   abiVersion,
   fitAom,
+  fitAomRidge,
+  fitModel,
   fitPls,
   loadModule,
   predictModel,
@@ -12,6 +14,7 @@ const COLORS = {
   train: "#0d9488",
   test: "#4f46e5",
   baseline: "#e76f51",
+  hpo: "#4f46e5",
   adaptive: "#0d9488",
   grid: "#e2e8f0",
   muted: "#64748b",
@@ -34,7 +37,8 @@ let runtimeReady = false;
 let comparisonSerial = 0;
 let loadingDatasetId = null;
 
-const PHASES = ["data", "baseline", "aom", "results"];
+const PHASES = ["data", "pls", "aom-pls", "ridge", "aom-ridge", "results"];
+const RIDGE_ALPHAS = [1e-8, 1e-6, 1e-4, 1e-2, 1, 1e2, 1e4];
 
 function setActivity({ state, progress, title, detail, phase = null }) {
   const container = byId("activity");
@@ -451,16 +455,28 @@ function plotPlaceholder(id, message, viewBox = [0, 0, 700, 420]) {
 }
 
 function resetResults() {
-  ["pls-rmse", "aom-rmse", "pls-mae", "aom-mae", "pls-r2", "aom-r2", "pls-cv", "aom-cv", "pls-time", "aom-time", "rmse-change", "mae-change", "r2-change", "selection-note", "time-change"].forEach((id) => { byId(id).textContent = "—"; });
+  [
+    "pls-default-selection", "pls-default-rmse", "pls-default-mae", "pls-default-r2", "pls-default-time",
+    "pls-hpo-selection", "pls-hpo-rmse", "pls-hpo-mae", "pls-hpo-r2", "pls-hpo-time",
+    "aom-pls-selection", "aom-pls-rmse", "aom-pls-mae", "aom-pls-r2", "aom-pls-time",
+    "ridge-default-selection", "ridge-default-rmse", "ridge-default-mae", "ridge-default-r2", "ridge-default-time",
+    "ridge-hpo-selection", "ridge-hpo-rmse", "ridge-hpo-mae", "ridge-hpo-r2", "ridge-hpo-time",
+    "aom-ridge-selection", "aom-ridge-rmse", "aom-ridge-mae", "aom-ridge-r2", "aom-ridge-time",
+  ].forEach((id) => { byId(id).textContent = "—"; });
   byId("operator").textContent = "—";
   byId("operator-detail").textContent = "The selected operator will appear here.";
   byId("rmse-delta").textContent = "—";
   byId("rmse-delta").className = "";
-  byId("delta-detail").textContent = "relative RMSE versus raw PLS";
-  byId("result-summary").textContent = "Run the comparison to populate the operator audit, performance table and diagnostic plots.";
+  byId("delta-detail").textContent = "held-out RMSE difference";
+  byId("ridge-rmse-delta").textContent = "—";
+  byId("ridge-rmse-delta").className = "";
+  byId("ridge-delta-detail").textContent = "held-out RMSE difference";
+  byId("result-summary").textContent = "Run the comparison to populate six held-out results, selected settings and diagnostic plots.";
   byId("operator-preview-title").textContent = "Raw vs selected operator view";
   byId("operator-explanation").textContent = "AOM will select one operator from the configured bank.";
-  plotPlaceholder("prediction-chart", "Awaiting a fitted comparison");
+  plotPlaceholder("rmse-chart", "Awaiting six fitted routes", [0, 0, 1280, 420]);
+  plotPlaceholder("pls-prediction-chart", "Awaiting the PLS comparison", [0, 0, 620, 420]);
+  plotPlaceholder("ridge-prediction-chart", "Awaiting the Ridge comparison", [0, 0, 620, 420]);
   plotPlaceholder("operator-chart", "Awaiting AOM operator selection", [0, 0, 560, 420]);
   plotPlaceholder("coefficient-chart", "Awaiting deployable coefficients", [0, 0, 1280, 360]);
 }
@@ -561,13 +577,13 @@ async function loadBundledDataset(id, runAfterLoad = false, announceReady = true
     setDatasetUi(currentData);
     loadingDatasetId = null;
     renderDatasetOptions();
-    byId("run-note").textContent = `${dataset.label} is ready. Review the settings, then compare both approaches.`;
+    byId("run-note").textContent = `${dataset.label} is ready. Review the settings, then run all six routes.`;
     byId("run-note").className = "form-status success";
     if (announceReady) {
       setActivity({
-        state: "ready", progress: 25, phase: "baseline",
+        state: "ready", progress: 25, phase: "pls",
         title: "Dataset ready",
-        detail: `${dataset.label}: ${trainX.rows} calibration rows, ${testX.rows} validation rows and ${trainX.cols} features. Click Compare to run both methods.`,
+        detail: `${dataset.label}: ${trainX.rows} calibration rows, ${testX.rows} validation rows and ${trainX.cols} features. Run the PLS and Ridge comparison when ready.`,
       });
     }
     if (runAfterLoad && runtimeReady) await runComparison();
@@ -609,7 +625,7 @@ function renderOperatorControls() {
         input.checked = true;
         byId("run-note").textContent = "Keep at least one operator in the AOM bank.";
         byId("run-note").className = "form-status error";
-        setActivity({ state: "error", progress: 25, phase: "aom", title: "AOM bank cannot be empty", detail: "Keep at least one spectral operator selected." });
+        setActivity({ state: "error", progress: 25, phase: "aom-pls", title: "Operator bank cannot be empty", detail: "Keep at least one spectral operator selected." });
       } else {
         markResultsStale();
       }
@@ -623,9 +639,9 @@ function markResultsStale() {
   byId("run-note").textContent = "Configuration changed. Run again to refresh the held-out comparison.";
   byId("run-note").className = "form-status";
   setActivity({
-    state: "ready", progress: 25, phase: "baseline",
+    state: "ready", progress: 25, phase: "pls",
     title: "Configuration ready",
-    detail: "Settings changed. Click Compare raw PLS and AOM-PLS to calculate new results.",
+    detail: "Settings changed. Run the PLS and Ridge comparison to calculate new results.",
   });
 }
 
@@ -671,6 +687,7 @@ async function fitCrossValidatedPls(data, maxComponents, foldCount, onProgress) 
   let completedFits = 0;
   for (let components = 1; components <= maxAllowed; components += 1) {
     const oof = new Float64Array(data.trainRows);
+    let validCandidate = true;
     for (const heldRows of folds) {
       const held = new Set(heldRows);
       const fitRows = allRows.filter((row) => !held.has(row));
@@ -678,16 +695,23 @@ async function fitCrossValidatedPls(data, maxComponents, foldCount, onProgress) 
       const yFit = selectRows(data.trainY, fitRows, 1);
       const xHeld = selectRows(data.trainX.data, heldRows, data.cols);
       const fitStarted = performance.now();
-      const model = fitPls(matrix(xFit, fitRows.length, data.cols), matrix(yFit, fitRows.length, 1), components);
-      const predictions = predictPls(model, matrix(xHeld, heldRows.length, data.cols)).data;
-      elapsed += performance.now() - fitStarted;
-      heldRows.forEach((row, index) => { oof[row] = predictions[index]; });
+      try {
+        const model = fitPls(matrix(xFit, fitRows.length, data.cols), matrix(yFit, fitRows.length, 1), components);
+        const predictions = predictPls(model, matrix(xHeld, heldRows.length, data.cols)).data;
+        elapsed += performance.now() - fitStarted;
+        heldRows.forEach((row, index) => { oof[row] = predictions[index]; });
+      } catch (error) {
+        elapsed += performance.now() - fitStarted;
+        validCandidate = false;
+      }
       completedFits += 1;
       onProgress?.(completedFits / totalFits, components, maxAllowed);
+      if (!validCandidate) break;
     }
-    candidates.push({ components, rmse: metrics(data.trainY, oof).rmse });
+    if (validCandidate) candidates.push({ components, rmse: metrics(data.trainY, oof).rmse });
     await yieldToBrowser();
   }
+  if (candidates.length === 0) throw new Error("No numerically stable PLS component count was found.");
   candidates.sort((left, right) => left.rmse - right.rmse || left.components - right.components);
   const selected = candidates[0];
   const finalFitStarted = performance.now();
@@ -696,7 +720,124 @@ async function fitCrossValidatedPls(data, maxComponents, foldCount, onProgress) 
   onProgress?.(completedFits / totalFits, selected.components, maxAllowed);
   const predictions = predictPls(model, matrix(data.testX.data, data.testRows, data.cols)).data;
   elapsed += performance.now() - finalFitStarted;
-  return { model, predictions, components: selected.components, cvRmse: selected.rmse, elapsed, maxAllowed };
+  return { model, predictions, components: selected.components, cvRmse: selected.rmse, elapsed, maxAllowed, candidateFits: completedFits };
+}
+
+function transformedDataset(data, operator) {
+  if (operator.kind === 0) return data;
+  return {
+    ...data,
+    trainX: matrix(operatorView(data.trainX.data, data.trainRows, data.cols, operator.kind), data.trainRows, data.cols),
+    testX: matrix(operatorView(data.testX.data, data.testRows, data.cols, operator.kind), data.testRows, data.cols),
+  };
+}
+
+async function fitPreprocessingHpoPls(data, maxComponents, foldCount, operators, onProgress) {
+  const candidates = [];
+  let elapsed = 0;
+  let candidateFits = 0;
+  for (let operatorIndex = 0; operatorIndex < operators.length; operatorIndex += 1) {
+    const operator = operators[operatorIndex];
+    const transformStarted = performance.now();
+    const transformed = transformedDataset(data, operator);
+    elapsed += performance.now() - transformStarted;
+    try {
+      const result = await fitCrossValidatedPls(transformed, maxComponents, foldCount, (fraction, component, total) => {
+        onProgress?.((operatorIndex + fraction) / operators.length, operator, component, total);
+      });
+      elapsed += result.elapsed;
+      candidateFits += result.candidateFits;
+      candidates.push({ operator, result });
+    } catch (error) {
+      onProgress?.((operatorIndex + 1) / operators.length, operator, maxComponents, maxComponents);
+    }
+  }
+  if (candidates.length === 0) throw new Error("No numerically stable PLS preprocessing route was found.");
+  candidates.sort((left, right) => left.result.cvRmse - right.result.cvRmse
+    || left.result.components - right.result.components
+    || left.operator.kind - right.operator.kind);
+  const selected = candidates[0];
+  return { ...selected.result, operator: selected.operator, elapsed, candidateFits };
+}
+
+async function fitCrossValidatedRidge(data, foldCount, alphas, onProgress) {
+  let elapsed = 0;
+  const folds = contiguousFolds(data.trainRows, foldCount);
+  const allRows = Array.from({ length: data.trainRows }, (_, index) => index);
+  const candidates = [];
+  const totalFits = alphas.length * folds.length + 1;
+  let completedFits = 0;
+  for (let alphaIndex = 0; alphaIndex < alphas.length; alphaIndex += 1) {
+    const alpha = alphas[alphaIndex];
+    const oof = new Float64Array(data.trainRows);
+    let validCandidate = true;
+    for (const heldRows of folds) {
+      const held = new Set(heldRows);
+      const fitRows = allRows.filter((row) => !held.has(row));
+      const xFit = selectRows(data.trainX.data, fitRows, data.cols);
+      const yFit = selectRows(data.trainY, fitRows, 1);
+      const xHeld = selectRows(data.trainX.data, heldRows, data.cols);
+      const fitStarted = performance.now();
+      try {
+        const model = fitModel("Ridge", matrix(xFit, fitRows.length, data.cols), matrix(yFit, fitRows.length, 1), 1, [alpha]);
+        const predictions = predictModel(model, matrix(xHeld, heldRows.length, data.cols)).data;
+        elapsed += performance.now() - fitStarted;
+        heldRows.forEach((row, index) => { oof[row] = predictions[index]; });
+      } catch (error) {
+        elapsed += performance.now() - fitStarted;
+        validCandidate = false;
+      }
+      completedFits += 1;
+      onProgress?.(completedFits / totalFits, alpha, alphaIndex + 1, alphas.length);
+      if (!validCandidate) break;
+    }
+    if (validCandidate) candidates.push({ alpha, rmse: metrics(data.trainY, oof).rmse });
+    await yieldToBrowser();
+  }
+  if (candidates.length === 0) throw new Error("No numerically stable Ridge regularisation value was found.");
+  candidates.sort((left, right) => left.rmse - right.rmse || left.alpha - right.alpha);
+  const selected = candidates[0];
+  const finalFitStarted = performance.now();
+  const model = fitModel(
+    "Ridge",
+    matrix(data.trainX.data, data.trainRows, data.cols),
+    matrix(data.trainY, data.trainRows, 1),
+    1,
+    [selected.alpha],
+  );
+  const predictions = predictModel(model, matrix(data.testX.data, data.testRows, data.cols)).data;
+  elapsed += performance.now() - finalFitStarted;
+  completedFits += 1;
+  onProgress?.(completedFits / totalFits, selected.alpha, alphas.length, alphas.length);
+  return { model, predictions, alpha: selected.alpha, cvRmse: selected.rmse, elapsed, candidateFits: completedFits };
+}
+
+async function fitPreprocessingHpoRidge(data, foldCount, alphas, operators, onProgress) {
+  const candidates = [];
+  let elapsed = 0;
+  let candidateFits = 0;
+  for (let operatorIndex = 0; operatorIndex < operators.length; operatorIndex += 1) {
+    const operator = operators[operatorIndex];
+    const transformStarted = performance.now();
+    const transformed = transformedDataset(data, operator);
+    elapsed += performance.now() - transformStarted;
+    try {
+      const result = await fitCrossValidatedRidge(transformed, foldCount, alphas, (fraction, alpha, alphaIndex, alphaCount) => {
+        onProgress?.((operatorIndex + fraction) / operators.length, operator, alpha, alphaIndex, alphaCount);
+      });
+      elapsed += result.elapsed;
+      candidateFits += result.candidateFits;
+      candidates.push({ operator, result });
+    } catch (error) {
+      onProgress?.((operatorIndex + 1) / operators.length, operator, alphas.at(-1), alphas.length, alphas.length);
+    }
+  }
+  if (candidates.length === 0) throw new Error("No numerically stable Ridge preprocessing route was found.");
+  candidates.sort((left, right) => left.result.cvRmse - right.result.cvRmse
+    || left.result.alpha - right.result.alpha
+    || left.operator.kind - right.operator.kind);
+  const selected = candidates[0];
+  return { ...selected.result, operator: selected.operator, elapsed, candidateFits };
 }
 
 function formatMetric(value) {
@@ -731,19 +872,55 @@ function setDeltaCell(id, delta) {
   cell.className = classForImprovement(delta.improvement);
 }
 
-function drawPredictionChart(actual, aom, pls) {
-  const svg = byId("prediction-chart");
+function drawPredictionChart(id, actual, series) {
+  const svg = byId(id);
   svg.replaceChildren();
-  const width = 700;
+  const width = 620;
   const height = 420;
   const margin = { left: 62, right: 20, top: 22, bottom: 54 };
-  const [min, max] = paddedExtent([...actual, ...aom, ...pls], .08);
+  const [min, max] = paddedExtent([...actual, ...series.flatMap((item) => [...item.predictions])], .08);
   const axis = Float64Array.from({ length: 101 }, (_, index) => min + index * (max - min) / 100);
   const scales = addAxes(svg, { width, height, margin, axis, yMin: min, yMax: max, xLabel: "Measured response", yLabel: "Predicted response", xTicks: 4, yTicks: 4 });
   const xValue = (value) => margin.left + (value - min) / (max - min) * (width - margin.left - margin.right);
   svg.append(svgElement("line", { x1: xValue(min), y1: scales.y(min), x2: xValue(max), y2: scales.y(max), class: "identity-line" }));
-  pls.forEach((value, index) => svg.append(svgElement("circle", { cx: xValue(actual[index]), cy: scales.y(value), r: 5.2, class: "prediction-point pls" })));
-  aom.forEach((value, index) => svg.append(svgElement("circle", { cx: xValue(actual[index]), cy: scales.y(value), r: 4.6, class: "prediction-point aom" })));
+  series.forEach((item, seriesIndex) => {
+    item.predictions.forEach((value, index) => svg.append(svgElement("circle", {
+      cx: xValue(actual[index]), cy: scales.y(value), r: 5.4 - seriesIndex * .45, class: `prediction-point ${item.className}`,
+    })));
+  });
+}
+
+function drawRmseChart(results) {
+  const svg = byId("rmse-chart");
+  svg.replaceChildren();
+  const width = 1280;
+  const height = 420;
+  const margin = { left: 78, right: 30, top: 30, bottom: 76 };
+  const max = Math.max(...results.map((item) => item.rmse)) * 1.16;
+  const plotHeight = height - margin.top - margin.bottom;
+  const y = (value) => margin.top + (max - value) / max * plotHeight;
+  const groupCenters = [width * .31, width * .72];
+  const barWidth = 116;
+  const offsets = [-barWidth - 12, 0, barWidth + 12];
+  for (let tick = 0; tick <= 4; tick += 1) {
+    const value = max * tick / 4;
+    const position = y(value);
+    svg.append(svgElement("line", { x1: margin.left, y1: position, x2: width - margin.right, y2: position, class: "n4viz-grid" }));
+    addText(svg, compactNumber(value), { x: margin.left - 10, y: position + 4, class: "n4viz-tick", "text-anchor": "end" });
+  }
+  const colors = [COLORS.baseline, COLORS.hpo, COLORS.adaptive];
+  results.forEach((item, index) => {
+    const familyIndex = index < 3 ? 0 : 1;
+    const routeIndex = index % 3;
+    const x = groupCenters[familyIndex] + offsets[routeIndex] - barWidth / 2;
+    const top = y(item.rmse);
+    svg.append(svgElement("rect", { x, y: top, width: barWidth, height: height - margin.bottom - top, rx: 7, fill: colors[routeIndex], opacity: routeIndex === 1 ? .84 : .92 }));
+    addText(svg, formatMetric(item.rmse), { x: x + barWidth / 2, y: top - 10, class: "bar-value", "text-anchor": "middle" });
+    addText(svg, ["Raw", "HPO", "AOM"][routeIndex], { x: x + barWidth / 2, y: height - margin.bottom + 22, class: "n4viz-tick", "text-anchor": "middle" });
+  });
+  addText(svg, "PLS", { x: groupCenters[0], y: height - 16, class: "bar-family", "text-anchor": "middle" });
+  addText(svg, "Ridge", { x: groupCenters[1], y: height - 16, class: "bar-family", "text-anchor": "middle" });
+  addText(svg, "Validation RMSE", { x: 18, y: height / 2, class: "n4viz-axis-label", transform: `rotate(-90 18 ${height / 2})`, "text-anchor": "middle" });
 }
 
 function xcorrZeroPad(buffer, rows, cols, kernel) {
@@ -842,6 +1019,53 @@ function drawCoefficientChart(data, plsCoefficients, aomCoefficients) {
   svg.append(svgElement("path", { d: pathFromValues(aomCoefficients, scales.x, scales.y), class: "plot-line coefficient-aom" }));
 }
 
+function formatAlpha(alpha) {
+  if (!Number.isFinite(alpha)) return "n/a";
+  if (alpha >= .01 && alpha < 1000) return alpha.toLocaleString("en-US", { maximumFractionDigits: 4 });
+  return alpha.toExponential(0).replace("e+", "e");
+}
+
+function renderMethodResult(prefix, result, stats, selection) {
+  byId(`${prefix}-selection`).textContent = selection;
+  byId(`${prefix}-rmse`).textContent = formatMetric(stats.rmse);
+  byId(`${prefix}-mae`).textContent = formatMetric(stats.mae);
+  byId(`${prefix}-r2`).textContent = formatMetric(stats.r2);
+  byId(`${prefix}-time`).textContent = `${formatTime(result.elapsed)} · ${result.searchLabel || `${result.candidateFits ?? 1} fit calls`}`;
+}
+
+function setComparisonBanner(valueId, detailId, aomStats, hpoStats, label) {
+  const delta = signedPercent(aomStats.rmse, hpoStats.rmse, true);
+  const value = byId(valueId);
+  value.className = classForImprovement(delta.improvement);
+  value.textContent = Math.abs(delta.raw) < .05
+    ? "no material change"
+    : `${Math.abs(delta.raw).toFixed(1)}% ${delta.raw < 0 ? "lower" : "higher"}`;
+  byId(detailId).textContent = `${label}: AOM ${formatMetric(aomStats.rmse)} vs HPO ${formatMetric(hpoStats.rmse)} RMSE`;
+}
+
+function fitAomPlsWithStableBudget(data, requestedBudget, foldCount, operatorKinds) {
+  const budgets = [...new Set([requestedBudget, 20, 15, 10, 5, 3, 1])]
+    .filter((value) => value <= requestedBudget && value >= 1)
+    .sort((left, right) => right - left);
+  let lastError = null;
+  for (const budget of budgets) {
+    try {
+      const model = fitAom(
+        matrix(data.trainX.data, data.trainRows, data.cols),
+        matrix(data.trainY, data.trainRows, 1),
+        budget,
+        foldCount,
+        0,
+        operatorKinds,
+      );
+      return { model, budget };
+    } catch (error) {
+      lastError = error;
+    }
+  }
+  throw lastError || new Error("AOM-PLS could not find a numerically stable component budget.");
+}
+
 async function runComparison() {
   if (!runtimeReady || !currentData) return;
   const serial = ++comparisonSerial;
@@ -851,12 +1075,12 @@ async function runComparison() {
   setControlsLocked(true);
   button.disabled = true;
   button.querySelector("span").textContent = "Comparison in progress…";
-  byId("run-note").textContent = "Step 1/2: selecting the raw PLS component count by calibration CV.";
+  byId("run-note").textContent = "Step 1/6: selecting the raw PLS component count by calibration CV.";
   byId("run-note").className = "form-status";
   setActivity({
-    state: "running", progress: 26, phase: "baseline",
-    title: "Running raw PLS",
-    detail: "Cross-validating component counts on calibration rows…",
+    state: "running", progress: 26, phase: "pls",
+    title: "PLS · raw reference",
+    detail: "Cross-validating component counts on the raw calibration spectra…",
   });
   await yieldToBrowser();
 
@@ -865,107 +1089,181 @@ async function runComparison() {
     const foldCount = Math.max(2, Math.min(Number(byId("folds").value), currentData.trainRows));
     const minFoldTrain = currentData.trainRows - Math.ceil(currentData.trainRows / foldCount);
     const componentBudget = Math.max(1, Math.min(requestedComponents, currentData.cols, minFoldTrain - 1));
-    const baseline = await fitCrossValidatedPls(currentData, componentBudget, foldCount, (fraction, component, total) => {
+    const rawPls = await fitCrossValidatedPls(currentData, componentBudget, foldCount, (fraction, component, total) => {
       setActivity({
-        state: "running", progress: 26 + fraction * 32, phase: "baseline",
-        title: "Running raw PLS",
+        state: "running", progress: 26 + fraction * 8, phase: "pls",
+        title: "PLS · raw reference",
         detail: `Calibration CV: component ${component}/${total}, ${foldCount} folds.`,
       });
     });
 
-    byId("run-note").textContent = `Step 2/2: AOM-PLS is screening ${operators.length} operators with the same ${foldCount} folds.`;
+    byId("run-note").textContent = `Step 2/6: conventional PLS HPO is screening ${operators.length} operators × ${componentBudget} component counts.`;
     setActivity({
-      state: "running", progress: 62, phase: "aom",
-      title: "Running AOM-PLS",
-      detail: `Screening ${operators.length} operators and up to ${componentBudget} components on calibration rows…`,
+      state: "running", progress: 34, phase: "pls",
+      title: "PLS · preprocessing HPO",
+      detail: `External CV grid: ${operators.length} operators × ${componentBudget} component counts…`,
     });
     await yieldToBrowser();
-    const aomStarted = performance.now();
-    const aomModel = fitAom(
-      matrix(currentData.trainX.data, currentData.trainRows, currentData.cols),
-      matrix(currentData.trainY, currentData.trainRows, 1),
+    const hpoPls = await fitPreprocessingHpoPls(currentData, componentBudget, foldCount, operators, (fraction, operator, component, total) => {
+      setActivity({
+        state: "running", progress: 34 + fraction * 18, phase: "pls",
+        title: "PLS · preprocessing HPO",
+        detail: `${operator.name}: component ${component}/${total}, ${foldCount} folds.`,
+      });
+    });
+
+    byId("run-note").textContent = `Step 3/6: native AOM-PLS is screening the same ${operators.length}-operator bank up to ${componentBudget} components.`;
+    setActivity({
+      state: "running", progress: 52, phase: "aom-pls",
+      title: "Running AOM-PLS",
+      detail: `Native operator/component selection on the calibration rows…`,
+    });
+    await yieldToBrowser();
+    const aomPlsStarted = performance.now();
+    const aomPlsFit = fitAomPlsWithStableBudget(
+      currentData,
       componentBudget,
       foldCount,
-      0,
       operators.map((operator) => operator.kind),
     );
-    const aomPredictions = predictModel(aomModel, matrix(currentData.testX.data, currentData.testRows, currentData.cols)).data;
-    const aomElapsed = performance.now() - aomStarted;
+    const aomPlsModel = aomPlsFit.model;
+    const aomPlsPredictions = predictModel(aomPlsModel, matrix(currentData.testX.data, currentData.testRows, currentData.cols)).data;
+    const aomPls = {
+      model: aomPlsModel,
+      predictions: aomPlsPredictions,
+      elapsed: performance.now() - aomPlsStarted,
+      candidateFits: operators.length * aomPlsFit.budget * foldCount + 1,
+      searchLabel: `${operators.length} ops × H≤${aomPlsFit.budget}`,
+    };
+
+    byId("run-note").textContent = `Step 4/6: selecting Ridge α on raw spectra, then screening preprocessing + α.`;
+    setActivity({
+      state: "running", progress: 63, phase: "ridge",
+      title: "Ridge · raw reference",
+      detail: `Cross-validating ${RIDGE_ALPHAS.length} logarithmic regularisation values…`,
+    });
+    await yieldToBrowser();
+    const rawRidge = await fitCrossValidatedRidge(currentData, foldCount, RIDGE_ALPHAS, (fraction, alpha) => {
+      setActivity({
+        state: "running", progress: 63 + fraction * 5, phase: "ridge",
+        title: "Ridge · raw reference",
+        detail: `Calibration CV: α ${formatAlpha(alpha)}, ${foldCount} folds.`,
+      });
+    });
+
+    byId("run-note").textContent = `Step 5/6: conventional Ridge HPO is screening ${operators.length} operators × ${RIDGE_ALPHAS.length} α values.`;
+    const hpoRidge = await fitPreprocessingHpoRidge(currentData, foldCount, RIDGE_ALPHAS, operators, (fraction, operator, alpha) => {
+      setActivity({
+        state: "running", progress: 68 + fraction * 16, phase: "ridge",
+        title: "Ridge · preprocessing HPO",
+        detail: `${operator.name}: α ${formatAlpha(alpha)}, ${foldCount} folds.`,
+      });
+    });
+
+    byId("run-note").textContent = "Step 6/6: fitting the native compact AOM-Ridge simplex blender.";
+    setActivity({
+      state: "running", progress: 85, phase: "aom-ridge",
+      title: "Running AOM-Ridge Blender",
+      detail: `Blending compact operator-chain × Ridge-α candidates with ${foldCount}-fold calibration CV…`,
+    });
+    await yieldToBrowser();
+    const aomRidgeStarted = performance.now();
+    const aomRidgeModel = fitAomRidge(
+      matrix(currentData.trainX.data, currentData.trainRows, currentData.cols),
+      matrix(currentData.trainY, currentData.trainRows, 1),
+      { profile: 0, cv: foldCount, ridgeLambdas: RIDGE_ALPHAS, regularizer: .01 },
+    );
+    const aomRidge = {
+      model: aomRidgeModel,
+      predictions: predictModel(aomRidgeModel, matrix(currentData.testX.data, currentData.testRows, currentData.cols)).data,
+      elapsed: performance.now() - aomRidgeStarted,
+      candidateFits: 12 * RIDGE_ALPHAS.length * foldCount + 12,
+      searchLabel: `12 chains × ${RIDGE_ALPHAS.length} α`,
+    };
     if (serial !== comparisonSerial) return;
 
     setActivity({
-      state: "running", progress: 88, phase: "results",
+      state: "running", progress: 94, phase: "results",
       title: "Calculating held-out results",
-      detail: `Comparing both prediction vectors on ${currentData.testRows} untouched validation rows…`,
+      detail: `Comparing six prediction vectors on ${currentData.testRows} untouched validation rows…`,
     });
     await yieldToBrowser();
 
-    const plsStats = metrics(currentData.testY, baseline.predictions);
-    const aomStats = metrics(currentData.testY, aomPredictions);
-    const selected = operators[aomModel.selectedOperator] || { name: `Bank entry ${aomModel.selectedOperator}`, short: "custom", detail: "Selected entry in the configured operator bank.", kind: operators[0].kind };
-    const rmseDelta = signedPercent(aomStats.rmse, plsStats.rmse, true);
-    const maeDelta = signedPercent(aomStats.mae, plsStats.mae, true);
-    const r2Delta = { text: `${aomStats.r2 - plsStats.r2 >= 0 ? "+" : ""}${(aomStats.r2 - plsStats.r2).toFixed(3)}`, improvement: aomStats.r2 - plsStats.r2 };
+    const rawPlsStats = metrics(currentData.testY, rawPls.predictions);
+    const hpoPlsStats = metrics(currentData.testY, hpoPls.predictions);
+    const aomPlsStats = metrics(currentData.testY, aomPls.predictions);
+    const rawRidgeStats = metrics(currentData.testY, rawRidge.predictions);
+    const hpoRidgeStats = metrics(currentData.testY, hpoRidge.predictions);
+    const aomRidgeStats = metrics(currentData.testY, aomRidge.predictions);
+    const selected = operators[aomPlsModel.selectedOperator] || { name: `Bank entry ${aomPlsModel.selectedOperator}`, short: "custom", detail: "Selected entry in the configured operator bank.", kind: operators[0].kind };
 
     byId("operator").textContent = selected.name;
-    byId("operator-detail").textContent = `${selected.short} · bank entry ${aomModel.selectedOperator + 1}/${operators.length}`;
-    byId("pls-rmse").textContent = formatMetric(plsStats.rmse);
-    byId("aom-rmse").textContent = formatMetric(aomStats.rmse);
-    byId("pls-mae").textContent = formatMetric(plsStats.mae);
-    byId("aom-mae").textContent = formatMetric(aomStats.mae);
-    byId("pls-r2").textContent = formatMetric(plsStats.r2);
-    byId("aom-r2").textContent = formatMetric(aomStats.r2);
-    byId("pls-cv").textContent = `${formatMetric(baseline.cvRmse)} · ${baseline.components} comp.`;
-    byId("aom-cv").textContent = `${formatMetric(aomModel.score)} · operator + comp.`;
-    byId("selection-note").textContent = `budget 1–${componentBudget}`;
-    byId("pls-time").textContent = formatTime(baseline.elapsed);
-    byId("aom-time").textContent = formatTime(aomElapsed);
-    byId("time-change").textContent = `${(aomElapsed / Math.max(baseline.elapsed, .001)).toFixed(1)}× PLS route`;
-    setDeltaCell("rmse-change", rmseDelta);
-    setDeltaCell("mae-change", maeDelta);
-    setDeltaCell("r2-change", r2Delta);
+    byId("operator-detail").textContent = `${selected.short} · bank entry ${aomPlsModel.selectedOperator + 1}/${operators.length} · CV RMSE ${formatMetric(aomPlsModel.score)}`;
+    renderMethodResult("pls-default", rawPls, rawPlsStats, `${rawPls.components} comp. · CV ${formatMetric(rawPls.cvRmse)}`);
+    renderMethodResult("pls-hpo", hpoPls, hpoPlsStats, `${hpoPls.operator.short} · ${hpoPls.components} comp. · CV ${formatMetric(hpoPls.cvRmse)}`);
+    const aomBudgetNote = aomPlsFit.budget < componentBudget ? ` (stable limit; requested ${componentBudget})` : "";
+    renderMethodResult("aom-pls", aomPls, aomPlsStats, `${selected.short} · H ≤ ${aomPlsFit.budget}${aomBudgetNote} · CV ${formatMetric(aomPlsModel.score)}`);
+    renderMethodResult("ridge-default", rawRidge, rawRidgeStats, `α ${formatAlpha(rawRidge.alpha)} · CV ${formatMetric(rawRidge.cvRmse)}`);
+    renderMethodResult("ridge-hpo", hpoRidge, hpoRidgeStats, `${hpoRidge.operator.short} · α ${formatAlpha(hpoRidge.alpha)} · CV ${formatMetric(hpoRidge.cvRmse)}`);
+    renderMethodResult("aom-ridge", aomRidge, aomRidgeStats, `compact 12-chain blend · ${RIDGE_ALPHAS.length} α`);
 
-    const banner = byId("rmse-delta");
-    banner.className = classForImprovement(rmseDelta.improvement);
-    if (Math.abs(rmseDelta.raw) < .05) {
-      banner.textContent = "no material change";
-    } else {
-      banner.textContent = `${Math.abs(rmseDelta.raw).toFixed(1)}% ${rmseDelta.raw < 0 ? "lower" : "higher"} RMSE`;
-    }
-    byId("delta-detail").textContent = `AOM ${formatMetric(aomStats.rmse)} vs raw PLS ${formatMetric(plsStats.rmse)} on ${currentData.testRows} rows`;
-    byId("result-summary").textContent = `Validation set (${currentData.testRows} rows): raw PLS RMSE ${formatMetric(plsStats.rmse)}; AOM-PLS RMSE ${formatMetric(aomStats.rmse)}. AOM selected ${selected.name.toLowerCase()}.`;
+    setComparisonBanner("rmse-delta", "delta-detail", aomPlsStats, hpoPlsStats, "PLS");
+    setComparisonBanner("ridge-rmse-delta", "ridge-delta-detail", aomRidgeStats, hpoRidgeStats, "Ridge");
+    const namedResults = [
+      { name: "raw PLS", stats: rawPlsStats }, { name: "PLS-HPO", stats: hpoPlsStats }, { name: "AOM-PLS", stats: aomPlsStats },
+      { name: "raw Ridge", stats: rawRidgeStats }, { name: "Ridge-HPO", stats: hpoRidgeStats }, { name: "AOM-Ridge", stats: aomRidgeStats },
+    ];
+    const best = [...namedResults].sort((left, right) => left.stats.rmse - right.stats.rmse)[0];
+    byId("result-summary").textContent = `On these ${currentData.testRows} held-out rows, ${best.name} has the lowest RMSE (${formatMetric(best.stats.rmse)}). This is one local result; the paper-context panel below reports the 32-dataset evidence.`;
     byId("operator-preview-title").textContent = `Raw vs ${selected.name.toLowerCase()}`;
     const edgeNote = selected.kind === 8 || selected.kind === 9 || selected.kind === 15
       ? " Boundary transients are clipped only in this preview; fitting uses the complete transformed matrix."
       : "";
     byId("operator-explanation").textContent = `${selected.detail} The two panels use independent y scales so shape changes remain legible.${edgeNote}`;
-    byId("fairness-text").textContent = `${currentData.trainRows} calibration · ${currentData.testRows} held out · ${foldCount} folds · component budget 1–${componentBudget}`;
+    byId("fairness-text").textContent = `${currentData.trainRows} calibration · ${currentData.testRows} held out · ${foldCount} folds · PLS H 1–${componentBudget} · Ridge ${RIDGE_ALPHAS.length}-α grid`;
 
-    drawPredictionChart(currentData.testY, aomPredictions, baseline.predictions);
+    drawRmseChart([
+      { rmse: rawPlsStats.rmse }, { rmse: hpoPlsStats.rmse }, { rmse: aomPlsStats.rmse },
+      { rmse: rawRidgeStats.rmse }, { rmse: hpoRidgeStats.rmse }, { rmse: aomRidgeStats.rmse },
+    ]);
+    drawPredictionChart("pls-prediction-chart", currentData.testY, [
+      { predictions: rawPls.predictions, className: "baseline" },
+      { predictions: hpoPls.predictions, className: "hpo" },
+      { predictions: aomPls.predictions, className: "aom" },
+    ]);
+    drawPredictionChart("ridge-prediction-chart", currentData.testY, [
+      { predictions: rawRidge.predictions, className: "baseline" },
+      { predictions: hpoRidge.predictions, className: "hpo" },
+      { predictions: aomRidge.predictions, className: "aom" },
+    ]);
     drawOperatorChart(currentData, selected);
-    drawCoefficientChart(currentData, baseline.model.coefficients, aomModel.coefficients);
+    drawCoefficientChart(currentData, rawPls.model.coefficients, aomPlsModel.coefficients);
     byId("run-note").textContent = `Complete: ${currentData.meta.label}; all metrics use the untouched validation partition.`;
     byId("run-note").className = "form-status success";
     setActivity({
       state: "complete", progress: 100, phase: "results",
       title: "Comparison complete",
-      detail: `Raw PLS RMSE ${formatMetric(plsStats.rmse)} · AOM-PLS RMSE ${formatMetric(aomStats.rmse)} · ${selected.name}.`,
+      detail: `Six routes complete · best local RMSE ${formatMetric(best.stats.rmse)} (${best.name}) · ${currentData.testRows} held-out rows.`,
     });
 
     if (new URLSearchParams(location.search).has("selftest")) {
-      document.documentElement.dataset.selftest = parserSelfTest() && Number.isFinite(aomStats.rmse) && byId("prediction-chart").children.length > 10 ? "pass" : "fail";
+      document.documentElement.dataset.selftest = parserSelfTest()
+        && namedResults.every((item) => Number.isFinite(item.stats.rmse))
+        && byId("rmse-chart").children.length > 10
+        && byId("ridge-prediction-chart").children.length > 10 ? "pass" : "fail";
       document.documentElement.dataset.selftestViewport = `${window.innerWidth}/${document.documentElement.scrollWidth}`;
     }
   } catch (error) {
     console.error(error);
-    byId("run-note").textContent = `Fit failed: ${error.message}`;
+    const failedStage = byId("run-note").textContent;
+    byId("run-note").textContent = `Fit failed during “${failedStage}”: ${error.message}`;
     byId("run-note").className = "form-status error";
-    setActivity({ state: "error", progress: 0, phase: "results", title: "Comparison failed", detail: error.message });
+    setActivity({ state: "error", progress: 0, phase: "results", title: "Comparison failed", detail: `${failedStage} ${error.message}` });
     if (new URLSearchParams(location.search).has("selftest")) document.documentElement.dataset.selftest = "fail";
   } finally {
     setControlsLocked(false);
     button.disabled = false;
-    button.querySelector("span").textContent = "Compare raw PLS and AOM-PLS";
+    button.querySelector("span").textContent = "Run PLS and Ridge comparison";
   }
 }
 
@@ -1009,12 +1307,12 @@ async function loadUploadedFiles() {
     setDatasetUi(currentData);
     status.textContent = `Accepted ${trainX.rows} calibration and ${testX.rows} validation rows with ${trainX.cols} shared features. Review the plots, then click Compare.`;
     status.className = "form-status success";
-    byId("run-note").textContent = "Local dataset ready. Review the settings, then compare both approaches.";
+    byId("run-note").textContent = "Local dataset ready. Review the settings, then run all six routes.";
     byId("run-note").className = "form-status success";
     setActivity({
-      state: "ready", progress: 25, phase: "baseline",
+      state: "ready", progress: 25, phase: "pls",
       title: "Local dataset ready",
-      detail: `${trainX.rows} calibration rows, ${testX.rows} validation rows and ${trainX.cols} features. Click Compare to run both methods.`,
+      detail: `${trainX.rows} calibration rows, ${testX.rows} validation rows and ${trainX.cols} features. Run the PLS and Ridge comparison when ready.`,
     });
   } catch (error) {
     console.error(error);
@@ -1070,7 +1368,7 @@ async function initialise() {
     byId("runtime-version").textContent = `n4m ${version()} · ABI ${abi}`;
     byId("runtime-dot").classList.replace("loading", "ready");
     byId("run").disabled = false;
-    setActivity({ state: "ready", progress: 25, phase: "baseline", title: "Ready to compare", detail: `${currentData.meta.label} and the WebAssembly engine are ready. Review the settings, then click Compare.` });
+    setActivity({ state: "ready", progress: 25, phase: "pls", title: "Ready to compare", detail: `${currentData.meta.label} and the WebAssembly engine are ready. Review the settings, then run the PLS and Ridge comparison.` });
   } catch (error) {
     console.error(error);
     byId("runtime-status").textContent = "WASM failed";

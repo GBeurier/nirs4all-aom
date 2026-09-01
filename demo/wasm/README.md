@@ -1,4 +1,4 @@
-# AOM-PLS interactive WebAssembly companion
+# AOM interactive WebAssembly companion
 
 This self-contained static application turns the AOM paper companion into a
 complete, inspectable calibration experiment. In one browser tab it guides a
@@ -8,12 +8,16 @@ chemometrician through the following path:
 - offers three traceable `nirs4all` synthetic format fixtures when no local data are available;
 - visualizes calibration and held-out spectra plus response distributions;
 - keeps the local-file importer visible and reports file-selection/validation errors in place;
-- cross-validates the component count of conventional raw-spectrum PLS;
-- screens a configurable strict-linear AOM operator bank with the same folds and
-  component budget;
-- reports the active dataset, raw-PLS CV, AOM screening, held-out scoring, and
-  completion stages through a persistent progress indicator;
-- compares both routes on the same untouched validation rows; and
+- cross-validates raw PLS from 1 to an effective maximum of 25 components;
+- runs conventional preprocessing HPO over the enabled operator bank and PLS
+  component counts;
+- runs native AOM-PLS over the same enabled bank (with an explicit stable-budget
+  fallback for small or rank-deficient browser datasets);
+- cross-validates raw Ridge over a logarithmic alpha grid, then runs the same
+  preprocessing HPO for Ridge;
+- fits the native compact AOM-Ridge simplex blender;
+- reports all six calibration stages through a persistent progress indicator;
+- compares all six routes on the same untouched validation rows; and
 - displays the selected operator, transformed spectral view, original-grid
   coefficients, metrics, and measured-versus-predicted values; and
 - ends with accessible tabs containing the released PyPI and R-universe install
@@ -37,8 +41,12 @@ selected directly with `?dataset=B02_wavenumber`, `B03_wavelength`, or
 `B04_reflectance`.
 
 The normal page does not launch a fit automatically: it waits for the user to
-inspect the active split and click **Compare raw PLS and AOM-PLS**. Self-test
-mode runs the comparison automatically.
+inspect the active split and click **Run PLS and Ridge comparison**. Self-test
+mode runs all six routes automatically.
+
+The browser times describe only this compact local run and are intentionally
+separated from the paper's runtime claim. In the paper, AOM is compared with the
+full preprocessing-HPO protocol, not with the inexpensive raw reference.
 
 ## Reproducible inputs
 
