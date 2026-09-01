@@ -6,9 +6,12 @@ complete, inspectable calibration experiment. In one browser tab it:
 - loads one of three traceable `nirs4all` synthetic format fixtures;
 - visualizes calibration and held-out spectra plus response distributions;
 - accepts local, separate `Xcal/Ycal/Xval/Yval` (or train/test) CSV/TSV files;
+- keeps the local-file importer visible and reports file-selection/validation errors in place;
 - cross-validates the component count of conventional raw-spectrum PLS;
 - screens a configurable strict-linear AOM operator bank with the same folds and
   component budget;
+- reports the active dataset, raw-PLS CV, AOM screening, held-out scoring, and
+  completion stages through a persistent progress indicator;
 - compares both routes on the same untouched validation rows; and
 - displays the selected operator, transformed spectral view, original-grid
   coefficients, metrics, and measured-versus-predicted values.

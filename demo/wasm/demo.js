@@ -32,6 +32,53 @@ let currentData = null;
 let activeDatasetId = null;
 let runtimeReady = false;
 let comparisonSerial = 0;
+let loadingDatasetId = null;
+
+const PHASES = ["data", "baseline", "aom", "results"];
+
+function setActivity({ state, progress, title, detail, phase = null }) {
+  const container = byId("activity");
+  const boundedProgress = Math.max(0, Math.min(100, Math.round(progress)));
+  container.dataset.state = state;
+  byId("activity-title").textContent = title;
+  byId("activity-detail").textContent = detail;
+  byId("activity-progress-bar").style.width = `${boundedProgress}%`;
+  byId("activity-progress").setAttribute("aria-valuenow", String(boundedProgress));
+  byId("activity-action").hidden = state !== "complete";
+  document.querySelectorAll(".activity-phases li").forEach((item) => {
+    const itemPhase = item.dataset.phase;
+    const itemIndex = PHASES.indexOf(itemPhase);
+    const phaseIndex = PHASES.indexOf(phase);
+    item.classList.toggle("active", state !== "complete" && itemPhase === phase);
+    item.classList.toggle("complete", state === "complete" || (phaseIndex >= 0 && itemIndex < phaseIndex));
+  });
+}
+
+function yieldToBrowser() {
+  return new Promise((resolve) => setTimeout(resolve, 0));
+}
+
+function updateUploadReadiness() {
+  const inputs = ["x-cal-file", "y-cal-file", "x-val-file", "y-val-file"].map((id) => byId(id));
+  const selected = inputs.filter((input) => input.files?.[0]).length;
+  const button = byId("load-upload");
+  button.disabled = selected !== inputs.length;
+  const status = byId("upload-status");
+  status.className = "form-status";
+  status.textContent = selected === inputs.length
+    ? "Four files selected. Validate them to inspect the dataset; nothing will be uploaded."
+    : `${selected}/4 files selected. Add calibration X/y and validation X/y.`;
+}
+
+function setControlsLocked(locked) {
+  document.querySelectorAll(".dataset-option, #components, #folds, #operator-controls input, .upload-card input, .upload-card select")
+    .forEach((control) => { control.disabled = locked; });
+  if (locked) byId("load-upload").disabled = true;
+  else {
+    const uploadInputs = ["x-cal-file", "y-cal-file", "x-val-file", "y-val-file"].map((id) => byId(id));
+    byId("load-upload").disabled = uploadInputs.some((input) => !input.files?.[0]);
+  }
+}
 
 function svgElement(name, attributes = {}) {
   const node = document.createElementNS("http://www.w3.org/2000/svg", name);
@@ -354,6 +401,8 @@ function renderDatasetOptions() {
     button.className = "dataset-option";
     button.setAttribute("role", "radio");
     button.setAttribute("aria-checked", String(dataset.id === activeDatasetId));
+    button.dataset.loading = String(dataset.id === loadingDatasetId);
+    button.setAttribute("aria-busy", String(dataset.id === loadingDatasetId));
     const radio = document.createElement("span");
     radio.className = "radio";
     const copy = document.createElement("span");
@@ -364,9 +413,9 @@ function renderDatasetOptions() {
     copy.append(strong, small);
     const unit = document.createElement("span");
     unit.className = "unit";
-    unit.textContent = axisUnit(dataset.unit);
+    unit.textContent = dataset.id === loadingDatasetId ? "Loading…" : axisUnit(dataset.unit);
     button.append(radio, copy, unit);
-    button.addEventListener("click", () => loadBundledDataset(dataset.id, true));
+    button.addEventListener("click", () => loadBundledDataset(dataset.id));
     container.append(button);
   });
 }
@@ -394,12 +443,18 @@ function setDatasetUi(data) {
   resetResults();
 }
 
-async function loadBundledDataset(id, runAfterLoad = false) {
+async function loadBundledDataset(id, runAfterLoad = false, announceReady = true) {
   const dataset = manifest.datasets.find((item) => item.id === id);
   if (!dataset) throw new Error(`Unknown bundled dataset: ${id}`);
   activeDatasetId = id;
+  loadingDatasetId = id;
   renderDatasetOptions();
   byId("dataset-name").textContent = "Loading dataset…";
+  setActivity({
+    state: "loading", progress: 10, phase: "data",
+    title: "Loading dataset",
+    detail: `Reading ${dataset.label}: Xcal, Ycal, Xval and Yval…`,
+  });
   const base = `datasets/${dataset.id}`;
   try {
     const responses = await Promise.all(["Xcal.csv", "Ycal.csv", "Xval.csv", "Yval.csv"].map((name) => fetch(`${base}/${name}`)));
@@ -427,13 +482,27 @@ async function loadBundledDataset(id, runAfterLoad = false) {
       },
     };
     setDatasetUi(currentData);
+    loadingDatasetId = null;
+    renderDatasetOptions();
+    byId("run-note").textContent = `${dataset.label} is ready. Review the settings, then compare both approaches.`;
+    byId("run-note").className = "form-status success";
+    if (announceReady) {
+      setActivity({
+        state: "ready", progress: 25, phase: "baseline",
+        title: "Dataset ready",
+        detail: `${dataset.label}: ${trainX.rows} calibration rows, ${testX.rows} validation rows and ${trainX.cols} features. Click Compare to run both methods.`,
+      });
+    }
     if (runAfterLoad && runtimeReady) await runComparison();
   } catch (error) {
     console.error(error);
+    loadingDatasetId = null;
+    renderDatasetOptions();
     byId("dataset-name").textContent = "Dataset failed to load";
     byId("dataset-description").textContent = location.protocol === "file:"
       ? "Serve this directory over HTTP; browsers cannot fetch the CSV and WASM files from file://."
       : error.message;
+    setActivity({ state: "error", progress: 10, phase: "data", title: "Dataset could not be loaded", detail: error.message });
   }
 }
 
@@ -463,6 +532,7 @@ function renderOperatorControls() {
         input.checked = true;
         byId("run-note").textContent = "Keep at least one operator in the AOM bank.";
         byId("run-note").className = "form-status error";
+        setActivity({ state: "error", progress: 25, phase: "aom", title: "AOM bank cannot be empty", detail: "Keep at least one spectral operator selected." });
       } else {
         markResultsStale();
       }
@@ -472,8 +542,14 @@ function renderOperatorControls() {
 
 function markResultsStale() {
   if (!currentData) return;
+  resetResults();
   byId("run-note").textContent = "Configuration changed. Run again to refresh the held-out comparison.";
   byId("run-note").className = "form-status";
+  setActivity({
+    state: "ready", progress: 25, phase: "baseline",
+    title: "Configuration ready",
+    detail: "Settings changed. Click Compare raw PLS and AOM-PLS to calculate new results.",
+  });
 }
 
 function selectRows(buffer, rowIndices, cols) {
@@ -508,31 +584,42 @@ function metrics(actual, predicted) {
   };
 }
 
-function fitCrossValidatedPls(data, maxComponents, foldCount) {
-  const started = performance.now();
+async function fitCrossValidatedPls(data, maxComponents, foldCount, onProgress) {
+  let elapsed = 0;
   const folds = contiguousFolds(data.trainRows, foldCount);
   const allRows = Array.from({ length: data.trainRows }, (_, index) => index);
   const maxAllowed = Math.max(1, Math.min(maxComponents, data.cols, ...folds.map((held) => data.trainRows - held.length - 1)));
   const candidates = [];
+  const totalFits = maxAllowed * folds.length + 1;
+  let completedFits = 0;
   for (let components = 1; components <= maxAllowed; components += 1) {
     const oof = new Float64Array(data.trainRows);
-    folds.forEach((heldRows) => {
+    for (const heldRows of folds) {
       const held = new Set(heldRows);
       const fitRows = allRows.filter((row) => !held.has(row));
       const xFit = selectRows(data.trainX.data, fitRows, data.cols);
       const yFit = selectRows(data.trainY, fitRows, 1);
       const xHeld = selectRows(data.trainX.data, heldRows, data.cols);
+      const fitStarted = performance.now();
       const model = fitPls(matrix(xFit, fitRows.length, data.cols), matrix(yFit, fitRows.length, 1), components);
       const predictions = predictPls(model, matrix(xHeld, heldRows.length, data.cols)).data;
+      elapsed += performance.now() - fitStarted;
       heldRows.forEach((row, index) => { oof[row] = predictions[index]; });
-    });
+      completedFits += 1;
+      onProgress?.(completedFits / totalFits, components, maxAllowed);
+    }
     candidates.push({ components, rmse: metrics(data.trainY, oof).rmse });
+    await yieldToBrowser();
   }
   candidates.sort((left, right) => left.rmse - right.rmse || left.components - right.components);
   const selected = candidates[0];
+  const finalFitStarted = performance.now();
   const model = fitPls(matrix(data.trainX.data, data.trainRows, data.cols), matrix(data.trainY, data.trainRows, 1), selected.components);
+  completedFits += 1;
+  onProgress?.(completedFits / totalFits, selected.components, maxAllowed);
   const predictions = predictPls(model, matrix(data.testX.data, data.testRows, data.cols)).data;
-  return { model, predictions, components: selected.components, cvRmse: selected.rmse, elapsed: performance.now() - started, maxAllowed };
+  elapsed += performance.now() - finalFitStarted;
+  return { model, predictions, components: selected.components, cvRmse: selected.rmse, elapsed, maxAllowed };
 }
 
 function formatMetric(value) {
@@ -683,19 +770,39 @@ async function runComparison() {
   const serial = ++comparisonSerial;
   const button = byId("run");
   const operators = selectedOperators();
+  resetResults();
+  setControlsLocked(true);
   button.disabled = true;
-  button.querySelector("span").textContent = "Fitting both routes…";
-  byId("run-note").textContent = "Cross-validating raw PLS, then screening the AOM operator bank…";
+  button.querySelector("span").textContent = "Comparison in progress…";
+  byId("run-note").textContent = "Step 1/2: selecting the raw PLS component count by calibration CV.";
   byId("run-note").className = "form-status";
-  await new Promise((resolve) => requestAnimationFrame(resolve));
+  setActivity({
+    state: "running", progress: 26, phase: "baseline",
+    title: "Running raw PLS",
+    detail: "Cross-validating component counts on calibration rows…",
+  });
+  await yieldToBrowser();
 
   try {
     const requestedComponents = Number(byId("components").value);
     const foldCount = Math.max(2, Math.min(Number(byId("folds").value), currentData.trainRows));
     const minFoldTrain = currentData.trainRows - Math.ceil(currentData.trainRows / foldCount);
     const componentBudget = Math.max(1, Math.min(requestedComponents, currentData.cols, minFoldTrain - 1));
-    const baseline = fitCrossValidatedPls(currentData, componentBudget, foldCount);
+    const baseline = await fitCrossValidatedPls(currentData, componentBudget, foldCount, (fraction, component, total) => {
+      setActivity({
+        state: "running", progress: 26 + fraction * 32, phase: "baseline",
+        title: "Running raw PLS",
+        detail: `Calibration CV: component ${component}/${total}, ${foldCount} folds.`,
+      });
+    });
 
+    byId("run-note").textContent = `Step 2/2: AOM-PLS is screening ${operators.length} operators with the same ${foldCount} folds.`;
+    setActivity({
+      state: "running", progress: 62, phase: "aom",
+      title: "Running AOM-PLS",
+      detail: `Screening ${operators.length} operators and up to ${componentBudget} components on calibration rows…`,
+    });
+    await yieldToBrowser();
     const aomStarted = performance.now();
     const aomModel = fitAom(
       matrix(currentData.trainX.data, currentData.trainRows, currentData.cols),
@@ -708,6 +815,13 @@ async function runComparison() {
     const aomPredictions = predictModel(aomModel, matrix(currentData.testX.data, currentData.testRows, currentData.cols)).data;
     const aomElapsed = performance.now() - aomStarted;
     if (serial !== comparisonSerial) return;
+
+    setActivity({
+      state: "running", progress: 88, phase: "results",
+      title: "Calculating held-out results",
+      detail: `Comparing both prediction vectors on ${currentData.testRows} untouched validation rows…`,
+    });
+    await yieldToBrowser();
 
     const plsStats = metrics(currentData.testY, baseline.predictions);
     const aomStats = metrics(currentData.testY, aomPredictions);
@@ -742,8 +856,7 @@ async function runComparison() {
       banner.textContent = `${Math.abs(rmseDelta.raw).toFixed(1)}% ${rmseDelta.raw < 0 ? "lower" : "higher"} RMSE`;
     }
     byId("delta-detail").textContent = `AOM ${formatMetric(aomStats.rmse)} vs raw PLS ${formatMetric(plsStats.rmse)} on ${currentData.testRows} rows`;
-    const outcome = rmseDelta.raw < -.05 ? "reduced" : rmseDelta.raw > .05 ? "increased" : "left essentially unchanged";
-    byId("result-summary").textContent = `On this fixed validation partition, AOM selected ${selected.name.toLowerCase()} and ${outcome} RMSE relative to cross-validated raw PLS. This is an illustration, not a general performance claim.`;
+    byId("result-summary").textContent = `Validation set (${currentData.testRows} rows): raw PLS RMSE ${formatMetric(plsStats.rmse)}; AOM-PLS RMSE ${formatMetric(aomStats.rmse)}. AOM selected ${selected.name.toLowerCase()}.`;
     byId("operator-preview-title").textContent = `Raw vs ${selected.name.toLowerCase()}`;
     const edgeNote = selected.kind === 8 || selected.kind === 9 || selected.kind === 15
       ? " Boundary transients are clipped only in this preview; fitting uses the complete transformed matrix."
@@ -756,18 +869,26 @@ async function runComparison() {
     drawCoefficientChart(currentData, baseline.model.coefficients, aomModel.coefficients);
     byId("run-note").textContent = `Complete: ${currentData.meta.label}; all metrics use the untouched validation partition.`;
     byId("run-note").className = "form-status success";
+    setActivity({
+      state: "complete", progress: 100, phase: "results",
+      title: "Comparison complete",
+      detail: `Raw PLS RMSE ${formatMetric(plsStats.rmse)} · AOM-PLS RMSE ${formatMetric(aomStats.rmse)} · ${selected.name}.`,
+    });
 
     if (new URLSearchParams(location.search).has("selftest")) {
       document.documentElement.dataset.selftest = parserSelfTest() && Number.isFinite(aomStats.rmse) && byId("prediction-chart").children.length > 10 ? "pass" : "fail";
+      document.documentElement.dataset.selftestViewport = `${window.innerWidth}/${document.documentElement.scrollWidth}`;
     }
   } catch (error) {
     console.error(error);
     byId("run-note").textContent = `Fit failed: ${error.message}`;
     byId("run-note").className = "form-status error";
+    setActivity({ state: "error", progress: 0, phase: "results", title: "Comparison failed", detail: error.message });
     if (new URLSearchParams(location.search).has("selftest")) document.documentElement.dataset.selftest = "fail";
   } finally {
+    setControlsLocked(false);
     button.disabled = false;
-    button.querySelector("span").textContent = "Run fair comparison";
+    button.querySelector("span").textContent = "Compare raw PLS and AOM-PLS";
   }
 }
 
@@ -781,8 +902,11 @@ async function loadUploadedFiles() {
   }
   status.textContent = "Reading and validating locally…";
   status.className = "form-status";
+  setActivity({ state: "loading", progress: 8, phase: "data", title: "Validating local files", detail: "Reading X/y calibration and validation files in this browser…" });
   try {
     const texts = await Promise.all(inputs.map((input) => input.files[0].text()));
+    setActivity({ state: "loading", progress: 15, phase: "data", title: "Parsing local dataset", detail: "Checking delimiters, numeric values, dimensions and feature headers…" });
+    await yieldToBrowser();
     const hasHeader = byId("upload-header").checked;
     const trainX = parseXText(texts[0], { hasHeader });
     const trainY = parseYText(texts[1]);
@@ -806,13 +930,20 @@ async function loadUploadedFiles() {
       },
     };
     setDatasetUi(currentData);
-    status.textContent = `Accepted ${trainX.rows} calibration and ${testX.rows} validation rows with ${trainX.cols} shared features.`;
+    status.textContent = `Accepted ${trainX.rows} calibration and ${testX.rows} validation rows with ${trainX.cols} shared features. Review the plots, then click Compare.`;
     status.className = "form-status success";
-    if (runtimeReady) await runComparison();
+    byId("run-note").textContent = "Local dataset ready. Review the settings, then compare both approaches.";
+    byId("run-note").className = "form-status success";
+    setActivity({
+      state: "ready", progress: 25, phase: "baseline",
+      title: "Local dataset ready",
+      detail: `${trainX.rows} calibration rows, ${testX.rows} validation rows and ${trainX.cols} features. Click Compare to run both methods.`,
+    });
   } catch (error) {
     console.error(error);
     status.textContent = error.message;
     status.className = "form-status error";
+    setActivity({ state: "error", progress: 8, phase: "data", title: "Local dataset rejected", detail: error.message });
   }
 }
 
@@ -833,10 +964,13 @@ function parserSelfTest() {
 async function initialise() {
   renderOperatorControls();
   resetResults();
+  setActivity({ state: "loading", progress: 4, phase: "data", title: "Initialising the demonstration", detail: "Loading the bundled dataset catalogue…" });
   byId("run").addEventListener("click", runComparison);
   byId("load-upload").addEventListener("click", loadUploadedFiles);
   byId("components").addEventListener("change", markResultsStale);
   byId("folds").addEventListener("change", markResultsStale);
+  ["x-cal-file", "y-cal-file", "x-val-file", "y-val-file"].forEach((id) => byId(id).addEventListener("change", updateUploadReadiness));
+  updateUploadReadiness();
 
   const manifestResponse = await fetch("datasets/manifest.json");
   if (!manifestResponse.ok) throw new Error(`Dataset manifest failed to load (${manifestResponse.status}).`);
@@ -846,9 +980,11 @@ async function initialise() {
     ? requestedDataset
     : manifest.datasets[0].id;
   renderDatasetOptions();
-  const datasetPromise = loadBundledDataset(activeDatasetId, false);
+  await loadBundledDataset(activeDatasetId, false, false);
+  if (!currentData) throw new Error("The initial dataset is unavailable.");
 
   try {
+    setActivity({ state: "loading", progress: 20, phase: "data", title: "Loading the numerical engine", detail: "Starting n4m WebAssembly; fitting remains local to this tab…" });
     await loadModule();
     runtimeReady = true;
     const abi = abiVersion().join(".");
@@ -856,6 +992,7 @@ async function initialise() {
     byId("runtime-version").textContent = `n4m ${version()} · ABI ${abi}`;
     byId("runtime-dot").classList.replace("loading", "ready");
     byId("run").disabled = false;
+    setActivity({ state: "ready", progress: 25, phase: "baseline", title: "Ready to compare", detail: `${currentData.meta.label} and the WebAssembly engine are ready. Starting the initial comparison…` });
   } catch (error) {
     console.error(error);
     byId("runtime-status").textContent = "WASM failed";
@@ -865,8 +1002,8 @@ async function initialise() {
       ? "Serve this directory over HTTP; browsers block WASM and CSV fetches from file://."
       : `WebAssembly failed to load: ${error.message}`;
     byId("run-note").className = "form-status error";
+    setActivity({ state: "error", progress: 20, phase: "data", title: "WebAssembly could not start", detail: error.message });
   }
-  await datasetPromise;
   if (runtimeReady && currentData) await runComparison();
 }
 
@@ -877,5 +1014,6 @@ initialise().catch((error) => {
   byId("runtime-status").textContent = "Demo failed";
   byId("runtime-version").textContent = error.message;
   byId("runtime-dot").classList.replace("loading", "error");
+  setActivity({ state: "error", progress: 0, phase: "data", title: "Demonstration could not start", detail: error.message });
   if (new URLSearchParams(location.search).has("selftest")) document.documentElement.dataset.selftest = "fail";
 });

@@ -29,29 +29,45 @@
     </div>
   </header>
 
+  <section id="activity" class="activity-strip" data-state="loading">
+    <div class="activity-status" role="status" aria-live="polite" aria-atomic="true">
+      <span id="activity-dot" class="activity-dot" aria-hidden="true"></span>
+      <div><strong id="activity-title">Initialising the demonstration</strong><small id="activity-detail">Loading the dataset description…</small></div>
+    </div>
+    <div id="activity-progress" class="activity-progress" role="progressbar" aria-label="Experiment progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="5">
+      <span id="activity-progress-bar" style="width: 5%"></span>
+    </div>
+    <ol class="activity-phases" aria-label="Experiment stages">
+      <li data-phase="data">1 · Data</li><li data-phase="baseline">2 · Raw PLS</li><li data-phase="aom">3 · AOM-PLS</li><li data-phase="results">4 · Results</li>
+    </ol>
+    <a id="activity-action" href="#results" hidden>View results ↓</a>
+  </section>
+
   <main>
     <section class="hero" aria-labelledby="page-title">
       <div>
-        <p class="kicker">Interactive paper companion · no server involved</p>
-        <h1 id="page-title">See what AOM changes — from spectra to held-out predictions.</h1>
-        <p class="hero-copy">Choose a documented <code>nirs4all</code> fixture or bring separate <code>X</code> and <code>y</code> files. The page fits two models on exactly the same calibration rows: conventional raw-spectrum PLS and operator-adaptive AOM-PLS.</p>
+        <p class="kicker">AOM-PLS browser demonstration</p>
+        <h1 id="page-title">Interactive comparison of raw PLS and AOM-PLS</h1>
+        <p class="hero-copy">Select a documented <code>nirs4all</code> fixture or load separate <code>X</code> and <code>y</code> files. Both methods use the same calibration rows, folds, component budget and held-out validation set. The page reports the only modelling difference: AOM-PLS screens a linear spectral operator before fitting PLS.</p>
         <div class="hero-actions">
-          <a class="n4-button" href="#data">Start with the data</a>
-          <span>All parsing, fitting and prediction stay in this browser tab.</span>
+          <a class="n4-button" href="#data">Choose a dataset</a>
+          <span>All parsing, fitting and prediction remain in this browser tab.</span>
         </div>
       </div>
-      <aside class="question-card n4-surface" aria-label="Comparison in one sentence">
-        <span class="question-mark">?</span>
-        <p><strong>The question</strong>Does screening a small, auditable bank of linear spectral operators improve prediction over PLS on the untouched spectra?</p>
-        <div class="mini-flow" aria-hidden="true">
-          <span>same X/y</span><b>→</b><span>two routes</span><b>→</b><span>same test</span>
-        </div>
+      <aside class="protocol-card n4-surface" aria-label="How to use the demonstration">
+        <p class="overline">How to use this page</p>
+        <ol class="workflow-overview">
+          <li><span>1</span><div><strong>Select data</strong><small>Inspect X, y and the fixed calibration/validation split.</small></div></li>
+          <li><span>2</span><div><strong>Set the comparison</strong><small>Choose folds, component budget and the AOM operator bank.</small></div></li>
+          <li><span>3</span><div><strong>Run and compare</strong><small>Follow progress, then read metrics and diagnostics on held-out rows.</small></div></li>
+        </ol>
+        <p class="privacy-note">No data are sent to a server.</p>
       </aside>
     </section>
 
     <section id="data" class="section-block" aria-labelledby="data-title">
       <div class="section-heading">
-        <div><span class="section-number">01</span><p class="kicker">Data first</p><h2 id="data-title">Know exactly what enters the models</h2></div>
+        <div><span class="section-number">01</span><p class="kicker">Dataset</p><h2 id="data-title">Select and inspect a dataset</h2></div>
         <p>Bundled examples are small synthetic format fixtures from the public <code>nirs4all</code> repository. They illustrate the workflow; they are not the paper benchmark data.</p>
       </div>
 
@@ -76,11 +92,11 @@
           <p class="provenance"><strong>Provenance.</strong> <span id="dataset-provenance"></span> <a id="dataset-source-link" href="#" target="_blank" rel="noreferrer">Open the exact source snapshot ↗</a></p>
         </article>
 
-        <details class="upload-card n4-surface">
-          <summary>
+        <article class="upload-card n4-surface">
+          <div class="upload-heading">
             <span><span class="overline">Your data</span><strong>Load separate X and y files</strong></span>
-            <span class="summary-action">Open importer</span>
-          </summary>
+            <span class="n4-badge">Local only</span>
+          </div>
           <div class="upload-body">
             <p>Use the standard nirs4all calibration/validation convention. CSV, TSV and TXT are accepted; comma, semicolon, tab and pipe delimiters are detected. X may have a numeric wavelength/wavenumber header; y must contain one numeric response column.</p>
             <div class="upload-grid">
@@ -93,11 +109,11 @@
               <label>Axis unit<select id="upload-unit"><option value="index">Feature index</option><option value="nm">nm</option><option value="cm-1">cm⁻¹</option></select></label>
               <label>Signal type<select id="upload-signal"><option value="absorbance">Absorbance</option><option value="reflectance%">Reflectance %</option><option value="unknown">Other / unknown</option></select></label>
               <label class="header-option"><input id="upload-header" type="checkbox" checked> X first row contains feature headers</label>
-              <button id="load-upload" class="secondary-button" type="button">Validate and use files</button>
+              <button id="load-upload" class="secondary-button" type="button" disabled>Validate and use files</button>
             </div>
-            <p id="upload-status" class="form-status" aria-live="polite">Files never leave your device.</p>
+            <p id="upload-status" class="form-status" aria-live="polite">Select the four files above. Files never leave your device.</p>
           </div>
-        </details>
+        </article>
       </div>
 
       <div class="inspection-grid">
@@ -114,7 +130,7 @@
 
     <section id="experiment" class="section-block" aria-labelledby="experiment-title">
       <div class="section-heading">
-        <div><span class="section-number">02</span><p class="kicker">Controlled comparison</p><h2 id="experiment-title">One split, two modelling routes</h2></div>
+        <div><span class="section-number">02</span><p class="kicker">Experiment</p><h2 id="experiment-title">Configure and run both approaches</h2></div>
         <p>The response and held-out rows are identical. Only the calibration route changes. Lower cross-validation and validation RMSE is better.</p>
       </div>
 
@@ -133,8 +149,8 @@
             <legend>Strict-linear AOM bank</legend>
             <div id="operator-controls" class="operator-controls"></div>
           </fieldset>
-          <button id="run" class="n4-button run-button" type="button" disabled><span>Run fair comparison</span><small>local WebAssembly</small></button>
-          <p id="run-note" class="form-status" aria-live="polite">Waiting for the WebAssembly engine.</p>
+          <button id="run" class="n4-button run-button" type="button" disabled><span>Compare raw PLS and AOM-PLS</span><small>local WebAssembly</small></button>
+          <p id="run-note" class="form-status" aria-live="polite">Loading the data and WebAssembly engine.</p>
         </aside>
 
         <div class="routes">
@@ -149,6 +165,10 @@
             <div class="route-flow"><span>raw X</span><b>→</b><span>CV screens bank + components</span><b>→</b><span>one operator + PLS</span><b>→</b><span>ŷ test</span></div>
             <p>The winner is folded back to the original feature grid. Deployment predicts directly from raw X; no preprocessing pipeline must be replayed.</p>
           </article>
+          <div class="comparison-definition n4-surface">
+            <div><strong>Kept identical</strong><span>X, y, calibration rows, validation rows, folds and maximum PLS components</span></div>
+            <div><strong>Changed</strong><span>Raw PLS uses X directly; AOM-PLS selects one operator using calibration CV</span></div>
+          </div>
           <div class="fairness-strip"><strong>Fairness lock</strong><span id="fairness-text">Same calibration rows · same held-out rows · same component budget</span></div>
         </div>
       </div>
@@ -156,7 +176,7 @@
 
     <section id="results" class="section-block" aria-labelledby="results-title">
       <div class="section-heading results-heading">
-        <div><span class="section-number">03</span><p class="kicker">Held-out evidence</p><h2 id="results-title">Read the difference, not just a score</h2></div>
+        <div><span class="section-number">03</span><p class="kicker">Results</p><h2 id="results-title">Held-out comparison</h2></div>
         <p id="result-summary">Run the comparison to populate the operator audit, performance table and diagnostic plots.</p>
       </div>
 
@@ -199,7 +219,7 @@
 
     <section id="reproduce" class="section-block reproduce" aria-labelledby="reproduce-title">
       <div class="section-heading">
-        <div><span class="section-number">04</span><p class="kicker">Audit and reproduce</p><h2 id="reproduce-title">What this demonstration establishes</h2></div>
+        <div><span class="section-number">04</span><p class="kicker">Scope</p><h2 id="reproduce-title">Reproducibility and limits</h2></div>
         <p>This companion is deliberately narrower than the paper benchmark. It makes one complete calibration auditable and portable.</p>
       </div>
       <div class="audit-grid">
