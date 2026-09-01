@@ -18,14 +18,14 @@
       "sourcePath": "nirs4all/synthesis/generator.py"
     },
     {
-      "id": "powder_scatter",
-      "label": "Scattering powder",
-      "short": "301 wavelengths · lipid",
+      "id": "grain_starch",
+      "label": "Grain starch",
+      "short": "301 wavelengths · starch",
       "unit": "nm",
       "signalType": "absorbance",
-      "target": "lipid percentage",
-      "description": "A more complex powder example combining curved baselines, wavelength shifts, scattering effects and structured spectral noise; lipid percentage is the response.",
-      "provenance": "Deterministic nirs4all SyntheticNIRSGenerator recipe (complex complexity, seed 202); 90 calibration and 30 untouched validation samples.",
+      "target": "starch percentage",
+      "description": "Realistic synthetic grain spectra with recognisable NIR absorption bands, baseline variation, scattering and instrument noise; starch percentage is the response.",
+      "provenance": "Deterministic nirs4all SyntheticNIRSGenerator recipe (realistic complexity, seed 707); 90 calibration and 30 untouched validation samples.",
       "sourcePath": "nirs4all/synthesis/generator.py"
     },
     {

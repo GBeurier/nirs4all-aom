@@ -558,21 +558,31 @@ function resetResults() {
     "ridge-hpo-selection", "ridge-hpo-rmse", "ridge-hpo-mae", "ridge-hpo-r2", "ridge-hpo-time",
     "aom-ridge-selection", "aom-ridge-rmse", "aom-ridge-mae", "aom-ridge-r2", "aom-ridge-time",
   ].forEach((id) => { byId(id).textContent = "—"; });
+  byId("pls-hpo-card").textContent = "—";
+  byId("pls-hpo-card-detail").textContent = "The winning HPO pipeline will appear here.";
   byId("operator").textContent = "—";
-  byId("operator-detail").textContent = "The selected operator will appear here.";
-  byId("rmse-delta").textContent = "—";
+  byId("operator-detail").textContent = "The AOM operator and component count will appear here.";
+  byId("ridge-hpo-card").textContent = "—";
+  byId("ridge-hpo-card-detail").textContent = "The winning HPO pipeline will appear here.";
+  byId("ridge-aom-card").textContent = "12-chain blender";
+  byId("ridge-aom-card-detail").textContent = "AOM-Ridge blends chains; it does not select one treatment.";
+  byId("rmse-delta").textContent = "Awaiting results";
   byId("rmse-delta").className = "";
-  byId("delta-detail").textContent = "held-out RMSE difference";
-  byId("ridge-rmse-delta").textContent = "—";
+  byId("delta-detail").textContent = "Run the experiment to compare HPO and AOM directly.";
+  byId("ridge-rmse-delta").textContent = "Awaiting results";
   byId("ridge-rmse-delta").className = "";
-  byId("ridge-delta-detail").textContent = "held-out RMSE difference";
+  byId("ridge-delta-detail").textContent = "Run the experiment to compare HPO and AOM directly.";
+  byId("hpo-search-summary").textContent = "Available after the experiment";
+  byId("hpo-protocol-detail").textContent = "The selected search depth, folds and repetitions will appear here.";
+  byId("hpo-pls-detail").textContent = "Component grid and winning preprocessing pipeline.";
+  byId("hpo-ridge-detail").textContent = "Alpha grid and winning preprocessing pipeline.";
   byId("result-summary").textContent = "Run the comparison to populate six held-out results, selected settings and diagnostic plots.";
-  byId("operator-preview-title").textContent = "Raw vs selected operator view";
-  byId("operator-explanation").textContent = "AOM will select one operator from the configured bank.";
+  byId("operator-preview-title").textContent = "Raw, HPO and AOM views";
+  byId("operator-explanation").textContent = "Panel B will show the HPO winner; panel C will show the separate AOM-PLS selection.";
   plotPlaceholder("rmse-chart", "Awaiting six fitted routes", [0, 0, 1280, 420]);
   plotPlaceholder("pls-prediction-chart", "Awaiting the PLS comparison", [0, 0, 620, 420]);
   plotPlaceholder("ridge-prediction-chart", "Awaiting the Ridge comparison", [0, 0, 620, 420]);
-  plotPlaceholder("operator-chart", "Awaiting AOM operator selection", [0, 0, 560, 420]);
+  plotPlaceholder("operator-chart", "Awaiting HPO and AOM selections", [0, 0, 560, 550]);
   plotPlaceholder("coefficient-chart", "Awaiting deployable coefficients", [0, 0, 1280, 360]);
 }
 
@@ -1185,23 +1195,36 @@ function drawOperatorPanel(svg, values, data, top, bottom, color, title, trim = 
   return x;
 }
 
-function drawOperatorChart(data, operator) {
+function pipelinePreviewTrim(selectedPipeline) {
+  let trim = 0;
+  for (const step of selectedPipeline.steps) {
+    if (step.op === "SavitzkyGolay") trim = Math.max(trim, Math.floor((step.params[0] || 1) / 2));
+    if (step.op === "Derivative") trim = Math.max(trim, Number(step.params[0]) || 1);
+    if (step.op === "GaussianFilter") trim = Math.max(trim, Math.ceil(3 * (Number(step.params[0]) || 1)));
+  }
+  return trim;
+}
+
+function drawOperatorChart(data, hpoPipeline, aomOperator) {
   const svg = byId("operator-chart");
   svg.replaceChildren();
   const sortedRows = Array.from({ length: data.trainRows }, (_, index) => index)
     .sort((left, right) => data.trainY[left] - data.trainY[right]);
   const representativeRow = sortedRows[Math.floor(sortedRows.length / 2)];
   const rawSpectrum = data.trainX.data.slice(representativeRow * data.cols, (representativeRow + 1) * data.cols);
-  const transformed = operatorView(data.trainX.data, data.trainRows, data.cols, operator.kind);
-  const transformedSpectrum = transformed.slice(representativeRow * data.cols, (representativeRow + 1) * data.cols);
-  const trim = operator.kind === 8 || operator.kind === 9 ? 2 : operator.kind === 15 ? 1 : 0;
-  const x = drawOperatorPanel(svg, rawSpectrum, data, 54, 178, COLORS.baseline, `A · raw representative spectrum (${signalLabel(data.meta.signalType)})`);
-  drawOperatorPanel(svg, transformedSpectrum, data, 244, 368, COLORS.adaptive, `B · ${operator.name} view (independent y scale)`, trim);
+  const hpoTransformed = transformWithPipeline(data.trainX.data, data.trainRows, data.cols, hpoPipeline);
+  const hpoSpectrum = hpoTransformed.slice(representativeRow * data.cols, (representativeRow + 1) * data.cols);
+  const aomTransformed = operatorView(data.trainX.data, data.trainRows, data.cols, aomOperator.kind);
+  const aomSpectrum = aomTransformed.slice(representativeRow * data.cols, (representativeRow + 1) * data.cols);
+  const aomTrim = aomOperator.kind === 8 || aomOperator.kind === 9 ? 2 : aomOperator.kind === 15 ? 1 : 0;
+  const x = drawOperatorPanel(svg, rawSpectrum, data, 50, 145, COLORS.baseline, `A · raw representative spectrum (${signalLabel(data.meta.signalType)})`);
+  drawOperatorPanel(svg, hpoSpectrum, data, 210, 305, COLORS.hpo, `B · HPO: ${hpoPipeline.name} (independent y scale)`, pipelinePreviewTrim(hpoPipeline));
+  drawOperatorPanel(svg, aomSpectrum, data, 370, 465, COLORS.adaptive, `C · AOM: ${aomOperator.name} (independent y scale)`, aomTrim);
   for (let tick = 0; tick <= 4; tick += 1) {
     const index = Math.round(tick * (data.axis.length - 1) / 4);
-    addText(svg, compactNumber(data.axis[index]), { x: x(index), y: 397, class: "n4viz-tick", "text-anchor": "middle" });
+    addText(svg, compactNumber(data.axis[index]), { x: x(index), y: 502, class: "n4viz-tick", "text-anchor": "middle" });
   }
-  addText(svg, axisUnit(data.meta.unit), { x: 310, y: 416, class: "n4viz-axis-label", "text-anchor": "middle" });
+  addText(svg, axisUnit(data.meta.unit), { x: 310, y: 528, class: "n4viz-axis-label", "text-anchor": "middle" });
 }
 
 function drawCoefficientChart(data, plsCoefficients, aomCoefficients) {
@@ -1231,14 +1254,23 @@ function renderMethodResult(prefix, result, stats, selection) {
   byId(`${prefix}-time`).textContent = `${formatTime(result.elapsed)} · ${result.searchLabel || `${result.candidateFits ?? 1} fit calls`}`;
 }
 
-function setComparisonBanner(valueId, detailId, aomStats, hpoStats, label) {
-  const delta = signedPercent(aomStats.rmse, hpoStats.rmse, true);
+function setComparisonVerdict(valueId, detailId, aomStats, hpoStats, label) {
   const value = byId(valueId);
-  value.className = classForImprovement(delta.improvement);
-  value.textContent = Math.abs(delta.raw) < .05
-    ? "no material change"
-    : `${Math.abs(delta.raw).toFixed(1)}% ${delta.raw < 0 ? "lower" : "higher"}`;
-  byId(detailId).textContent = `${label}: AOM ${formatMetric(aomStats.rmse)} vs HPO ${formatMetric(hpoStats.rmse)} RMSE`;
+  const aomWins = aomStats.rmse < hpoStats.rmse;
+  const tied = Math.abs(aomStats.rmse - hpoStats.rmse) <= Number.EPSILON * Math.max(1, Math.abs(aomStats.rmse), Math.abs(hpoStats.rmse));
+  if (tied) {
+    value.className = "neutral";
+    value.textContent = "Tie";
+    byId(detailId).textContent = `${label}: identical held-out RMSE (${formatMetric(aomStats.rmse)}) for HPO and AOM.`;
+    return;
+  }
+  const winner = aomWins ? "AOM" : "HPO";
+  const winnerRmse = aomWins ? aomStats.rmse : hpoStats.rmse;
+  const loserRmse = aomWins ? hpoStats.rmse : aomStats.rmse;
+  const gap = (loserRmse - winnerRmse) / Math.abs(loserRmse) * 100;
+  value.className = aomWins ? "verdict-aom" : "verdict-hpo";
+  value.textContent = `${winner} wins`;
+  byId(detailId).textContent = `${winner} has ${gap.toFixed(1)}% lower held-out RMSE · HPO ${formatMetric(hpoStats.rmse)} · AOM ${formatMetric(aomStats.rmse)}.`;
 }
 
 function fitAomPlsWithStableBudget(data, requestedBudget, foldCount, operatorKinds) {
@@ -1262,6 +1294,30 @@ function fitAomPlsWithStableBudget(data, requestedBudget, foldCount, operatorKin
     }
   }
   throw lastError || new Error("AOM-PLS could not find a numerically stable component budget.");
+}
+
+async function inferAomSelectedComponents(data, budget, foldCount, selectedKind, finalScore, onProgress) {
+  const x = matrix(data.trainX.data, data.trainRows, data.cols);
+  const y = matrix(data.trainY, data.trainRows, 1);
+  const scores = [];
+  const started = performance.now();
+  for (let components = 1; components <= budget; components += 1) {
+    const model = fitAom(x, y, components, foldCount, 0, [selectedKind]);
+    if (Number.isFinite(model.score)) scores.push({ components, score: model.score });
+    onProgress?.(components / budget, components, budget);
+    if (components % 2 === 0) await yieldToBrowser();
+  }
+  if (scores.length === 0) throw new Error("AOM component audit returned no finite CV score.");
+  const bestScore = Math.min(finalScore, ...scores.map((item) => item.score));
+  const tolerance = Math.max(1e-10, Math.abs(bestScore) * 1e-8);
+  const selected = scores.find((item) => item.score <= bestScore + tolerance)
+    || [...scores].sort((left, right) => left.score - right.score || left.components - right.components)[0];
+  return {
+    components: selected.components,
+    score: selected.score,
+    checks: scores.length,
+    elapsed: performance.now() - started,
+  };
 }
 
 async function runComparison() {
@@ -1326,25 +1382,42 @@ async function runComparison() {
       operators.map((operator) => operator.kind),
     );
     const aomPlsModel = aomPlsFit.model;
+    const selectedOperator = operators[aomPlsModel.selectedOperator]
+      || { kind: operators[0].kind };
+    const aomComponentAudit = await inferAomSelectedComponents(
+      currentData,
+      aomPlsFit.budget,
+      foldCount,
+      selectedOperator.kind,
+      aomPlsModel.score,
+      (fraction, component, total) => {
+        setActivity({
+          state: "running", progress: 83 + fraction * 3, phase: "aom-pls",
+          title: "AOM-PLS · component audit",
+          detail: `Confirming the native selection: prefix ${component}/${total} for the winning operator.`,
+        });
+      },
+    );
     const aomPlsPredictions = predictModel(aomPlsModel, matrix(currentData.testX.data, currentData.testRows, currentData.cols)).data;
     const aomPls = {
       model: aomPlsModel,
       predictions: aomPlsPredictions,
       elapsed: performance.now() - aomPlsStarted,
+      components: aomComponentAudit.components,
       candidateFits: operators.length * aomPlsFit.budget * foldCount + 1,
-      searchLabel: `${operators.length} ops × H≤${aomPlsFit.budget}`,
+      searchLabel: `${operators.length} ops × H≤${aomPlsFit.budget} + ${aomComponentAudit.checks} prefix checks`,
     };
 
     byId("run-note").textContent = `Step 4/6: selecting Ridge α on raw spectra, then screening preprocessing + α.`;
     setActivity({
-      state: "running", progress: 85, phase: "ridge",
+      state: "running", progress: 86, phase: "ridge",
       title: "Ridge · raw reference",
       detail: `Cross-validating ${RIDGE_ALPHAS.length} logarithmic regularisation values…`,
     });
     await yieldToBrowser();
     const rawRidge = await fitCrossValidatedRidge(currentData, foldCount, RIDGE_ALPHAS, (fraction, alpha) => {
       setActivity({
-        state: "running", progress: 85 + fraction, phase: "ridge",
+        state: "running", progress: 86 + fraction, phase: "ridge",
         title: "Ridge · raw reference",
         detail: `Calibration CV: α ${formatAlpha(alpha)}, ${foldCount} folds.`,
       });
@@ -1353,7 +1426,7 @@ async function runComparison() {
     byId("run-note").textContent = `Step 5/6: ${searchProfile.label} Ridge is screening ${searchProfile.pipelines.length} pipelines × ${RIDGE_ALPHAS.length} α values.`;
     const hpoRidge = await fitPreprocessingHpoRidge(currentData, foldCount, RIDGE_ALPHAS, searchProfile.pipelines, searchProfile.repeats, (fraction, selectedPipeline, alpha, alphaIndex, alphaCount, repeat, repeats) => {
       setActivity({
-        state: "running", progress: 86 + fraction * 11, phase: "ridge",
+        state: "running", progress: 87 + fraction * 10, phase: "ridge",
         title: "Ridge · preprocessing HPO",
         detail: `${selectedPipeline.name} · repeat ${repeat}/${repeats} · α ${alphaIndex}/${alphaCount} (${formatAlpha(alpha)}).`,
       });
@@ -1396,29 +1469,38 @@ async function runComparison() {
     const aomRidgeStats = metrics(currentData.testY, aomRidge.predictions);
     const selected = operators[aomPlsModel.selectedOperator] || { name: `Bank entry ${aomPlsModel.selectedOperator}`, short: "custom", detail: "Selected entry in the configured operator bank.", kind: operators[0].kind };
 
+    byId("pls-hpo-card").textContent = hpoPls.operator.name;
+    byId("pls-hpo-card-detail").textContent = `${hpoPls.operator.short} · ${hpoPls.components} components · CV RMSE ${formatMetric(hpoPls.cvRmse)}`;
     byId("operator").textContent = selected.name;
-    byId("operator-detail").textContent = `${selected.short} · bank entry ${aomPlsModel.selectedOperator + 1}/${operators.length} · CV RMSE ${formatMetric(aomPlsModel.score)}`;
+    byId("operator-detail").textContent = `${selected.short} · ${aomComponentAudit.components} components · bank ${aomPlsModel.selectedOperator + 1}/${operators.length} · CV RMSE ${formatMetric(aomPlsModel.score)}`;
+    byId("ridge-hpo-card").textContent = hpoRidge.operator.name;
+    byId("ridge-hpo-card-detail").textContent = `${hpoRidge.operator.short} · α ${formatAlpha(hpoRidge.alpha)} · CV RMSE ${formatMetric(hpoRidge.cvRmse)}`;
+    byId("ridge-aom-card-detail").textContent = `${RIDGE_ALPHAS.length} α values · ${foldCount}-fold internal CV · one blended raw-input model.`;
     renderMethodResult("pls-default", rawPls, rawPlsStats, `${rawPls.components} comp. · CV ${formatMetric(rawPls.cvRmse)}`);
     renderMethodResult("pls-hpo", hpoPls, hpoPlsStats, `${hpoPls.operator.short} · ${hpoPls.components} comp. · CV ${formatMetric(hpoPls.cvRmse)}`);
     const aomBudgetNote = aomPlsFit.budget < componentBudget ? ` (stable limit; requested ${componentBudget})` : "";
-    renderMethodResult("aom-pls", aomPls, aomPlsStats, `${selected.short} · H ≤ ${aomPlsFit.budget}${aomBudgetNote} · CV ${formatMetric(aomPlsModel.score)}`);
+    renderMethodResult("aom-pls", aomPls, aomPlsStats, `${selected.short} · ${aomComponentAudit.components} comp. · CV ${formatMetric(aomPlsModel.score)}${aomBudgetNote}`);
     renderMethodResult("ridge-default", rawRidge, rawRidgeStats, `α ${formatAlpha(rawRidge.alpha)} · CV ${formatMetric(rawRidge.cvRmse)}`);
     renderMethodResult("ridge-hpo", hpoRidge, hpoRidgeStats, `${hpoRidge.operator.short} · α ${formatAlpha(hpoRidge.alpha)} · CV ${formatMetric(hpoRidge.cvRmse)}`);
     renderMethodResult("aom-ridge", aomRidge, aomRidgeStats, `compact 12-chain blend · ${RIDGE_ALPHAS.length} α`);
 
-    setComparisonBanner("rmse-delta", "delta-detail", aomPlsStats, hpoPlsStats, "PLS");
-    setComparisonBanner("ridge-rmse-delta", "ridge-delta-detail", aomRidgeStats, hpoRidgeStats, "Ridge");
+    setComparisonVerdict("rmse-delta", "delta-detail", aomPlsStats, hpoPlsStats, "PLS");
+    setComparisonVerdict("ridge-rmse-delta", "ridge-delta-detail", aomRidgeStats, hpoRidgeStats, "Ridge");
+    byId("hpo-search-summary").textContent = `${searchProfile.label} · ${searchProfile.pipelines.length} pipelines · ${searchProfile.repeats} fold layout${searchProfile.repeats > 1 ? "s" : ""}`;
+    byId("hpo-protocol-detail").textContent = `${foldCount}-fold calibration CV; ${searchProfile.repeats} deterministic layout${searchProfile.repeats > 1 ? "s" : ""}. The ${currentData.testRows} validation rows stay untouched until final scoring.`;
+    byId("hpo-pls-detail").textContent = `Screened ${searchProfile.pipelines.length} pipelines × components 1–${componentBudget}. Winner: ${hpoPls.operator.name}, ${hpoPls.components} components (CV RMSE ${formatMetric(hpoPls.cvRmse)}; ${hpoPls.candidateFits} fit calls).`;
+    byId("hpo-ridge-detail").textContent = `Screened ${searchProfile.pipelines.length} pipelines × α {${RIDGE_ALPHAS.map(formatAlpha).join(", ")}}. Winner: ${hpoRidge.operator.name}, α ${formatAlpha(hpoRidge.alpha)} (CV RMSE ${formatMetric(hpoRidge.cvRmse)}; ${hpoRidge.candidateFits} fit calls).`;
     const namedResults = [
       { name: "raw PLS", stats: rawPlsStats }, { name: "PLS-HPO", stats: hpoPlsStats }, { name: "AOM-PLS", stats: aomPlsStats },
       { name: "raw Ridge", stats: rawRidgeStats }, { name: "Ridge-HPO", stats: hpoRidgeStats }, { name: "AOM-Ridge", stats: aomRidgeStats },
     ];
     const best = [...namedResults].sort((left, right) => left.stats.rmse - right.stats.rmse)[0];
     byId("result-summary").textContent = `On these ${currentData.testRows} held-out rows, ${best.name} has the lowest RMSE (${formatMetric(best.stats.rmse)}). This is one local result; the paper-context panel below reports the 32-dataset evidence.`;
-    byId("operator-preview-title").textContent = `Raw vs ${selected.name.toLowerCase()}`;
-    const edgeNote = selected.kind === 8 || selected.kind === 9 || selected.kind === 15
-      ? " Boundary transients are clipped only in this preview; fitting uses the complete transformed matrix."
+    byId("operator-preview-title").textContent = "Raw, HPO and AOM views";
+    const edgeNote = pipelinePreviewTrim(hpoPls.operator) > 0 || selected.kind === 8 || selected.kind === 9 || selected.kind === 15
+      ? " Boundary transients are clipped only in this preview; fitting uses the complete transformed matrices."
       : "";
-    byId("operator-explanation").textContent = `${selected.detail} The two panels use independent y scales so shape changes remain legible.${edgeNote}`;
+    byId("operator-explanation").textContent = `Panel B is the HPO winner (${hpoPls.operator.name}); panel C is the separate AOM-PLS selection (${selected.name}, ${aomComponentAudit.components} components). Independent y scales keep shape changes legible.${edgeNote}`;
     byId("fairness-text").textContent = `${currentData.trainRows} calibration · ${currentData.testRows} held out · ${foldCount} folds · ${searchProfile.label}: ${searchProfile.pipelines.length} pipelines × ${searchProfile.repeats} layout${searchProfile.repeats > 1 ? "s" : ""}`;
 
     drawRmseChart([
@@ -1435,7 +1517,7 @@ async function runComparison() {
       { predictions: hpoRidge.predictions, className: "hpo" },
       { predictions: aomRidge.predictions, className: "aom" },
     ]);
-    drawOperatorChart(currentData, selected);
+    drawOperatorChart(currentData, hpoPls.operator, selected);
     drawCoefficientChart(currentData, rawPls.model.coefficients, aomPlsModel.coefficients);
     byId("run-note").textContent = `Complete: ${currentData.meta.label}; all metrics use the untouched validation partition.`;
     byId("run-note").className = "form-status success";
@@ -1449,6 +1531,9 @@ async function runComparison() {
       document.documentElement.dataset.selftest = parserSelfTest()
         && namedResults.every((item) => Number.isFinite(item.stats.rmse))
         && byId("rmse-chart").children.length > 10
+        && byId("operator-chart").children.length > 15
+        && byId("aom-pls-selection").textContent.includes("comp.")
+        && !byId("pls-hpo-card").textContent.includes("—")
         && byId("ridge-prediction-chart").children.length > 10 ? "pass" : "fail";
       document.documentElement.dataset.selftestViewport = `${window.innerWidth}/${document.documentElement.scrollWidth}`;
     }

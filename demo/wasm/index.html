@@ -207,11 +207,33 @@
         <p id="result-summary">Run the comparison to populate six held-out results, selected settings and diagnostic plots.</p>
       </div>
 
-      <div class="selection-banner n4-surface">
-        <div><p class="overline">AOM-PLS selection</p><strong id="operator">—</strong><small id="operator-detail">The selected operator will appear here.</small></div>
-        <div><p class="overline">PLS · AOM vs HPO</p><strong id="rmse-delta">—</strong><small id="delta-detail">held-out RMSE difference</small></div>
-        <div><p class="overline">Ridge · AOM vs HPO</p><strong id="ridge-rmse-delta">—</strong><small id="ridge-delta-detail">held-out RMSE difference</small></div>
+      <div class="verdict-grid">
+        <article class="verdict-card n4-surface">
+          <div class="verdict-head"><div><p class="overline">PLS · HPO versus AOM</p><strong id="rmse-delta">Awaiting results</strong></div><span>Held-out RMSE</span></div>
+          <div class="verdict-selections">
+            <div class="hpo-selection"><span>HPO selected</span><strong id="pls-hpo-card">—</strong><small id="pls-hpo-card-detail">The winning HPO pipeline will appear here.</small></div>
+            <div class="aom-selection"><span>AOM selected</span><strong id="operator">—</strong><small id="operator-detail">The AOM operator will appear here.</small></div>
+          </div>
+          <p id="delta-detail">Run the experiment to compare HPO and AOM directly.</p>
+        </article>
+        <article class="verdict-card n4-surface">
+          <div class="verdict-head"><div><p class="overline">Ridge · HPO versus AOM</p><strong id="ridge-rmse-delta">Awaiting results</strong></div><span>Held-out RMSE</span></div>
+          <div class="verdict-selections">
+            <div class="hpo-selection"><span>HPO selected</span><strong id="ridge-hpo-card">—</strong><small id="ridge-hpo-card-detail">The winning HPO pipeline will appear here.</small></div>
+            <div class="aom-selection"><span>AOM strategy</span><strong id="ridge-aom-card">12-chain blender</strong><small id="ridge-aom-card-detail">AOM-Ridge blends chains; it does not select one treatment.</small></div>
+          </div>
+          <p id="ridge-delta-detail">Run the experiment to compare HPO and AOM directly.</p>
+        </article>
       </div>
+
+      <details class="hpo-result-details n4-surface">
+        <summary><span>HPO search detail</span><small id="hpo-search-summary">Available after the experiment</small></summary>
+        <div class="hpo-detail-grid">
+          <div><strong>Protocol</strong><p id="hpo-protocol-detail">The selected search depth, folds and repetitions will appear here.</p></div>
+          <div><strong>PLS search</strong><p id="hpo-pls-detail">Component grid and winning preprocessing pipeline.</p></div>
+          <div><strong>Ridge search</strong><p id="hpo-ridge-detail">Alpha grid and winning preprocessing pipeline.</p></div>
+        </div>
+      </details>
 
       <div class="results-table-wrap n4-surface">
         <table class="results-table method-results">
@@ -242,14 +264,14 @@
           <svg id="ridge-prediction-chart" class="n4viz" viewBox="0 0 620 420" role="img" aria-label="Measured versus predicted Ridge responses" aria-describedby="result-summary"></svg>
         </article>
         <article class="chart-panel operator-panel n4-surface">
-          <div class="chart-title"><div><p class="overline">Treatment difference</p><h3 id="operator-preview-title">Raw vs selected operator view</h3></div></div>
-          <svg id="operator-chart" class="n4viz" viewBox="0 0 560 420" role="img" aria-label="A representative raw spectrum compared with its AOM-selected transformed view" aria-describedby="operator-explanation"></svg>
-          <p id="operator-explanation" class="chart-footnote">AOM will select one operator from the configured bank.</p>
+          <div class="chart-title"><div><p class="overline">Selected PLS treatments</p><h3 id="operator-preview-title">Raw, HPO and AOM views</h3></div></div>
+          <svg id="operator-chart" class="n4viz" viewBox="0 0 560 550" role="img" aria-label="A representative raw spectrum compared with the HPO-selected and AOM-selected transformed views" aria-describedby="operator-explanation"></svg>
+          <p id="operator-explanation" class="chart-footnote">Panel B will show the HPO winner; panel C will show the separate AOM-PLS selection.</p>
         </article>
         <article class="chart-panel coefficients-panel n4-surface">
-          <div class="chart-title"><div><p class="overline">Deployable PLS model</p><h3>Coefficients on the original spectral grid</h3></div><div class="legend"><span class="legend-key baseline"></span>Raw PLS <span class="legend-key aom"></span>AOM-PLS</div></div>
+          <div class="chart-title"><div><p class="overline">Deployable raw-input models</p><h3>Coefficients on the original spectral grid</h3></div><div class="legend"><span class="legend-key baseline"></span>Raw PLS <span class="legend-key aom"></span>AOM-PLS</div></div>
           <svg id="coefficient-chart" class="n4viz" viewBox="0 0 1280 360" role="img" aria-label="Raw PLS and AOM-PLS regression coefficients on the original feature grid" aria-describedby="coefficient-summary"></svg>
-          <p id="coefficient-summary" class="chart-footnote">Both coefficient vectors align with the input columns. AOM folds its selected linear operator into a single raw-input model.</p>
+          <p id="coefficient-summary" class="chart-footnote">Raw PLS and AOM-PLS align with the input columns. HPO coefficients are not plotted because they act after the separately reported HPO preprocessing pipeline; AOM folds its operator into one raw-input model.</p>
         </article>
       </div>
       <div class="paper-context n4-surface">

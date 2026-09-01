@@ -11,14 +11,15 @@ chemometrician through the following path:
 - cross-validates raw PLS from 1 to an effective maximum of 25 components;
 - offers a quick search and a full 33-pipeline preprocessing HPO with three
   deterministic repeated fold layouts for PLS and Ridge;
-- runs native AOM-PLS over its editable strict-linear bank (with an explicit stable-budget
-  fallback for small or rank-deficient browser datasets);
+- runs native AOM-PLS over its editable strict-linear bank, then confirms the
+  selected component count through exact native prefix checks (with an explicit
+  stable-budget fallback for small or rank-deficient browser datasets);
 - cross-validates raw Ridge over a logarithmic alpha grid;
 - fits the native compact AOM-Ridge simplex blender;
 - reports all six calibration stages through a persistent progress indicator;
 - compares all six routes on the same untouched validation rows; and
-- displays the selected operator, transformed spectral view, original-grid
-  coefficients, metrics, and measured-versus-predicted values; and
+- displays the HPO and AOM selections separately, their transformed spectral
+  views, original-grid coefficients, metrics, and measured-versus-predicted values; and
 - ends with accessible tabs containing the released PyPI and R-universe install
   commands, executable Python/R examples, and links to both source repositories.
 
@@ -36,7 +37,7 @@ python3 -m http.server 8765
 
 Add `?selftest=1` to run the browser parser and fit smoke test. A passing page
 sets `data-selftest="pass"` on the root HTML element. A bundled dataset can be
-selected directly with `?dataset=food_composition`, `powder_scatter`, or
+selected directly with `?dataset=food_composition`, `grain_starch`, or
 `batch_process`.
 Use `?selftest=full` only when timing the complete repeated HPO automatically.
 
