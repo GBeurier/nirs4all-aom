@@ -39,7 +39,7 @@ try:  # pragma: no cover - import-time guard
 except ImportError:  # pragma: no cover
     pass
 
-__version__ = "0.10.3"
+__version__ = "0.10.4"
 
 __all__ = [
     "AOMPLSDAClassifier",

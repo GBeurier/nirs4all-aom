@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="AOM-PLS runs entirely in the browser through the n4m WebAssembly engine.">
+  <title>AOM-PLS · live WebAssembly demo</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main>
+    <header class="hero">
+      <div>
+        <p class="eyebrow">nirs4all-aom · paper companion</p>
+        <h1>AOM-PLS, running locally in your browser</h1>
+        <p class="lede">A compact bank of strict-linear spectral operators is screened inside one PLS calibration. The selected model predicts raw spectra directly: no preprocessing pipeline is replayed.</p>
+      </div>
+      <div class="runtime" aria-live="polite">
+        <span id="runtime-dot" class="dot loading"></span>
+        <div><strong id="runtime-status">Loading WebAssembly…</strong><small id="runtime-version">n4m engine</small></div>
+      </div>
+    </header>
+
+    <section class="panel controls" aria-labelledby="controls-title">
+      <div>
+        <p class="step">01 · Synthetic NIR calibration</p>
+        <h2 id="controls-title">Change the calibration conditions</h2>
+        <p>The reproducible example contains smooth absorption bands, slope variation and measurement noise. Training and test rows are kept separate.</p>
+      </div>
+      <div class="control-grid">
+        <label>Noise level <output id="noise-value">0.035</output>
+          <input id="noise" type="range" min="0.010" max="0.090" value="0.035" step="0.005">
+        </label>
+        <label>Maximum components
+          <select id="components">
+            <option>3</option><option selected>5</option><option>7</option><option>9</option>
+          </select>
+        </label>
+        <label>Internal folds
+          <select id="folds">
+            <option>3</option><option selected>5</option><option>7</option>
+          </select>
+        </label>
+        <button id="run" type="button" disabled>Run AOM-PLS</button>
+      </div>
+    </section>
+
+    <section class="results" aria-labelledby="results-title">
+      <div class="result-heading">
+        <div><p class="step">02 · Results</p><h2 id="results-title">One global operator, one deployable model</h2></div>
+        <p id="run-note" class="run-note">The first fit starts when the WASM engine is ready.</p>
+      </div>
+      <div class="metric-grid">
+        <article class="metric accent"><span>Selected global operator</span><strong id="operator">—</strong><small id="operator-index">compact WASM bank</small></article>
+        <article class="metric"><span>AOM test RMSE</span><strong id="aom-rmse">—</strong><small id="aom-r2">R² —</small></article>
+        <article class="metric"><span>Plain PLS test RMSE</span><strong id="pls-rmse">—</strong><small>same component budget</small></article>
+        <article class="metric"><span>Fit time</span><strong id="fit-time">—</strong><small>browser wall time</small></article>
+      </div>
+      <div class="panel chart-card">
+        <div><h3>Held-out predictions</h3><p>Points on the diagonal match the measured synthetic response.</p></div>
+        <svg id="prediction-chart" viewBox="0 0 720 390" role="img" aria-label="Measured versus predicted test values"></svg>
+      </div>
+    </section>
+
+    <section class="panel audit" aria-labelledby="audit-title">
+      <div><p class="step">03 · Audit trail</p><h2 id="audit-title">What this page proves</h2></div>
+      <ul>
+        <li>The fit calls the native <code>n4m_model_selection_aom_pls_select</code> path compiled to WebAssembly.</li>
+        <li>The default bank contains identity, polynomial detrending, Savitzky–Golay smoothing, Savitzky–Golay derivative and finite difference.</li>
+        <li>The returned coefficients live on the original wavelength grid and predictions use the raw held-out spectra.</li>
+        <li>No observations or spectra leave the browser.</li>
+      </ul>
+    </section>
+
+    <footer>
+      <span>Reference Python package: <a href="https://pypi.org/project/nirs4all-aom/">nirs4all-aom</a></span>
+      <span>Portable engine: <a href="https://github.com/GBeurier/nirs4all-methods">nirs4all-methods / n4m</a></span>
+      <span>Source: <a href="https://github.com/GBeurier/nirs4all-aom">GitHub</a></span>
+    </footer>
+  </main>
+  <script type="module" src="demo.js"></script>
+</body>
+</html>
