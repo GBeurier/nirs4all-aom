@@ -1,11 +1,12 @@
 # AOM-PLS interactive WebAssembly companion
 
 This self-contained static application turns the AOM paper companion into a
-complete, inspectable calibration experiment. In one browser tab it:
+complete, inspectable calibration experiment. In one browser tab it guides a
+chemometrician through the following path:
 
-- loads one of three traceable `nirs4all` synthetic format fixtures;
+- starts from local, separate `Xcal/Ycal/Xval/Yval` (or train/test) CSV/TSV files;
+- offers three traceable `nirs4all` synthetic format fixtures when no local data are available;
 - visualizes calibration and held-out spectra plus response distributions;
-- accepts local, separate `Xcal/Ycal/Xval/Yval` (or train/test) CSV/TSV files;
 - keeps the local-file importer visible and reports file-selection/validation errors in place;
 - cross-validates the component count of conventional raw-spectrum PLS;
 - screens a configurable strict-linear AOM operator bank with the same folds and
@@ -14,7 +15,9 @@ complete, inspectable calibration experiment. In one browser tab it:
   completion stages through a persistent progress indicator;
 - compares both routes on the same untouched validation rows; and
 - displays the selected operator, transformed spectral view, original-grid
-  coefficients, metrics, and measured-versus-predicted values.
+  coefficients, metrics, and measured-versus-predicted values; and
+- ends with accessible tabs containing the released PyPI and R-universe install
+  commands, executable Python/R examples, and links to both source repositories.
 
 All CSV parsing, native fitting, and prediction stay in the browser. There is no
 analytics endpoint and no upload code.
@@ -32,6 +35,10 @@ Add `?selftest=1` to run the browser parser and fit smoke test. A passing page
 sets `data-selftest="pass"` on the root HTML element. A bundled dataset can be
 selected directly with `?dataset=B02_wavenumber`, `B03_wavelength`, or
 `B04_reflectance`.
+
+The normal page does not launch a fit automatically: it waits for the user to
+inspect the active split and click **Compare raw PLS and AOM-PLS**. Self-test
+mode runs the comparison automatically.
 
 ## Reproducible inputs
 

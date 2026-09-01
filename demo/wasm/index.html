@@ -21,7 +21,8 @@
       <a href="#data">Data</a>
       <a href="#experiment">Experiment</a>
       <a href="#results">Results</a>
-      <a href="#reproduce">Reproduce</a>
+      <a href="#reproduce">Scope</a>
+      <a href="#continue">Code</a>
     </nav>
     <div class="runtime n4-badge" aria-live="polite">
       <span id="runtime-dot" class="runtime-dot loading" aria-hidden="true"></span>
@@ -48,16 +49,17 @@
       <div>
         <p class="kicker">AOM-PLS browser demonstration</p>
         <h1 id="page-title">Interactive comparison of raw PLS and AOM-PLS</h1>
-        <p class="hero-copy">Select a documented <code>nirs4all</code> fixture or load separate <code>X</code> and <code>y</code> files. Both methods use the same calibration rows, folds, component budget and held-out validation set. The page reports the only modelling difference: AOM-PLS screens a linear spectral operator before fitting PLS.</p>
+        <p class="hero-copy">Bring separate calibration and validation <code>X</code>/<code>y</code> files, inspect them, then run both methods on the same split. The page reports the only modelling difference: AOM-PLS screens a linear spectral operator before fitting PLS. A documented example is available when you do not have files at hand.</p>
         <div class="hero-actions">
-          <a class="n4-button" href="#data">Choose a dataset</a>
+          <a class="n4-button" href="#upload-card">Load my data</a>
+          <a class="text-action" href="#bundled-datasets">Try an example</a>
           <span>All parsing, fitting and prediction remain in this browser tab.</span>
         </div>
       </div>
       <aside class="protocol-card n4-surface" aria-label="How to use the demonstration">
         <p class="overline">How to use this page</p>
         <ol class="workflow-overview">
-          <li><span>1</span><div><strong>Select data</strong><small>Inspect X, y and the fixed calibration/validation split.</small></div></li>
+          <li><span>1</span><div><strong>Load your data</strong><small>Provide separate X/y files for calibration and validation, then inspect them.</small></div></li>
           <li><span>2</span><div><strong>Set the comparison</strong><small>Choose folds, component budget and the AOM operator bank.</small></div></li>
           <li><span>3</span><div><strong>Run and compare</strong><small>Follow progress, then read metrics and diagnostics on held-out rows.</small></div></li>
         </ol>
@@ -67,34 +69,14 @@
 
     <section id="data" class="section-block" aria-labelledby="data-title">
       <div class="section-heading">
-        <div><span class="section-number">01</span><p class="kicker">Dataset</p><h2 id="data-title">Select and inspect a dataset</h2></div>
-        <p>Bundled examples are small synthetic format fixtures from the public <code>nirs4all</code> repository. They illustrate the workflow; they are not the paper benchmark data.</p>
+        <div><span class="section-number">01</span><p class="kicker">Dataset</p><h2 id="data-title">Start with your spectra and reference values</h2></div>
+        <p>Load your fixed calibration/validation split first. If you are exploring the method, use a small documented format fixture from <code>nirs4all</code>.</p>
       </div>
 
-      <div id="dataset-options" class="dataset-options" role="radiogroup" aria-label="Bundled datasets"></div>
-
       <div class="data-layout">
-        <article class="dataset-detail n4-surface">
-          <div class="card-head">
-            <div><p class="overline">Active dataset</p><h3 id="dataset-name">Loading…</h3></div>
-            <span id="dataset-kind" class="n4-badge">Bundled fixture</span>
-          </div>
-          <p id="dataset-description" class="muted"></p>
-          <dl class="metadata-grid">
-            <div><dt>Calibration</dt><dd id="train-shape">—</dd></div>
-            <div><dt>Validation</dt><dd id="test-shape">—</dd></div>
-            <div><dt>Spectral axis</dt><dd id="axis-range">—</dd></div>
-            <div><dt>Response</dt><dd id="target-range">—</dd></div>
-          </dl>
-          <div class="file-contract">
-            <span>Xcal.csv</span><span>Ycal.csv</span><span>Xval.csv</span><span>Yval.csv</span>
-          </div>
-          <p class="provenance"><strong>Provenance.</strong> <span id="dataset-provenance"></span> <a id="dataset-source-link" href="#" target="_blank" rel="noreferrer">Open the exact source snapshot ↗</a></p>
-        </article>
-
-        <article class="upload-card n4-surface">
+        <article id="upload-card" class="upload-card n4-surface">
           <div class="upload-heading">
-            <span><span class="overline">Your data</span><strong>Load separate X and y files</strong></span>
+            <span><span class="overline">Recommended start</span><strong>Load your X and y files</strong></span>
             <span class="n4-badge">Local only</span>
           </div>
           <div class="upload-body">
@@ -114,7 +96,32 @@
             <p id="upload-status" class="form-status" aria-live="polite">Select the four files above. Files never leave your device.</p>
           </div>
         </article>
+
+        <article class="dataset-detail n4-surface">
+          <div class="card-head">
+            <div><p class="overline">Active dataset</p><h3 id="dataset-name">Loading…</h3></div>
+            <span id="dataset-kind" class="n4-badge">Bundled fixture</span>
+          </div>
+          <p id="dataset-description" class="muted"></p>
+          <dl class="metadata-grid">
+            <div><dt>Calibration</dt><dd id="train-shape">—</dd></div>
+            <div><dt>Validation</dt><dd id="test-shape">—</dd></div>
+            <div><dt>Spectral axis</dt><dd id="axis-range">—</dd></div>
+            <div><dt>Response</dt><dd id="target-range">—</dd></div>
+          </dl>
+          <div class="file-contract">
+            <span>Xcal.csv</span><span>Ycal.csv</span><span>Xval.csv</span><span>Yval.csv</span>
+          </div>
+          <p class="provenance"><strong>Provenance.</strong> <span id="dataset-provenance"></span> <a id="dataset-source-link" href="#" target="_blank" rel="noreferrer">Open the exact source snapshot ↗</a></p>
+        </article>
+
       </div>
+
+      <div id="bundled-datasets" class="fixture-picker">
+        <div><p class="overline">No files at hand?</p><h3>Try the complete workflow with a bundled fixture</h3></div>
+        <p>These synthetic format fixtures illustrate the interface; they are not the paper benchmark data.</p>
+      </div>
+      <div id="dataset-options" class="dataset-options" role="radiogroup" aria-label="Bundled datasets"></div>
 
       <div class="inspection-grid">
         <article class="chart-panel n4-surface">
@@ -215,6 +222,10 @@
           <p class="chart-footnote">Both coefficient vectors align with the input columns. AOM folds its selected linear operator into a single raw-input model.</p>
         </article>
       </div>
+      <div class="guided-next n4-surface">
+        <div><span>Next step</span><strong>Keep the comparison reproducible</strong><small>When you have reviewed the held-out metrics and plots, copy the matching Python or R setup for your project.</small></div>
+        <a href="#continue">Open installation and code ↓</a>
+      </div>
     </section>
 
     <section id="reproduce" class="section-block reproduce" aria-labelledby="reproduce-title">
@@ -231,6 +242,105 @@
       <div class="technical-note n4-surface">
         <div><p class="overline">Scope note</p><h3>Illustration, not a benchmark claim</h3></div>
         <p>The included datasets were generated to exercise nirs4all formats and spectral metadata. Results can favor either route and should not be generalized. See the paper and supplementary material for the multi-dataset evaluation.</p>
+      </div>
+    </section>
+
+    <section id="continue" class="section-block continue" aria-labelledby="continue-title">
+      <div class="section-heading">
+        <div><span class="section-number">05</span><p class="kicker">Continue</p><h2 id="continue-title">Use AOM in your own workflow</h2></div>
+        <p>Move from this browser comparison to a reproducible script. The examples use the same separate <code>Xcal</code>, <code>Ycal</code>, <code>Xval</code> and <code>Yval</code> files.</p>
+      </div>
+
+      <div class="code-workbench n4-surface">
+        <div class="code-tabs" role="tablist" aria-label="Installation and code examples">
+          <button id="tab-python" role="tab" aria-selected="true" aria-controls="panel-python" tabindex="0" type="button"><span>Python</span><small>PyPI · held-out comparison</small></button>
+          <button id="tab-r" role="tab" aria-selected="false" aria-controls="panel-r" tabindex="-1" type="button"><span>R</span><small>R-universe · native selector</small></button>
+          <button id="tab-source" role="tab" aria-selected="false" aria-controls="panel-source" tabindex="-1" type="button"><span>GitHub</span><small>source · issues · paper code</small></button>
+        </div>
+
+        <div id="panel-python" class="code-panel" role="tabpanel" aria-labelledby="tab-python">
+          <div class="code-intro"><div><p class="overline">Python package</p><h3>Reproduce the held-out comparison</h3></div><p>The sklearn-compatible package selects the AOM operator and component count by calibration CV, then predicts your untouched validation rows.</p></div>
+          <div class="install-row"><code id="python-install">python -m pip install nirs4all-aom pandas scikit-learn</code><button class="copy-button" type="button" data-copy-target="python-install">Copy install</button></div>
+          <div class="code-frame">
+            <div class="code-frame-head"><span>compare_aom.py</span><button class="copy-button" type="button" data-copy-target="python-code">Copy code</button></div>
+            <pre><code id="python-code">import numpy as np
+import pandas as pd
+from sklearn.cross_decomposition import PLSRegression
+from sklearn.metrics import mean_squared_error
+from sklearn.model_selection import GridSearchCV, KFold
+from aom_nirs.pls import AOMPLSRegressor
+
+def read_x(path):
+    return pd.read_csv(path, sep=None, engine="python").to_numpy(float)
+
+def read_y(path):
+    return pd.read_csv(path, sep=None, engine="python").iloc[:, 0].to_numpy(float)
+
+Xcal, ycal = read_x("Xcal.csv"), read_y("Ycal.csv")
+Xval, yval = read_x("Xval.csv"), read_y("Yval.csv")
+cv = KFold(n_splits=5, shuffle=False)
+budget = range(1, min(15, Xcal.shape[1], len(Xcal) - 1) + 1)
+
+raw = GridSearchCV(
+    PLSRegression(scale=False), {"n_components": budget},
+    cv=cv, scoring="neg_root_mean_squared_error"
+).fit(Xcal, ycal)
+
+aom = AOMPLSRegressor(
+    n_components="auto", max_components=max(budget),
+    operator_bank="compact", criterion="cv", cv=5,
+    cv_splitter=cv, random_state=0
+).fit(Xcal, ycal)
+
+for name, model in {"Raw PLS": raw, "AOM-PLS": aom}.items():
+    pred = np.asarray(model.predict(Xval)).ravel()
+    rmsep = np.sqrt(mean_squared_error(yval, pred))
+    print(f"{name:8s} RMSEP = {rmsep:.4g}")
+
+print("AOM operator:", aom.selected_operators_)
+print("AOM components:", aom.n_components_)</code></pre>
+          </div>
+          <p class="code-note">If your files do not contain a header row, add <code>header=None</code> to each <code>read_csv</code> call.</p>
+        </div>
+
+        <div id="panel-r" class="code-panel" role="tabpanel" aria-labelledby="tab-r" hidden>
+          <div class="code-intro"><div><p class="overline">R package</p><h3>Run the native AOM selector</h3></div><p>The current R interface exposes the native calibration fit, operator selection and CV diagnostics. Held-out prediction from the selected original-grid model is currently provided by the browser and Python interfaces.</p></div>
+          <div class="install-row"><code id="r-install">install.packages("n4m", repos = c("https://gbeurier.r-universe.dev", getOption("repos")))</code><button class="copy-button" type="button" data-copy-target="r-install">Copy install</button></div>
+          <div class="code-frame">
+            <div class="code-frame-head"><span>compare_aom.R</span><button class="copy-button" type="button" data-copy-target="r-code">Copy code</button></div>
+            <pre><code id="r-code">library(n4m)
+
+read_x &lt;- function(path) as.matrix(read.csv(path, check.names = FALSE))
+read_y &lt;- function(path) read.csv(path)[[1L]]
+
+Xcal &lt;- read_x("Xcal.csv")
+ycal &lt;- read_y("Ycal.csv")
+
+aom &lt;- aom_pls(
+  Xcal, ycal,
+  max_components = 15L,
+  n_operators = 9L,
+  cv = 5L
+)
+
+cat("Selected operator index:", aom$selected_operator_index, "\n")
+cat("Selected components:", aom$selected_n_components, "\n")
+cat("Calibration CV RMSE:", aom$best_score, "\n")
+plot(aom$rmse_curves, type = "l", xlab = "Candidate", ylab = "CV RMSE")</code></pre>
+          </div>
+          <p class="code-note">For semicolon-delimited decimal-comma files, replace <code>read.csv</code> with <code>read.csv2</code>.</p>
+        </div>
+
+        <div id="panel-source" class="code-panel source-panel" role="tabpanel" aria-labelledby="tab-source" hidden>
+          <div class="code-intro"><div><p class="overline">Open source</p><h3>Inspect, cite or extend the implementation</h3></div><p>The reference estimator, this demonstration and the portable numerical engine are developed in public repositories.</p></div>
+          <div class="repository-grid">
+            <a href="https://github.com/GBeurier/nirs4all-aom" target="_blank" rel="noreferrer"><span>Reference implementation</span><strong>nirs4all-aom</strong><small>Python package, paper code and this demo ↗</small></a>
+            <a href="https://github.com/GBeurier/nirs4all-methods" target="_blank" rel="noreferrer"><span>Portable engine</span><strong>nirs4all-methods</strong><small>n4m native core, R package and WASM bindings ↗</small></a>
+            <a href="https://pypi.org/project/nirs4all-aom/" target="_blank" rel="noreferrer"><span>Released package</span><strong>PyPI</strong><small>Versions and installation metadata ↗</small></a>
+            <a href="https://gbeurier.r-universe.dev/n4m" target="_blank" rel="noreferrer"><span>Released package</span><strong>R-universe</strong><small>Binary packages and reference manual ↗</small></a>
+          </div>
+        </div>
+        <p id="copy-status" class="copy-status" role="status" aria-live="polite"></p>
       </div>
     </section>
   </main>

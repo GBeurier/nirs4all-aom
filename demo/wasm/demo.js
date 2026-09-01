@@ -44,7 +44,18 @@ function setActivity({ state, progress, title, detail, phase = null }) {
   byId("activity-detail").textContent = detail;
   byId("activity-progress-bar").style.width = `${boundedProgress}%`;
   byId("activity-progress").setAttribute("aria-valuenow", String(boundedProgress));
-  byId("activity-action").hidden = state !== "complete";
+  const action = byId("activity-action");
+  if (state === "complete") {
+    action.hidden = false;
+    action.href = "#results";
+    action.textContent = "View results ↓";
+  } else if (state === "ready") {
+    action.hidden = false;
+    action.href = "#experiment";
+    action.textContent = "Configure and run ↓";
+  } else {
+    action.hidden = true;
+  }
   document.querySelectorAll(".activity-phases li").forEach((item) => {
     const itemPhase = item.dataset.phase;
     const itemIndex = PHASES.indexOf(itemPhase);
@@ -56,6 +67,72 @@ function setActivity({ state, progress, title, detail, phase = null }) {
 
 function yieldToBrowser() {
   return new Promise((resolve) => setTimeout(resolve, 0));
+}
+
+async function copyText(text) {
+  if (navigator.clipboard && window.isSecureContext) {
+    try {
+      await navigator.clipboard.writeText(text);
+      return;
+    } catch (error) {
+      // Fall through for browsers that expose Clipboard API but deny it.
+    }
+  }
+  const fallback = document.createElement("textarea");
+  fallback.value = text;
+  fallback.setAttribute("readonly", "");
+  fallback.style.position = "fixed";
+  fallback.style.opacity = "0";
+  document.body.append(fallback);
+  fallback.select();
+  const copied = document.execCommand("copy");
+  fallback.remove();
+  if (!copied) throw new Error("Copy is unavailable in this browser.");
+}
+
+function setupCodeWorkbench() {
+  const tabs = [...document.querySelectorAll('.code-tabs [role="tab"]')];
+  const activate = (selected, moveFocus = true) => {
+    tabs.forEach((tab) => {
+      const active = tab === selected;
+      tab.setAttribute("aria-selected", String(active));
+      tab.tabIndex = active ? 0 : -1;
+      byId(tab.getAttribute("aria-controls")).hidden = !active;
+    });
+    if (moveFocus) selected.focus();
+  };
+  tabs.forEach((tab, index) => {
+    tab.addEventListener("click", () => activate(tab, false));
+    tab.addEventListener("keydown", (event) => {
+      if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+      event.preventDefault();
+      let nextIndex = index;
+      if (event.key === "ArrowLeft") nextIndex = (index - 1 + tabs.length) % tabs.length;
+      if (event.key === "ArrowRight") nextIndex = (index + 1) % tabs.length;
+      if (event.key === "Home") nextIndex = 0;
+      if (event.key === "End") nextIndex = tabs.length - 1;
+      activate(tabs[nextIndex]);
+    });
+  });
+
+  document.querySelectorAll("[data-copy-target]").forEach((button) => {
+    button.addEventListener("click", async () => {
+      const target = byId(button.dataset.copyTarget);
+      const original = button.textContent;
+      try {
+        await copyText(target.textContent.trim());
+        button.textContent = "Copied";
+        button.classList.add("copied");
+        byId("copy-status").textContent = `${target.id.includes("install") ? "Installation command" : "Code example"} copied to the clipboard.`;
+      } catch (error) {
+        byId("copy-status").textContent = error.message;
+      }
+      window.setTimeout(() => {
+        button.textContent = original;
+        button.classList.remove("copied");
+      }, 1800);
+    });
+  });
 }
 
 function updateUploadReadiness() {
@@ -963,6 +1040,7 @@ function parserSelfTest() {
 
 async function initialise() {
   renderOperatorControls();
+  setupCodeWorkbench();
   resetResults();
   setActivity({ state: "loading", progress: 4, phase: "data", title: "Initialising the demonstration", detail: "Loading the bundled dataset catalogue…" });
   byId("run").addEventListener("click", runComparison);
@@ -992,7 +1070,7 @@ async function initialise() {
     byId("runtime-version").textContent = `n4m ${version()} · ABI ${abi}`;
     byId("runtime-dot").classList.replace("loading", "ready");
     byId("run").disabled = false;
-    setActivity({ state: "ready", progress: 25, phase: "baseline", title: "Ready to compare", detail: `${currentData.meta.label} and the WebAssembly engine are ready. Starting the initial comparison…` });
+    setActivity({ state: "ready", progress: 25, phase: "baseline", title: "Ready to compare", detail: `${currentData.meta.label} and the WebAssembly engine are ready. Review the settings, then click Compare.` });
   } catch (error) {
     console.error(error);
     byId("runtime-status").textContent = "WASM failed";
@@ -1004,7 +1082,7 @@ async function initialise() {
     byId("run-note").className = "form-status error";
     setActivity({ state: "error", progress: 20, phase: "data", title: "WebAssembly could not start", detail: error.message });
   }
-  if (runtimeReady && currentData) await runComparison();
+  if (runtimeReady && currentData && new URLSearchParams(location.search).has("selftest")) await runComparison();
 }
 
 window.__AOM_DEMO__ = { parseXText, parseYText, validatePartitions, parserSelfTest };
