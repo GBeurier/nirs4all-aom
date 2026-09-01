@@ -162,6 +162,8 @@ let loadingDatasetId = null;
 let activityRunStarted = null;
 let lastActivityProgress = 0;
 let lastActivityAnnouncement = "";
+let lastOperatorChart = null;
+let operatorResizeTimer = null;
 
 const PHASES = ["data", "pls", "aom-pls", "ridge", "aom-ridge", "results"];
 const RIDGE_ALPHAS = [1e-8, 1e-6, 1e-4, 1e-2, 1, 1e2, 1e4];
@@ -626,6 +628,7 @@ function plotPlaceholder(id, message, viewBox = [0, 0, 700, 420]) {
 }
 
 function resetResults() {
+  lastOperatorChart = null;
   [
     "pls-default-selection", "pls-default-rmse", "pls-default-mae", "pls-default-r2", "pls-default-time",
     "pls-hpo-selection", "pls-hpo-rmse", "pls-hpo-mae", "pls-hpo-r2", "pls-hpo-time",
@@ -652,14 +655,26 @@ function resetResults() {
   byId("hpo-protocol-detail").textContent = "The shared fold plan and score definition will appear here.";
   byId("hpo-pls-detail").textContent = "Component grid and winning preprocessing pipeline.";
   byId("hpo-ridge-detail").textContent = "Alpha grid and winning preprocessing pipeline.";
+  resetHpoScoreTable();
   byId("result-summary").textContent = "Run the comparison to populate six held-out results, selected settings and diagnostic plots.";
-  byId("operator-preview-title").textContent = "Raw, HPO and AOM views";
-  byId("operator-explanation").textContent = "Panel B will show the HPO winner; panel C will show the separate AOM-PLS selection.";
+  byId("pretreatment-hpo-name").textContent = "Awaiting selection";
+  byId("pretreatment-hpo-setting").textContent = "Pipeline, components and validation RMSE will appear here.";
+  byId("pretreatment-aom-name").textContent = "Awaiting selection";
+  byId("pretreatment-aom-setting").textContent = "Operator, components and validation RMSE will appear here.";
+  byId("operator-preview-title").textContent = "Two routes, two selected spectral views";
+  byId("operator-explanation").textContent = "The two comparisons will appear after fitting. Shapes are standardized only for this display; models use the complete transformed values.";
+  byId("local-conclusion-title").textContent = "Run the comparison to obtain a local conclusion";
+  byId("local-conclusion-copy").textContent = "The conclusion will distinguish the held-out result from the broader evidence reported in the paper.";
+  byId("conclusion-pls").textContent = "Awaiting results";
+  byId("conclusion-pls-detail").textContent = "HPO versus AOM on held-out rows.";
+  byId("conclusion-ridge").textContent = "Awaiting results";
+  byId("conclusion-ridge-detail").textContent = "HPO versus AOM on held-out rows.";
   plotPlaceholder("rmse-chart", "Awaiting six fitted routes", [0, 0, 1280, 420]);
   plotPlaceholder("pls-prediction-chart", "Awaiting the PLS comparison", [0, 0, 620, 420]);
   plotPlaceholder("ridge-prediction-chart", "Awaiting the Ridge comparison", [0, 0, 620, 420]);
-  plotPlaceholder("operator-chart", "Awaiting HPO and AOM selections", [0, 0, 560, 550]);
-  plotPlaceholder("coefficient-chart", "Awaiting deployable coefficients", [0, 0, 1280, 360]);
+  const operatorBox = window.innerWidth < 640 ? [0, 0, 640, 688] : [0, 0, 1280, 360];
+  byId("operator-chart").setAttribute("viewBox", operatorBox.join(" "));
+  plotPlaceholder("operator-chart", "Awaiting HPO and AOM selections", operatorBox);
 }
 
 function sourceUrl(dataset) {
@@ -955,6 +970,7 @@ async function fitPreprocessingHpoPls(data, maxComponents, foldCount, pipelines,
   const rawCandidate = [...candidates]
     .filter((candidate) => candidate.pipeline.id === "raw")
     .sort((left, right) => left.cvRmse - right.cvRmse || left.components - right.components)[0];
+  const pipelineResults = [...candidates].sort((left, right) => left.pipelineIndex - right.pipelineIndex);
   candidates.sort((left, right) => left.cvRmse - right.cvRmse
     || left.components - right.components
     || left.pipelineIndex - right.pipelineIndex);
@@ -962,7 +978,7 @@ async function fitPreprocessingHpoPls(data, maxComponents, foldCount, pipelines,
   const finalData = transformedDataset(data, selected.pipeline);
   const model = selected.model;
   const predictions = predictModel(model, matrix(finalData.testX.data, finalData.testRows, finalData.cols)).data;
-  return { model, predictions, components: selected.components, cvRmse: selected.cvRmse, operator: selected.pipeline, elapsed, candidateFits, rawCandidate };
+  return { model, predictions, components: selected.components, cvRmse: selected.cvRmse, operator: selected.pipeline, elapsed, candidateFits, rawCandidate, pipelineResults };
 }
 
 async function scoreRidgeCandidates(data, foldCount, alphas, onProgress) {
@@ -1061,6 +1077,10 @@ async function fitPreprocessingHpoRidge(data, foldCount, alphas, pipelines, onPr
   const rawCandidate = [...candidates]
     .filter((candidate) => candidate.pipeline.id === "raw")
     .sort((left, right) => left.cvRmse - right.cvRmse || left.alpha - right.alpha)[0];
+  const pipelineResults = pipelines.map((selectedPipeline) => [...candidates]
+    .filter((candidate) => candidate.pipeline.id === selectedPipeline.id)
+    .sort((left, right) => left.cvRmse - right.cvRmse || left.alpha - right.alpha)[0])
+    .filter(Boolean);
   candidates.sort((left, right) => left.cvRmse - right.cvRmse
     || left.alpha - right.alpha
     || left.pipelineIndex - right.pipelineIndex);
@@ -1070,7 +1090,7 @@ async function fitPreprocessingHpoRidge(data, foldCount, alphas, pipelines, onPr
   const model = fitModel("Ridge", matrix(finalData.trainX.data, finalData.trainRows, finalData.cols), matrix(finalData.trainY, finalData.trainRows, 1), 1, [selected.alpha]);
   const predictions = predictModel(model, matrix(finalData.testX.data, finalData.testRows, finalData.cols)).data;
   elapsed += performance.now() - finalFitStarted;
-  return { model, predictions, alpha: selected.alpha, cvRmse: selected.cvRmse, operator: selected.pipeline, elapsed, candidateFits: candidateFits + 1, rawCandidate };
+  return { model, predictions, alpha: selected.alpha, cvRmse: selected.cvRmse, operator: selected.pipeline, elapsed, candidateFits: candidateFits + 1, rawCandidate, pipelineResults };
 }
 
 function formatMetric(value) {
@@ -1220,24 +1240,6 @@ function operatorView(buffer, rows, cols, kind) {
   return buffer.slice();
 }
 
-function drawOperatorPanel(svg, values, data, top, bottom, color, title, trim = 0) {
-  const width = 560;
-  const margin = { left: 60, right: 18 };
-  const visibleValues = trim > 0 ? values.slice(trim, values.length - trim) : values;
-  const [yMin, yMax] = paddedExtent(visibleValues, .08);
-  const x = (index) => margin.left + index / (values.length - 1) * (width - margin.left - margin.right);
-  const y = (value) => Math.max(top, Math.min(bottom, top + (yMax - value) / (yMax - yMin) * (bottom - top)));
-  for (let tick = 0; tick <= 2; tick += 1) {
-    const value = yMin + tick * (yMax - yMin) / 2;
-    const position = y(value);
-    svg.append(svgElement("line", { x1: margin.left, y1: position, x2: width - margin.right, y2: position, class: "n4viz-grid" }));
-    addText(svg, compactNumber(value), { x: margin.left - 8, y: position + 3, class: "n4viz-tick", "text-anchor": "end" });
-  }
-  addText(svg, title, { x: margin.left, y: top - 10, class: "n4viz-axis-label" });
-  svg.append(svgElement("path", { d: pathFromValues(values, x, y), class: "plot-line mean", stroke: color }));
-  return x;
-}
-
 function pipelinePreviewTrim(selectedPipeline) {
   let trim = 0;
   for (const step of selectedPipeline.steps) {
@@ -1248,9 +1250,46 @@ function pipelinePreviewTrim(selectedPipeline) {
   return trim;
 }
 
+function standardizedShape(values) {
+  const mean = values.reduce((sum, value) => sum + value, 0) / Math.max(1, values.length);
+  const variance = values.reduce((sum, value) => sum + (value - mean) ** 2, 0) / Math.max(1, values.length - 1);
+  const scale = Math.sqrt(variance) || 1;
+  return Float64Array.from(values, (value) => Math.max(-3.25, Math.min(3.25, (value - mean) / scale)));
+}
+
+function drawTreatmentCard(svg, rawValues, treatedValues, data, { x0, y0 = 12, width, title, routeClass, trim = 0 }) {
+  const top = y0 + 46;
+  const bottom = y0 + 274;
+  const left = x0 + 36;
+  const right = x0 + width - 20;
+  const safeTrim = Math.min(trim, Math.max(0, Math.floor((rawValues.length - 3) / 2)));
+  const raw = standardizedShape(rawValues.slice(safeTrim, rawValues.length - safeTrim || undefined));
+  const treated = standardizedShape(treatedValues.slice(safeTrim, treatedValues.length - safeTrim || undefined));
+  const axis = data.axis.slice(safeTrim, data.axis.length - safeTrim || undefined);
+  const x = (index) => left + index / Math.max(1, raw.length - 1) * (right - left);
+  const y = (value) => top + (3.5 - value) / 7 * (bottom - top);
+
+  svg.append(svgElement("rect", { x: x0, y: y0, width, height: 322, rx: 12, class: "treatment-card-bg" }));
+  addText(svg, title, { x: x0 + 22, y: y0 + 28, class: "treatment-panel-title" });
+  addText(svg, "standardized spectral shape", { x: x0 + width - 22, y: y0 + 28, class: "treatment-panel-note", "text-anchor": "end" });
+  [-2, 0, 2].forEach((value) => {
+    svg.append(svgElement("line", { x1: left, y1: y(value), x2: right, y2: y(value), class: "treatment-grid" }));
+  });
+  svg.append(svgElement("path", { d: pathFromValues(raw, x, y), class: "treatment-raw-line" }));
+  svg.append(svgElement("path", { d: pathFromValues(treated, x, y), class: routeClass }));
+  [0, .5, 1].forEach((fraction) => {
+    const index = Math.round(fraction * (axis.length - 1));
+    addText(svg, compactNumber(axis[index]), { x: x(index), y: y0 + 297, class: "n4viz-tick", "text-anchor": "middle" });
+  });
+  addText(svg, axisUnit(data.meta.unit), { x: x0 + width / 2, y: y0 + 316, class: "treatment-panel-note", "text-anchor": "middle" });
+}
+
 function drawOperatorChart(data, hpoPipeline, aomOperator) {
+  lastOperatorChart = { data, hpoPipeline, aomOperator };
   const svg = byId("operator-chart");
   svg.replaceChildren();
+  const compact = window.innerWidth < 640;
+  svg.setAttribute("viewBox", compact ? "0 0 640 688" : "0 0 1280 360");
   const sortedRows = Array.from({ length: data.trainRows }, (_, index) => index)
     .sort((left, right) => data.trainY[left] - data.trainY[right]);
   const representativeRow = sortedRows[Math.floor(sortedRows.length / 2)];
@@ -1260,28 +1299,29 @@ function drawOperatorChart(data, hpoPipeline, aomOperator) {
   const aomTransformed = operatorView(data.trainX.data, data.trainRows, data.cols, aomOperator.kind);
   const aomSpectrum = aomTransformed.slice(representativeRow * data.cols, (representativeRow + 1) * data.cols);
   const aomTrim = aomOperator.kind === 8 || aomOperator.kind === 9 ? 2 : aomOperator.kind === 15 ? 1 : 0;
-  const x = drawOperatorPanel(svg, rawSpectrum, data, 50, 145, COLORS.baseline, `A · raw representative spectrum (${signalLabel(data.meta.signalType)})`);
-  drawOperatorPanel(svg, hpoSpectrum, data, 210, 305, COLORS.hpo, `B · HPO: ${hpoPipeline.name} (independent y scale)`, pipelinePreviewTrim(hpoPipeline));
-  drawOperatorPanel(svg, aomSpectrum, data, 370, 465, COLORS.adaptive, `C · AOM: ${aomOperator.name} (independent y scale)`, aomTrim);
-  for (let tick = 0; tick <= 4; tick += 1) {
-    const index = Math.round(tick * (data.axis.length - 1) / 4);
-    addText(svg, compactNumber(data.axis[index]), { x: x(index), y: 502, class: "n4viz-tick", "text-anchor": "middle" });
+  if (compact) {
+    drawTreatmentCard(svg, rawSpectrum, hpoSpectrum, data, {
+      x0: 10, y0: 8, width: 620, title: "HPO-selected view", routeClass: "treatment-hpo-line", trim: pipelinePreviewTrim(hpoPipeline),
+    });
+    drawTreatmentCard(svg, rawSpectrum, aomSpectrum, data, {
+      x0: 10, y0: 350, width: 620, title: "AOM-selected view", routeClass: "treatment-aom-line", trim: aomTrim,
+    });
+  } else {
+    drawTreatmentCard(svg, rawSpectrum, hpoSpectrum, data, {
+      x0: 12, width: 620, title: "HPO-selected view", routeClass: "treatment-hpo-line", trim: pipelinePreviewTrim(hpoPipeline),
+    });
+    drawTreatmentCard(svg, rawSpectrum, aomSpectrum, data, {
+      x0: 648, width: 620, title: "AOM-selected view", routeClass: "treatment-aom-line", trim: aomTrim,
+    });
   }
-  addText(svg, axisUnit(data.meta.unit), { x: 310, y: 528, class: "n4viz-axis-label", "text-anchor": "middle" });
 }
 
-function drawCoefficientChart(data, plsCoefficients, aomCoefficients) {
-  const svg = byId("coefficient-chart");
-  svg.replaceChildren();
-  const width = 1280;
-  const height = 360;
-  const margin = { left: 72, right: 24, top: 22, bottom: 52 };
-  const [yMin, yMax] = paddedExtent([...plsCoefficients, ...aomCoefficients], .07);
-  const scales = addAxes(svg, { width, height, margin, axis: data.axis, yMin, yMax, xLabel: axisUnit(data.meta.unit), yLabel: "coefficient", xTicks: 6, yTicks: 4 });
-  if (yMin < 0 && yMax > 0) svg.append(svgElement("line", { x1: margin.left, y1: scales.y(0), x2: width - margin.right, y2: scales.y(0), class: "n4viz-axis" }));
-  svg.append(svgElement("path", { d: pathFromValues(plsCoefficients, scales.x, scales.y), class: "plot-line coefficient-pls" }));
-  svg.append(svgElement("path", { d: pathFromValues(aomCoefficients, scales.x, scales.y), class: "plot-line coefficient-aom" }));
-}
+window.addEventListener("resize", () => {
+  window.clearTimeout(operatorResizeTimer);
+  operatorResizeTimer = window.setTimeout(() => {
+    if (lastOperatorChart) drawOperatorChart(lastOperatorChart.data, lastOperatorChart.hpoPipeline, lastOperatorChart.aomOperator);
+  }, 120);
+});
 
 function formatAlpha(alpha) {
   if (!Number.isFinite(alpha)) return "n/a";
@@ -1289,12 +1329,127 @@ function formatAlpha(alpha) {
   return alpha.toExponential(0).replace("e+", "e");
 }
 
-function renderMethodResult(prefix, result, stats, selection) {
-  byId(`${prefix}-selection`).textContent = selection;
+function describePreprocessingStep(step) {
+  if (step.op === "Detrend") return `${Number(step.params[0]) === 2 ? "quadratic" : "linear"} baseline removed`;
+  if (step.op === "StandardNormalVariate") return "standard normal variate (SNV)";
+  if (step.op === "GaussianFilter") return `Gaussian smoothing, σ = ${formatAlpha(Number(step.params[0]))}`;
+  if (step.op === "Derivative") return `${Number(step.params[0]) === 2 ? "second" : "first"} finite derivative`;
+  if (step.op === "SavitzkyGolay") {
+    const [window, polynomial, derivative = 0] = step.params;
+    const action = derivative === 0 ? "smoothing" : derivative === 1 ? "first derivative" : "second derivative";
+    return `SG window ${window}, polynomial degree ${polynomial}, ${action}`;
+  }
+  return step.op;
+}
+
+function describePipeline(selectedPipeline) {
+  if (!selectedPipeline || selectedPipeline.steps.length === 0) return "No spectral pretreatment";
+  return selectedPipeline.steps.map(describePreprocessingStep).join(" → ");
+}
+
+function componentLabel(count) {
+  return `${count} PLS latent component${count === 1 ? "" : "s"}`;
+}
+
+function renderModelSetting(cell, setting) {
+  cell.replaceChildren();
+  const wrapper = document.createElement("div");
+  wrapper.className = "model-setting";
+  const title = document.createElement("strong");
+  title.textContent = setting.title;
+  const detail = document.createElement("span");
+  detail.textContent = setting.detail;
+  const selection = document.createElement("small");
+  selection.textContent = setting.selection;
+  wrapper.append(title, detail, selection);
+  cell.append(wrapper);
+}
+
+function renderMethodResult(prefix, result, stats, setting) {
+  renderModelSetting(byId(`${prefix}-selection`), setting);
   byId(`${prefix}-rmse`).textContent = formatMetric(stats.rmse);
   byId(`${prefix}-mae`).textContent = formatMetric(stats.mae);
   byId(`${prefix}-r2`).textContent = formatMetric(stats.r2);
   byId(`${prefix}-time`).textContent = `${formatTime(result.elapsed)} · ${result.searchLabel || `${result.candidateFits ?? 1} fit calls`}`;
+}
+
+function resetHpoScoreTable() {
+  const body = byId("hpo-all-scores");
+  body.replaceChildren();
+  const row = document.createElement("tr");
+  const cell = document.createElement("td");
+  cell.colSpan = 6;
+  cell.textContent = "Run the experiment to populate all candidate scores.";
+  row.append(cell);
+  body.append(row);
+}
+
+function appendScoreCell(row, value) {
+  const cell = document.createElement("td");
+  cell.textContent = value;
+  row.append(cell);
+}
+
+function renderHpoScoreTable(pipelines, plsResults, ridgeResults, hpoPls, hpoRidge) {
+  const body = byId("hpo-all-scores");
+  body.replaceChildren();
+  const plsById = new Map(plsResults.map((result) => [result.pipeline.id, result]));
+  const ridgeById = new Map(ridgeResults.map((result) => [result.pipeline.id, result]));
+  pipelines.forEach((selectedPipeline) => {
+    const pls = plsById.get(selectedPipeline.id);
+    const ridge = ridgeById.get(selectedPipeline.id);
+    const plsWinner = selectedPipeline.id === hpoPls.operator.id;
+    const ridgeWinner = selectedPipeline.id === hpoRidge.operator.id;
+    const row = document.createElement("tr");
+    if (plsWinner) row.classList.add("is-pls-winner");
+    if (ridgeWinner) row.classList.add("is-ridge-winner");
+    const name = document.createElement("th");
+    name.scope = "row";
+    name.textContent = selectedPipeline.name;
+    const description = document.createElement("small");
+    description.textContent = describePipeline(selectedPipeline);
+    name.append(description);
+    row.append(name);
+    appendScoreCell(row, pls ? String(pls.components) : "not stable");
+    appendScoreCell(row, pls ? formatMetric(pls.cvRmse) : "—");
+    appendScoreCell(row, ridge ? formatAlpha(ridge.alpha) : "not stable");
+    appendScoreCell(row, ridge ? formatMetric(ridge.cvRmse) : "—");
+    const selected = document.createElement("td");
+    selected.className = "winner-badges";
+    [[plsWinner, "PLS winner", "pls"], [ridgeWinner, "Ridge winner", "ridge"]].forEach(([winner, label, type]) => {
+      if (!winner) return;
+      const badge = document.createElement("span");
+      badge.className = `score-winner ${type}`;
+      badge.textContent = label;
+      selected.append(badge);
+    });
+    if (!plsWinner && !ridgeWinner) selected.textContent = "—";
+    row.append(selected);
+    body.append(row);
+  });
+}
+
+function comparisonSummary(hpoRmse, aomRmse) {
+  const denominator = Math.max(Math.abs(hpoRmse), Math.abs(aomRmse), Number.EPSILON);
+  const gap = Math.abs(hpoRmse - aomRmse) / denominator * 100;
+  if (gap <= .5) return { winner: "tie", text: `Essentially tied (${gap.toFixed(1)}% apart)` };
+  const aomWins = aomRmse < hpoRmse;
+  return { winner: aomWins ? "aom" : "hpo", text: `${aomWins ? "AOM" : "HPO"} is ${gap.toFixed(1)}% lower` };
+}
+
+function renderLocalConclusion(hpoPlsStats, aomPlsStats, hpoRidgeStats, aomRidgeStats, hpoPls, selected) {
+  const pls = comparisonSummary(hpoPlsStats.rmse, aomPlsStats.rmse);
+  const ridge = comparisonSummary(hpoRidgeStats.rmse, aomRidgeStats.rmse);
+  let title = "HPO and AOM trade places across the two model families";
+  if ([pls.winner, ridge.winner].every((winner) => winner === "aom" || winner === "tie")) title = "AOM matches or improves on HPO in this run";
+  if ([pls.winner, ridge.winner].every((winner) => winner === "hpo" || winner === "tie")) title = "HPO matches or improves on AOM in this run";
+  if (pls.winner === "tie" && ridge.winner === "tie") title = "HPO and AOM are essentially tied in this run";
+  byId("local-conclusion-title").textContent = title;
+  byId("local-conclusion-copy").textContent = `This conclusion applies only to this held-out split. HPO selected ${hpoPls.operator.name}; AOM selected ${selected.name}. The 32-dataset evidence remains in the paper summary below.`;
+  byId("conclusion-pls").textContent = `HPO ${formatMetric(hpoPlsStats.rmse)} · AOM ${formatMetric(aomPlsStats.rmse)}`;
+  byId("conclusion-pls-detail").textContent = `${pls.text} on validation RMSE.`;
+  byId("conclusion-ridge").textContent = `HPO ${formatMetric(hpoRidgeStats.rmse)} · AOM ${formatMetric(aomRidgeStats.rmse)}`;
+  byId("conclusion-ridge-detail").textContent = `${ridge.text} on validation RMSE.`;
 }
 
 function setComparisonVerdict(valueId, detailId, aomStats, hpoStats, label) {
@@ -1530,19 +1685,43 @@ async function runComparison() {
     const selected = operators[aomPlsModel.selectedOperator] || { name: `Bank entry ${aomPlsModel.selectedOperator}`, short: "custom", detail: "Selected entry in the configured operator bank.", kind: operators[0].kind };
 
     byId("pls-hpo-card").textContent = hpoPls.operator.name;
-    byId("pls-hpo-card-detail").textContent = `${hpoPls.operator.short} · ${hpoPls.components} components · CV RMSE ${formatMetric(hpoPls.cvRmse)}`;
+    byId("pls-hpo-card-detail").textContent = `${describePipeline(hpoPls.operator)} · ${componentLabel(hpoPls.components)} · ${foldCount}-fold calibration CV RMSE ${formatMetric(hpoPls.cvRmse)}`;
     byId("operator").textContent = selected.name;
-    byId("operator-detail").textContent = `${selected.short} · ${aomComponentAudit.components} components · bank ${aomPlsModel.selectedOperator + 1}/${operators.length} · CV RMSE ${formatMetric(aomPlsModel.score)}`;
+    byId("operator-detail").textContent = `${selected.detail} ${componentLabel(aomComponentAudit.components)} · ${foldCount}-fold calibration CV RMSE ${formatMetric(aomPlsModel.score)}`;
     byId("ridge-hpo-card").textContent = hpoRidge.operator.name;
-    byId("ridge-hpo-card-detail").textContent = `${hpoRidge.operator.short} · α ${formatAlpha(hpoRidge.alpha)} · CV RMSE ${formatMetric(hpoRidge.cvRmse)}`;
+    byId("ridge-hpo-card-detail").textContent = `${describePipeline(hpoRidge.operator)} · Ridge regularisation α = ${formatAlpha(hpoRidge.alpha)} · ${foldCount}-fold calibration CV RMSE ${formatMetric(hpoRidge.cvRmse)}`;
     byId("ridge-aom-card-detail").textContent = `${RIDGE_ALPHAS.length} α values · ${foldCount}-fold internal CV · one blended raw-input model.`;
-    renderMethodResult("pls-default", rawPls, rawPlsStats, `${rawPls.components} comp. · CV ${formatMetric(rawPls.cvRmse)}`);
-    renderMethodResult("pls-hpo", hpoPls, hpoPlsStats, `${hpoPls.operator.short} · ${hpoPls.components} comp. · CV ${formatMetric(hpoPls.cvRmse)}`);
+    renderMethodResult("pls-default", rawPls, rawPlsStats, {
+      title: "Raw spectrum",
+      detail: `${componentLabel(rawPls.components)} · no spectral pretreatment`,
+      selection: `${foldCount}-fold calibration CV RMSE ${formatMetric(rawPls.cvRmse)}`,
+    });
+    renderMethodResult("pls-hpo", hpoPls, hpoPlsStats, {
+      title: hpoPls.operator.name,
+      detail: `${describePipeline(hpoPls.operator)} · ${componentLabel(hpoPls.components)}`,
+      selection: `${foldCount}-fold calibration CV RMSE ${formatMetric(hpoPls.cvRmse)}`,
+    });
     const aomBudgetNote = aomPlsFit.budget < requestedComponentBudget ? ` (shared stable limit; requested ${requestedComponentBudget})` : "";
-    renderMethodResult("aom-pls", aomPls, aomPlsStats, `${selected.short} · ${aomComponentAudit.components} comp. · CV ${formatMetric(aomPlsModel.score)}${aomBudgetNote}`);
-    renderMethodResult("ridge-default", rawRidge, rawRidgeStats, `α ${formatAlpha(rawRidge.alpha)} · CV ${formatMetric(rawRidge.cvRmse)}`);
-    renderMethodResult("ridge-hpo", hpoRidge, hpoRidgeStats, `${hpoRidge.operator.short} · α ${formatAlpha(hpoRidge.alpha)} · CV ${formatMetric(hpoRidge.cvRmse)}`);
-    renderMethodResult("aom-ridge", aomRidge, aomRidgeStats, `compact 12-chain blend · ${RIDGE_ALPHAS.length} α`);
+    renderMethodResult("aom-pls", aomPls, aomPlsStats, {
+      title: selected.name,
+      detail: `${selected.detail} ${componentLabel(aomComponentAudit.components)}${aomBudgetNote}`,
+      selection: `${foldCount}-fold calibration CV RMSE ${formatMetric(aomPlsModel.score)}`,
+    });
+    renderMethodResult("ridge-default", rawRidge, rawRidgeStats, {
+      title: "Raw spectrum",
+      detail: `Ridge regularisation α = ${formatAlpha(rawRidge.alpha)} · no spectral pretreatment`,
+      selection: `${foldCount}-fold calibration CV RMSE ${formatMetric(rawRidge.cvRmse)}`,
+    });
+    renderMethodResult("ridge-hpo", hpoRidge, hpoRidgeStats, {
+      title: hpoRidge.operator.name,
+      detail: `${describePipeline(hpoRidge.operator)} · Ridge regularisation α = ${formatAlpha(hpoRidge.alpha)}`,
+      selection: `${foldCount}-fold calibration CV RMSE ${formatMetric(hpoRidge.cvRmse)}`,
+    });
+    renderMethodResult("aom-ridge", aomRidge, aomRidgeStats, {
+      title: "Compact 12-chain blend",
+      detail: `${RIDGE_ALPHAS.length} candidate α values · one raw-input predictor`,
+      selection: `Blend and regularisation selected by ${foldCount}-fold calibration CV`,
+    });
 
     setComparisonVerdict("rmse-delta", "delta-detail", aomPlsStats, hpoPlsStats, "PLS");
     setComparisonVerdict("ridge-rmse-delta", "ridge-delta-detail", aomRidgeStats, hpoRidgeStats, "Ridge");
@@ -1550,17 +1729,23 @@ async function runComparison() {
     byId("hpo-protocol-detail").textContent = `PLS routes share components 1–${componentBudget}; raw, HPO and AOM share the same ${foldCount} contiguous folds and arithmetic mean of fold RMSEs. Only the search space and search mechanism differ. Raw-subset and native-identity parity checks passed. The ${currentData.testRows} validation rows stay untouched until final scoring.`;
     byId("hpo-pls-detail").textContent = `Screened ${searchProfile.pipelines.length} pipelines × components 1–${componentBudget}. Winner: ${hpoPls.operator.name}, ${hpoPls.components} components (CV RMSE ${formatMetric(hpoPls.cvRmse)}; ${hpoPls.candidateFits} fit calls).`;
     byId("hpo-ridge-detail").textContent = `Screened ${searchProfile.pipelines.length} pipelines × α {${RIDGE_ALPHAS.map(formatAlpha).join(", ")}}. Winner: ${hpoRidge.operator.name}, α ${formatAlpha(hpoRidge.alpha)} (CV RMSE ${formatMetric(hpoRidge.cvRmse)}; ${hpoRidge.candidateFits} fit calls).`;
+    renderHpoScoreTable(searchProfile.pipelines, hpoPls.pipelineResults, hpoRidge.pipelineResults, hpoPls, hpoRidge);
     const namedResults = [
       { name: "raw PLS", stats: rawPlsStats }, { name: "PLS-HPO", stats: hpoPlsStats }, { name: "AOM-PLS", stats: aomPlsStats },
       { name: "raw Ridge", stats: rawRidgeStats }, { name: "Ridge-HPO", stats: hpoRidgeStats }, { name: "AOM-Ridge", stats: aomRidgeStats },
     ];
     const best = [...namedResults].sort((left, right) => left.stats.rmse - right.stats.rmse)[0];
     byId("result-summary").textContent = `On these ${currentData.testRows} held-out rows, ${best.name} has the lowest RMSE (${formatMetric(best.stats.rmse)}). This is one local result; the paper-context panel below reports the 32-dataset evidence.`;
-    byId("operator-preview-title").textContent = "Raw, HPO and AOM views";
+    byId("pretreatment-hpo-name").textContent = hpoPls.operator.name;
+    byId("pretreatment-hpo-setting").textContent = `${describePipeline(hpoPls.operator)} · ${componentLabel(hpoPls.components)} · ${foldCount}-fold calibration CV RMSE ${formatMetric(hpoPls.cvRmse)} · validation RMSE ${formatMetric(hpoPlsStats.rmse)}`;
+    byId("pretreatment-aom-name").textContent = selected.name;
+    byId("pretreatment-aom-setting").textContent = `${selected.detail} ${componentLabel(aomComponentAudit.components)} · ${foldCount}-fold calibration CV RMSE ${formatMetric(aomPlsModel.score)} · validation RMSE ${formatMetric(aomPlsStats.rmse)}`;
+    byId("operator-preview-title").textContent = "The spectral views selected for PLS";
     const edgeNote = pipelinePreviewTrim(hpoPls.operator) > 0 || selected.kind === 8 || selected.kind === 9 || selected.kind === 15
       ? " Boundary transients are clipped only in this preview; fitting uses the complete transformed matrices."
       : "";
-    byId("operator-explanation").textContent = `Panel B is the HPO winner (${hpoPls.operator.name}); panel C is the separate AOM-PLS selection (${selected.name}, ${aomComponentAudit.components} components). Independent y scales keep shape changes legible.${edgeNote}`;
+    byId("operator-explanation").textContent = `Each card compares the same representative raw spectrum (dashed) with the selected spectral view (solid). Each curve is standardized separately for shape comparison only; fitting uses complete transformed values. Exact settings, CV scores and validation scores are stated above.${edgeNote}`;
+    renderLocalConclusion(hpoPlsStats, aomPlsStats, hpoRidgeStats, aomRidgeStats, hpoPls, selected);
     byId("fairness-text").textContent = `${currentData.trainRows} calibration · ${currentData.testRows} held out · same ${foldCount} folds · mean fold RMSE · parity checks passed`;
 
     drawRmseChart([
@@ -1578,7 +1763,6 @@ async function runComparison() {
       { predictions: aomRidge.predictions, className: "aom" },
     ]);
     drawOperatorChart(currentData, hpoPls.operator, selected);
-    drawCoefficientChart(currentData, rawPls.model.coefficients, aomPlsModel.coefficients);
     byId("run-note").textContent = `Complete: ${currentData.meta.label}; all metrics use the untouched validation partition.`;
     byId("run-note").className = "form-status success";
     setActivity({
@@ -1592,7 +1776,8 @@ async function runComparison() {
         && namedResults.every((item) => Number.isFinite(item.stats.rmse))
         && byId("rmse-chart").children.length > 10
         && byId("operator-chart").children.length > 15
-        && byId("aom-pls-selection").textContent.includes("comp.")
+        && byId("aom-pls-selection").textContent.includes("PLS latent component")
+        && byId("hpo-all-scores").children.length === searchProfile.pipelines.length
         && !byId("pls-hpo-card").textContent.includes("—")
         && document.documentElement.dataset.protocolParity === "pass"
         && byId("activity-progress").getAttribute("aria-valuenow") === "100"

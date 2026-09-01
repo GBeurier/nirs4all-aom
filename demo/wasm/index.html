@@ -233,11 +233,18 @@
           <div><strong>PLS search</strong><p id="hpo-pls-detail">Component grid and winning preprocessing pipeline.</p></div>
           <div><strong>Ridge search</strong><p id="hpo-ridge-detail">Alpha grid and winning preprocessing pipeline.</p></div>
         </div>
+        <div class="hpo-score-table-wrap" role="region" aria-label="Complete HPO cross-validation scores" tabindex="0">
+          <table class="hpo-score-table">
+            <caption>Every preprocessing pipeline tested. Each row reports its best internal PLS component count and Ridge α, selected on calibration CV only.</caption>
+            <thead><tr><th scope="col">Pretreatment</th><th scope="col">PLS components</th><th scope="col">PLS CV RMSE</th><th scope="col">Ridge α</th><th scope="col">Ridge CV RMSE</th><th scope="col">Selected</th></tr></thead>
+            <tbody id="hpo-all-scores"><tr><td colspan="6">Run the experiment to populate all candidate scores.</td></tr></tbody>
+          </table>
+        </div>
       </details>
 
       <div class="results-table-wrap n4-surface">
         <table class="results-table method-results">
-          <thead><tr><th scope="col">Family</th><th scope="col">Calibration route</th><th scope="col">Selected setting</th><th scope="col">RMSE ↓</th><th scope="col">MAE ↓</th><th scope="col">R² ↑</th><th scope="col">Local compute time*</th></tr></thead>
+          <thead><tr><th scope="col">Family</th><th scope="col">Calibration route</th><th scope="col">Selected model configuration</th><th scope="col">Validation RMSE ↓</th><th scope="col">Validation MAE ↓</th><th scope="col">Validation R² ↑</th><th scope="col">Local compute time*</th></tr></thead>
           <tbody>
             <tr data-family="pls"><th scope="row" rowspan="3">PLS</th><td><span class="method-dot baseline"></span>Raw reference</td><td id="pls-default-selection">—</td><td id="pls-default-rmse">—</td><td id="pls-default-mae">—</td><td id="pls-default-r2">—</td><td id="pls-default-time">—</td></tr>
             <tr data-family="pls"><td><span class="method-dot hpo"></span>Preprocessing HPO</td><td id="pls-hpo-selection">—</td><td id="pls-hpo-rmse">—</td><td id="pls-hpo-mae">—</td><td id="pls-hpo-r2">—</td><td id="pls-hpo-time">—</td></tr>
@@ -247,6 +254,12 @@
             <tr data-family="ridge" class="aom-row"><td><span class="method-dot adaptive"></span>AOM-Ridge Blender</td><td id="aom-ridge-selection">—</td><td id="aom-ridge-rmse">—</td><td id="aom-ridge-mae">—</td><td id="aom-ridge-r2">—</td><td id="aom-ridge-time">—</td></tr>
           </tbody>
         </table>
+        <div class="results-reading-guide" aria-label="How to read the model settings and scores">
+          <div><strong>CV RMSE</strong><span>Mean prediction error across folds of the calibration set. It selects the configuration; lower is better.</span></div>
+          <div><strong>Validation RMSE</strong><span>Error on untouched rows, used only after selection. This is the main local comparison.</span></div>
+          <div><strong>SG · window · polynomial · derivative</strong><span>Savitzky–Golay settings: number of spectral points, local polynomial degree, then derivative order; derivative 0 means smoothing only.</span></div>
+          <div><strong>PLS components · Ridge α</strong><span>Number of latent PLS dimensions and Ridge regularisation strength. Both are selected by calibration CV.</span></div>
+        </div>
         <p class="table-note">* Times measure this compact browser run and depend on your device. The paper's runtime comparison is AOM against the much larger preprocessing-HPO protocol—not against the raw reference.</p>
       </div>
 
@@ -263,22 +276,35 @@
           <div class="chart-title"><div><p class="overline">Ridge · independent validation</p><h3>Measured vs predicted</h3></div><div class="legend"><span class="legend-key baseline"></span>Raw <span class="legend-key hpo"></span>HPO <span class="legend-key aom"></span>AOM</div></div>
           <svg id="ridge-prediction-chart" class="n4viz" viewBox="0 0 620 420" role="img" aria-label="Measured versus predicted Ridge responses" aria-describedby="result-summary"></svg>
         </article>
-        <article class="chart-panel operator-panel n4-surface">
-          <div class="chart-title"><div><p class="overline">Selected PLS treatments</p><h3 id="operator-preview-title">Raw, HPO and AOM views</h3></div></div>
-          <svg id="operator-chart" class="n4viz" viewBox="0 0 560 550" role="img" aria-label="A representative raw spectrum compared with the HPO-selected and AOM-selected transformed views" aria-describedby="operator-explanation"></svg>
-          <p id="operator-explanation" class="chart-footnote">Panel B will show the HPO winner; panel C will show the separate AOM-PLS selection.</p>
+        <article class="chart-panel selection-panel n4-surface">
+          <div class="chart-title selection-title">
+            <div><p class="overline">What PLS selected</p><h3 id="operator-preview-title">Two routes, two selected spectral views</h3></div>
+            <p>Compare the spectral shape used by each fitted PLS route. Exact metrics remain in the table above.</p>
+          </div>
+          <div class="selection-summary" aria-label="Selected PLS pretreatments">
+            <div class="selection-route hpo-route"><span>Conventional HPO</span><strong id="pretreatment-hpo-name">Awaiting selection</strong><small id="pretreatment-hpo-setting">Pipeline, components and validation RMSE will appear here.</small></div>
+            <div class="selection-route aom-route"><span>AOM one-shot selection</span><strong id="pretreatment-aom-name">Awaiting selection</strong><small id="pretreatment-aom-setting">Operator, components and validation RMSE will appear here.</small></div>
+          </div>
+          <div class="selection-legend" aria-hidden="true"><span class="raw-shape-key"></span>Raw spectral shape <span class="selected-shape-key"></span>Selected spectral view</div>
+          <svg id="operator-chart" class="n4viz" viewBox="0 0 1280 360" role="img" aria-label="Standardized raw spectral shape compared with the HPO-selected and AOM-selected spectral views" aria-describedby="operator-explanation"></svg>
+          <p id="operator-explanation" class="chart-footnote">The two comparisons will appear after fitting. Shapes are standardized only for this display; models use the complete transformed values.</p>
         </article>
-        <article class="chart-panel coefficients-panel n4-surface">
-          <div class="chart-title"><div><p class="overline">Deployable raw-input models</p><h3>Coefficients on the original spectral grid</h3></div><div class="legend"><span class="legend-key baseline"></span>Raw PLS <span class="legend-key aom"></span>AOM-PLS</div></div>
-          <svg id="coefficient-chart" class="n4viz" viewBox="0 0 1280 360" role="img" aria-label="Raw PLS and AOM-PLS regression coefficients on the original feature grid" aria-describedby="coefficient-summary"></svg>
-          <p id="coefficient-summary" class="chart-footnote">Raw PLS and AOM-PLS align with the input columns. HPO coefficients are not plotted because they act after the separately reported HPO preprocessing pipeline; AOM folds its operator into one raw-input model.</p>
+        <article class="conclusion-panel n4-surface" aria-labelledby="local-conclusion-title">
+          <div class="conclusion-lead"><p class="overline">Takeaway from this run</p><h3 id="local-conclusion-title">Run the comparison to obtain a local conclusion</h3><p id="local-conclusion-copy">The conclusion will distinguish the held-out result from the broader evidence reported in the paper.</p></div>
+          <div class="conclusion-facts">
+            <div><span>PLS</span><strong id="conclusion-pls">Awaiting results</strong><small id="conclusion-pls-detail">HPO versus AOM on held-out rows.</small></div>
+            <div><span>Ridge</span><strong id="conclusion-ridge">Awaiting results</strong><small id="conclusion-ridge-detail">HPO versus AOM on held-out rows.</small></div>
+            <div><span>Deployment</span><strong id="conclusion-deploy">AOM accepts raw X</strong><small>The selected operator is folded into one raw-input predictor; HPO must replay its pipeline.</small></div>
+          </div>
         </article>
       </div>
       <div class="paper-context n4-surface">
-        <div><p class="overline">Paper benchmark · 32 datasets</p><h3>Interpret one local result in the aggregate context</h3></div>
-        <p><strong>AOM-PLS</strong> wins 22/32 comparisons against PLS-default and remains near parity with PLS-HPO (median RMSEP ratio 0.990).</p>
-        <p><strong>AOM-Ridge Blender</strong> wins 25/32 comparisons against Ridge-HPO (median RMSEP ratio 0.966; Holm-adjusted p = 0.033).</p>
-        <p><strong>Runtime claim.</strong> The paper compares the full HPO protocol (median 710.81 s; 3000 trial fits) with the compact AOM search (1.18–1.63 s; 45 search units). This browser fixture is illustrative, not that benchmark.</p>
+        <div class="paper-context-lead"><p class="overline">How to read this result</p><h3>A demonstration is one split; the paper is the evidence</h3><p>This page explains the workflow on one dataset. It does not replace the multi-dataset comparison.</p></div>
+        <div class="paper-evidence">
+          <p><strong>PLS evidence.</strong> Across 32 datasets, AOM-PLS wins 22 comparisons against raw PLS and remains near parity with PLS-HPO (median RMSEP ratio 0.990).</p>
+          <p><strong>Ridge evidence.</strong> AOM-Ridge wins 25/32 comparisons against Ridge-HPO (median RMSEP ratio 0.966; Holm-adjusted p = 0.033).</p>
+          <p><strong>Runtime evidence.</strong> The paper compares full HPO (median 710.81 s; 3000 trial fits) with the compact AOM search (1.18–1.63 s; 45 search units).</p>
+        </div>
       </div>
       <div class="guided-next n4-surface">
         <div><span>Next step</span><strong>Keep the comparison reproducible</strong><small>When you have reviewed the held-out metrics and plots, copy the matching Python or R setup for your project.</small></div>

@@ -22,9 +22,12 @@ chemometrician through the following path:
 - cross-validates raw Ridge over a logarithmic alpha grid;
 - fits the native compact AOM-Ridge simplex blender;
 - reports all six calibration stages through a persistent progress indicator;
-- compares all six routes on the same untouched validation rows; and
-- displays the HPO and AOM selections separately, their transformed spectral
-  views, original-grid coefficients, metrics, and measured-versus-predicted values; and
+- compares all six routes on the same untouched validation rows;
+- displays every HPO preprocessing pipeline with its best PLS/Ridge CV setting
+  and score, explains the selected parameters in plain language, and compares
+  the HPO and AOM spectral views, validation metrics, and measured-versus-predicted values;
+- closes the experiment with a split-specific conclusion kept explicitly
+  separate from the paper's 32-dataset evidence; and
 - ends with accessible tabs containing the released PyPI and R-universe install
   commands, executable Python/R examples, and links to both source repositories.
 
