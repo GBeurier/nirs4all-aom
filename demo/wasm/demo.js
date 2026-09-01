@@ -3,13 +3,11 @@ import {
   fitAom,
   fitAomRidge,
   fitModel,
-  fitPls,
   loadModule,
   ppCreate,
   ppDestroy,
   ppTransform,
   predictModel,
-  predictPls,
   version,
 } from "./n4m/index.js";
 
@@ -68,12 +66,90 @@ const HPO_PIPELINES = [
   pipeline("gaussian-2-snv", "Gaussian σ2 then SNV", "Gaussian σ2 → SNV", [{ op: "GaussianFilter", params: [2] }, { op: "StandardNormalVariate", params: [] }]),
   pipeline("sg-s5-snv", "SG smoothing 5 then SNV", "SG 5/2 → SNV", [sg(5, 2), { op: "StandardNormalVariate", params: [] }]),
   pipeline("sg-s11-snv", "SG smoothing 11 then SNV", "SG 11/2 → SNV", [sg(11, 2), { op: "StandardNormalVariate", params: [] }]),
+  ...[.25, .75, 1.5, 2.5, 3, 5, 6].map((sigma) => pipeline(
+    `gaussian-${String(sigma).replace(".", "")}`,
+    `Gaussian smoothing σ${sigma}`,
+    `Gaussian σ${sigma}`,
+    [{ op: "GaussianFilter", params: [sigma] }],
+  )),
+  ...[9, 13, 19, 21, 25].map((window) => pipeline(
+    `sg-s${window}`,
+    `Savitzky–Golay smoothing ${window}`,
+    `SG ${window}/3 d0`,
+    [sg(window, 3)],
+  )),
+  ...[9, 13, 19, 21, 25].map((window) => pipeline(
+    `sg-d1-${window}`,
+    `Savitzky–Golay derivative ${window}`,
+    `SG ${window}/3 d1`,
+    [sg(window, 3, 1)],
+  )),
+  ...[5, 9, 13, 19, 21, 25].map((window) => pipeline(
+    `sg-d2-${window}`,
+    `Savitzky–Golay second derivative ${window}`,
+    `SG ${window}/3 d2`,
+    [sg(window, 3, 2)],
+  )),
+  ...[7, 15, 21].map((window) => pipeline(
+    `snv-sg-s${window}`,
+    `SNV then SG smoothing ${window}`,
+    `SNV → SG ${window}/3`,
+    [{ op: "StandardNormalVariate", params: [] }, sg(window, 3)],
+  )),
+  ...[5, 15, 21].map((window) => pipeline(
+    `snv-sg-d1-${window}`,
+    `SNV then SG derivative ${window}`,
+    `SNV → SG ${window}/3 d1`,
+    [{ op: "StandardNormalVariate", params: [] }, sg(window, 3, 1)],
+  )),
+  ...[7, 15, 21].map((window) => pipeline(
+    `d1-sg-s${window}`,
+    `Linear detrending then SG smoothing ${window}`,
+    `detrend → SG ${window}/3`,
+    [{ op: "Detrend", params: [1] }, sg(window, 3)],
+  )),
+  ...[5, 15, 21].map((window) => pipeline(
+    `d1-sg-d1-${window}`,
+    `Linear detrending then SG derivative ${window}`,
+    `detrend → SG ${window}/3 d1`,
+    [{ op: "Detrend", params: [1] }, sg(window, 3, 1)],
+  )),
+  ...[5, 11, 21].map((window) => pipeline(
+    `d2-sg-s${window}`,
+    `Quadratic detrending then SG smoothing ${window}`,
+    `detrend d2 → SG ${window}/3`,
+    [{ op: "Detrend", params: [2] }, sg(window, 3)],
+  )),
+  ...[7, 11, 21].map((window) => pipeline(
+    `d2-sg-d1-${window}`,
+    `Quadratic detrending then SG derivative ${window}`,
+    `detrend d2 → SG ${window}/3 d1`,
+    [{ op: "Detrend", params: [2] }, sg(window, 3, 1)],
+  )),
+  ...[.5, 4, 6].map((sigma) => pipeline(
+    `gaussian-${String(sigma).replace(".", "")}-snv`,
+    `Gaussian σ${sigma} then SNV`,
+    `Gaussian σ${sigma} → SNV`,
+    [{ op: "GaussianFilter", params: [sigma] }, { op: "StandardNormalVariate", params: [] }],
+  )),
+  ...[7, 15, 21].map((window) => pipeline(
+    `sg-s${window}-snv`,
+    `SG smoothing ${window} then SNV`,
+    `SG ${window}/3 → SNV`,
+    [sg(window, 3), { op: "StandardNormalVariate", params: [] }],
+  )),
+  ...[5, 11, 21].map((window) => pipeline(
+    `sg-d1-${window}-snv`,
+    `SG derivative ${window} then SNV`,
+    `SG ${window}/3 d1 → SNV`,
+    [sg(window, 3, 1), { op: "StandardNormalVariate", params: [] }],
+  )),
 ];
 
 const QUICK_PIPELINE_IDS = new Set(["raw", "detrend-1", "sg-s5", "sg-d1-5", "diff-1"]);
 const SEARCH_PROFILES = {
-  quick: { id: "quick", label: "Quick check", pipelines: HPO_PIPELINES.filter((item) => QUICK_PIPELINE_IDS.has(item.id)), repeats: 1 },
-  full: { id: "full", label: "Full HPO", pipelines: HPO_PIPELINES, repeats: 3 },
+  quick: { id: "quick", label: "Quick check", pipelines: HPO_PIPELINES.filter((item) => QUICK_PIPELINE_IDS.has(item.id)) },
+  full: { id: "full", label: "Full HPO", pipelines: HPO_PIPELINES },
 };
 
 const byId = (id) => document.getElementById(id);
@@ -247,12 +323,12 @@ function updateSearchDepthUi(markStale = true) {
   const profile = selectedSearchProfile();
   const full = profile.id === "full";
   byId("search-depth-note").textContent = full
-    ? `Broad library: ${profile.pipelines.length} pipelines with ${profile.repeats} repeated fold layouts; typically 20–45 seconds on bundled examples (device dependent).`
-    : `${profile.pipelines.length} representative pipelines with one fold layout for a fast interface check.`;
+    ? `Broad library: ${profile.pipelines.length} pipelines on the exact same fold plan as raw PLS and AOM (device-dependent runtime).`
+    : `${profile.pipelines.length} representative pipelines on the same shared fold plan for a fast interface check.`;
   byId("hpo-scope").textContent = full
-    ? "The full search covers raw spectra, SNV, two detrending orders, several Gaussian and Savitzky–Golay smoothers, first/second derivatives and selected two-step chains. Repeated deterministic fold layouts are averaged before the winner is refitted."
+    ? "The full search covers raw spectra, SNV, two detrending orders, several Gaussian and Savitzky–Golay smoothers, first/second derivatives and selected two-step chains. Every route uses the same deterministic folds and mean fold-RMSE score."
     : "The quick check screens raw spectra, linear detrending, one Savitzky–Golay smoother, one Savitzky–Golay derivative and one finite derivative. It is useful for checking files, not for an exhaustive comparison.";
-  byId("run-search-summary").textContent = full ? "full repeated local HPO" : "quick local check";
+  byId("run-search-summary").textContent = full ? "full protocol-matched HPO" : "quick protocol-matched check";
   if (markStale) markResultsStale();
 }
 
@@ -573,7 +649,7 @@ function resetResults() {
   byId("ridge-rmse-delta").className = "";
   byId("ridge-delta-detail").textContent = "Run the experiment to compare HPO and AOM directly.";
   byId("hpo-search-summary").textContent = "Available after the experiment";
-  byId("hpo-protocol-detail").textContent = "The selected search depth, folds and repetitions will appear here.";
+  byId("hpo-protocol-detail").textContent = "The shared fold plan and score definition will appear here.";
   byId("hpo-pls-detail").textContent = "Component grid and winning preprocessing pipeline.";
   byId("hpo-ridge-detail").textContent = "Alpha grid and winning preprocessing pipeline.";
   byId("result-summary").textContent = "Run the comparison to populate six held-out results, selected settings and diagnostic plots.";
@@ -763,12 +839,9 @@ function selectRows(buffer, rowIndices, cols) {
   return output;
 }
 
-function contiguousFolds(rows, count, offset = 0) {
+function contiguousFolds(rows, count) {
   const folds = Array.from({ length: count }, () => []);
-  for (let position = 0; position < rows; position += 1) {
-    const row = (position + offset) % rows;
-    folds[Math.floor(position * count / rows)].push(row);
-  }
+  for (let row = 0; row < rows; row += 1) folds[Math.floor(row * count / rows)].push(row);
   return folds;
 }
 
@@ -790,68 +863,41 @@ function metrics(actual, predicted) {
   };
 }
 
-async function scorePlsCandidates(data, maxComponents, foldCount, foldOffset = 0, onProgress) {
-  let elapsed = 0;
-  const folds = contiguousFolds(data.trainRows, foldCount, foldOffset);
-  const allRows = Array.from({ length: data.trainRows }, (_, index) => index);
-  const maxAllowed = Math.max(1, Math.min(maxComponents, data.cols, ...folds.map((held) => data.trainRows - held.length - 1)));
-  const candidates = [];
-  const totalUnits = maxAllowed * folds.length;
-  let completedUnits = 0;
-  let candidateFits = 0;
-  for (let components = 1; components <= maxAllowed; components += 1) {
-    const oof = new Float64Array(data.trainRows);
-    let validCandidate = true;
-    for (let foldIndex = 0; foldIndex < folds.length; foldIndex += 1) {
-      const heldRows = folds[foldIndex];
-      const held = new Set(heldRows);
-      const fitRows = allRows.filter((row) => !held.has(row));
-      const xFit = selectRows(data.trainX.data, fitRows, data.cols);
-      const yFit = selectRows(data.trainY, fitRows, 1);
-      const xHeld = selectRows(data.trainX.data, heldRows, data.cols);
-      const fitStarted = performance.now();
-      try {
-        const model = fitPls(matrix(xFit, fitRows.length, data.cols), matrix(yFit, fitRows.length, 1), components);
-        const predictions = predictPls(model, matrix(xHeld, heldRows.length, data.cols)).data;
-        candidateFits += 1;
-        elapsed += performance.now() - fitStarted;
-        heldRows.forEach((row, index) => { oof[row] = predictions[index]; });
-      } catch (error) {
-        elapsed += performance.now() - fitStarted;
-        validCandidate = false;
-      }
-      completedUnits += 1;
-      if (!validCandidate) {
-        completedUnits += folds.length - foldIndex - 1;
-        break;
-      }
-      onProgress?.(completedUnits / totalUnits, components, maxAllowed);
-    }
-    if (validCandidate) candidates.push({ components, rmse: metrics(data.trainY, oof).rmse });
-    onProgress?.(completedUnits / totalUnits, components, maxAllowed);
-    await yieldToBrowser();
-  }
-  if (candidates.length === 0) throw new Error("No numerically stable PLS component count was found.");
-  return { candidates, elapsed, maxAllowed, candidateFits };
-}
-
 async function fitCrossValidatedPls(data, maxComponents, foldCount, onProgress) {
-  const scored = await scorePlsCandidates(data, maxComponents, foldCount, 0, onProgress);
-  const candidates = [...scored.candidates];
-  candidates.sort((left, right) => left.rmse - right.rmse || left.components - right.components);
-  const selected = candidates[0];
-  const finalFitStarted = performance.now();
-  const model = fitPls(matrix(data.trainX.data, data.trainRows, data.cols), matrix(data.trainY, data.trainRows, 1), selected.components);
-  const predictions = predictPls(model, matrix(data.testX.data, data.testRows, data.cols)).data;
-  onProgress?.(1, selected.components, scored.maxAllowed);
+  const selected = await scoreNativeIdentityPls(data, maxComponents, foldCount, onProgress);
+  const model = selected.model;
+  const predictions = predictModel(model, matrix(data.testX.data, data.testRows, data.cols)).data;
+  onProgress?.(1, selected.components, maxComponents);
   return {
     model,
     predictions,
     components: selected.components,
-    cvRmse: selected.rmse,
-    elapsed: scored.elapsed + performance.now() - finalFitStarted,
-    maxAllowed: scored.maxAllowed,
-    candidateFits: scored.candidateFits + 1,
+    cvRmse: selected.cvRmse,
+    elapsed: selected.elapsed,
+    maxAllowed: maxComponents,
+    candidateFits: selected.candidateFits,
+  };
+}
+
+async function scoreNativeIdentityPls(data, maxComponents, foldCount, onProgress) {
+  const x = matrix(data.trainX.data, data.trainRows, data.cols);
+  const y = matrix(data.trainY, data.trainRows, 1);
+  const started = performance.now();
+  const selector = fitAom(x, y, maxComponents, foldCount, 0, [0]);
+  const audit = await inferAomSelectedComponents(
+    data,
+    maxComponents,
+    foldCount,
+    0,
+    selector.score,
+    onProgress,
+  );
+  return {
+    model: selector,
+    components: audit.components,
+    cvRmse: selector.score,
+    elapsed: performance.now() - started,
+    candidateFits: (audit.checks + 1) * foldCount,
   };
 }
 
@@ -877,7 +923,7 @@ function transformedDataset(data, selectedPipeline) {
   };
 }
 
-async function fitPreprocessingHpoPls(data, maxComponents, foldCount, pipelines, repeats, onProgress) {
+async function fitPreprocessingHpoPls(data, maxComponents, foldCount, pipelines, onProgress) {
   const candidates = [];
   let elapsed = 0;
   let candidateFits = 0;
@@ -887,50 +933,41 @@ async function fitPreprocessingHpoPls(data, maxComponents, foldCount, pipelines,
     try {
       const transformed = transformedDataset(data, selectedPipeline);
       elapsed += performance.now() - transformStarted;
-      const aggregated = new Map();
-      let maxAllowed = 1;
-      for (let repeat = 0; repeat < repeats; repeat += 1) {
-        const foldOffset = Math.round(repeat * data.trainRows / repeats) % data.trainRows;
-        const scored = await scorePlsCandidates(transformed, maxComponents, foldCount, foldOffset, (fraction, component, total) => {
-          const overall = (pipelineIndex * repeats + repeat + fraction) / (pipelines.length * repeats);
-          onProgress?.(overall, selectedPipeline, component, total, repeat + 1, repeats);
-        });
-        elapsed += scored.elapsed;
-        candidateFits += scored.candidateFits;
-        maxAllowed = scored.maxAllowed;
-        scored.candidates.forEach(({ components, rmse }) => {
-          const aggregate = aggregated.get(components) || { sum: 0, count: 0 };
-          aggregate.sum += rmse;
-          aggregate.count += 1;
-          aggregated.set(components, aggregate);
-        });
-      }
-      aggregated.forEach((aggregate, components) => {
-        if (aggregate.count === repeats) {
-          candidates.push({ pipeline: selectedPipeline, pipelineIndex, components, cvRmse: aggregate.sum / aggregate.count, maxAllowed });
-        }
+      const scored = await scoreNativeIdentityPls(transformed, maxComponents, foldCount, (fraction, component, total) => {
+        const overall = (pipelineIndex + fraction) / pipelines.length;
+        onProgress?.(overall, selectedPipeline, component, total);
+      });
+      elapsed += scored.elapsed;
+      candidateFits += scored.candidateFits;
+      candidates.push({
+        pipeline: selectedPipeline,
+        pipelineIndex,
+        components: scored.components,
+        cvRmse: scored.cvRmse,
+        model: scored.model,
       });
     } catch (error) {
       elapsed += performance.now() - transformStarted;
-      onProgress?.((pipelineIndex + 1) / pipelines.length, selectedPipeline, maxComponents, maxComponents, repeats, repeats);
+      onProgress?.((pipelineIndex + 1) / pipelines.length, selectedPipeline, maxComponents, maxComponents);
     }
   }
   if (candidates.length === 0) throw new Error("No numerically stable PLS preprocessing route was found.");
+  const rawCandidate = [...candidates]
+    .filter((candidate) => candidate.pipeline.id === "raw")
+    .sort((left, right) => left.cvRmse - right.cvRmse || left.components - right.components)[0];
   candidates.sort((left, right) => left.cvRmse - right.cvRmse
     || left.components - right.components
     || left.pipelineIndex - right.pipelineIndex);
   const selected = candidates[0];
   const finalData = transformedDataset(data, selected.pipeline);
-  const finalFitStarted = performance.now();
-  const model = fitPls(matrix(finalData.trainX.data, finalData.trainRows, finalData.cols), matrix(finalData.trainY, finalData.trainRows, 1), selected.components);
-  const predictions = predictPls(model, matrix(finalData.testX.data, finalData.testRows, finalData.cols)).data;
-  elapsed += performance.now() - finalFitStarted;
-  return { model, predictions, components: selected.components, cvRmse: selected.cvRmse, operator: selected.pipeline, elapsed, candidateFits: candidateFits + 1 };
+  const model = selected.model;
+  const predictions = predictModel(model, matrix(finalData.testX.data, finalData.testRows, finalData.cols)).data;
+  return { model, predictions, components: selected.components, cvRmse: selected.cvRmse, operator: selected.pipeline, elapsed, candidateFits, rawCandidate };
 }
 
-async function scoreRidgeCandidates(data, foldCount, alphas, foldOffset = 0, onProgress) {
+async function scoreRidgeCandidates(data, foldCount, alphas, onProgress) {
   let elapsed = 0;
-  const folds = contiguousFolds(data.trainRows, foldCount, foldOffset);
+  const folds = contiguousFolds(data.trainRows, foldCount);
   const allRows = Array.from({ length: data.trainRows }, (_, index) => index);
   const candidates = [];
   const totalUnits = alphas.length * folds.length;
@@ -938,7 +975,8 @@ async function scoreRidgeCandidates(data, foldCount, alphas, foldOffset = 0, onP
   let candidateFits = 0;
   for (let alphaIndex = 0; alphaIndex < alphas.length; alphaIndex += 1) {
     const alpha = alphas[alphaIndex];
-    const oof = new Float64Array(data.trainRows);
+    let foldRmseSum = 0;
+    let validFolds = 0;
     let validCandidate = true;
     for (let foldIndex = 0; foldIndex < folds.length; foldIndex += 1) {
       const heldRows = folds[foldIndex];
@@ -947,13 +985,15 @@ async function scoreRidgeCandidates(data, foldCount, alphas, foldOffset = 0, onP
       const xFit = selectRows(data.trainX.data, fitRows, data.cols);
       const yFit = selectRows(data.trainY, fitRows, 1);
       const xHeld = selectRows(data.trainX.data, heldRows, data.cols);
+      const yHeld = selectRows(data.trainY, heldRows, 1);
       const fitStarted = performance.now();
       try {
         const model = fitModel("Ridge", matrix(xFit, fitRows.length, data.cols), matrix(yFit, fitRows.length, 1), 1, [alpha]);
         const predictions = predictModel(model, matrix(xHeld, heldRows.length, data.cols)).data;
         candidateFits += 1;
         elapsed += performance.now() - fitStarted;
-        heldRows.forEach((row, index) => { oof[row] = predictions[index]; });
+        foldRmseSum += metrics(yHeld, predictions).rmse;
+        validFolds += 1;
       } catch (error) {
         elapsed += performance.now() - fitStarted;
         validCandidate = false;
@@ -965,7 +1005,9 @@ async function scoreRidgeCandidates(data, foldCount, alphas, foldOffset = 0, onP
       }
       onProgress?.(completedUnits / totalUnits, alpha, alphaIndex + 1, alphas.length);
     }
-    if (validCandidate) candidates.push({ alpha, rmse: metrics(data.trainY, oof).rmse });
+    if (validCandidate && validFolds === folds.length) {
+      candidates.push({ alpha, rmse: foldRmseSum / validFolds });
+    }
     onProgress?.(completedUnits / totalUnits, alpha, alphaIndex + 1, alphas.length);
     await yieldToBrowser();
   }
@@ -974,7 +1016,7 @@ async function scoreRidgeCandidates(data, foldCount, alphas, foldOffset = 0, onP
 }
 
 async function fitCrossValidatedRidge(data, foldCount, alphas, onProgress) {
-  const scored = await scoreRidgeCandidates(data, foldCount, alphas, 0, onProgress);
+  const scored = await scoreRidgeCandidates(data, foldCount, alphas, onProgress);
   const candidates = [...scored.candidates];
   candidates.sort((left, right) => left.rmse - right.rmse || left.alpha - right.alpha);
   const selected = candidates[0];
@@ -991,7 +1033,7 @@ async function fitCrossValidatedRidge(data, foldCount, alphas, onProgress) {
   return { model, predictions, alpha: selected.alpha, cvRmse: selected.rmse, elapsed: scored.elapsed + performance.now() - finalFitStarted, candidateFits: scored.candidateFits + 1 };
 }
 
-async function fitPreprocessingHpoRidge(data, foldCount, alphas, pipelines, repeats, onProgress) {
+async function fitPreprocessingHpoRidge(data, foldCount, alphas, pipelines, onProgress) {
   const candidates = [];
   let elapsed = 0;
   let candidateFits = 0;
@@ -1001,33 +1043,24 @@ async function fitPreprocessingHpoRidge(data, foldCount, alphas, pipelines, repe
     try {
       const transformed = transformedDataset(data, selectedPipeline);
       elapsed += performance.now() - transformStarted;
-      const aggregated = new Map();
-      for (let repeat = 0; repeat < repeats; repeat += 1) {
-        const foldOffset = Math.round(repeat * data.trainRows / repeats) % data.trainRows;
-        const scored = await scoreRidgeCandidates(transformed, foldCount, alphas, foldOffset, (fraction, alpha, alphaIndex, alphaCount) => {
-          const overall = (pipelineIndex * repeats + repeat + fraction) / (pipelines.length * repeats);
-          onProgress?.(overall, selectedPipeline, alpha, alphaIndex, alphaCount, repeat + 1, repeats);
-        });
-        elapsed += scored.elapsed;
-        candidateFits += scored.candidateFits;
-        scored.candidates.forEach(({ alpha, rmse }) => {
-          const aggregate = aggregated.get(alpha) || { sum: 0, count: 0 };
-          aggregate.sum += rmse;
-          aggregate.count += 1;
-          aggregated.set(alpha, aggregate);
-        });
-      }
-      aggregated.forEach((aggregate, alpha) => {
-        if (aggregate.count === repeats) {
-          candidates.push({ pipeline: selectedPipeline, pipelineIndex, alpha, cvRmse: aggregate.sum / aggregate.count });
-        }
+      const scored = await scoreRidgeCandidates(transformed, foldCount, alphas, (fraction, alpha, alphaIndex, alphaCount) => {
+        const overall = (pipelineIndex + fraction) / pipelines.length;
+        onProgress?.(overall, selectedPipeline, alpha, alphaIndex, alphaCount);
+      });
+      elapsed += scored.elapsed;
+      candidateFits += scored.candidateFits;
+      scored.candidates.forEach(({ alpha, rmse }) => {
+        candidates.push({ pipeline: selectedPipeline, pipelineIndex, alpha, cvRmse: rmse });
       });
     } catch (error) {
       elapsed += performance.now() - transformStarted;
-      onProgress?.((pipelineIndex + 1) / pipelines.length, selectedPipeline, alphas.at(-1), alphas.length, alphas.length, repeats, repeats);
+      onProgress?.((pipelineIndex + 1) / pipelines.length, selectedPipeline, alphas.at(-1), alphas.length, alphas.length);
     }
   }
   if (candidates.length === 0) throw new Error("No numerically stable Ridge preprocessing route was found.");
+  const rawCandidate = [...candidates]
+    .filter((candidate) => candidate.pipeline.id === "raw")
+    .sort((left, right) => left.cvRmse - right.cvRmse || left.alpha - right.alpha)[0];
   candidates.sort((left, right) => left.cvRmse - right.cvRmse
     || left.alpha - right.alpha
     || left.pipelineIndex - right.pipelineIndex);
@@ -1037,7 +1070,7 @@ async function fitPreprocessingHpoRidge(data, foldCount, alphas, pipelines, repe
   const model = fitModel("Ridge", matrix(finalData.trainX.data, finalData.trainRows, finalData.cols), matrix(finalData.trainY, finalData.trainRows, 1), 1, [selected.alpha]);
   const predictions = predictModel(model, matrix(finalData.testX.data, finalData.testRows, finalData.cols)).data;
   elapsed += performance.now() - finalFitStarted;
-  return { model, predictions, alpha: selected.alpha, cvRmse: selected.cvRmse, operator: selected.pipeline, elapsed, candidateFits: candidateFits + 1 };
+  return { model, predictions, alpha: selected.alpha, cvRmse: selected.cvRmse, operator: selected.pipeline, elapsed, candidateFits: candidateFits + 1, rawCandidate };
 }
 
 function formatMetric(value) {
@@ -1051,6 +1084,16 @@ function formatTime(milliseconds) {
   if (milliseconds < .1) return "<0.1 ms";
   if (milliseconds < 1000) return `${milliseconds.toFixed(1)} ms`;
   return `${(milliseconds / 1000).toFixed(2)} s`;
+}
+
+function protocolScoresMatch(left, right) {
+  if (!Number.isFinite(left) || !Number.isFinite(right)) return false;
+  const scale = Math.max(1, Math.abs(left), Math.abs(right));
+  return Math.abs(left - right) <= scale * 1e-6;
+}
+
+function assertProtocolParity(condition, detail) {
+  if (!condition) throw new Error(`Protocol parity failed: ${detail}`);
 }
 
 function signedPercent(aom, baseline, lowerIsBetter = true) {
@@ -1257,7 +1300,7 @@ function renderMethodResult(prefix, result, stats, selection) {
 function setComparisonVerdict(valueId, detailId, aomStats, hpoStats, label) {
   const value = byId(valueId);
   const aomWins = aomStats.rmse < hpoStats.rmse;
-  const tied = Math.abs(aomStats.rmse - hpoStats.rmse) <= Number.EPSILON * Math.max(1, Math.abs(aomStats.rmse), Math.abs(hpoStats.rmse));
+  const tied = protocolScoresMatch(aomStats.rmse, hpoStats.rmse);
   if (tied) {
     value.className = "neutral";
     value.textContent = "Tie";
@@ -1326,6 +1369,7 @@ async function runComparison() {
   const button = byId("run");
   const operators = selectedOperators();
   const searchProfile = selectedSearchProfile();
+  document.documentElement.dataset.protocolParity = "checking";
   resetResults();
   setControlsLocked(true);
   button.disabled = true;
@@ -1343,7 +1387,16 @@ async function runComparison() {
     const requestedComponents = Number(byId("components").value);
     const foldCount = Math.max(2, Math.min(Number(byId("folds").value), currentData.trainRows));
     const minFoldTrain = currentData.trainRows - Math.ceil(currentData.trainRows / foldCount);
-    const componentBudget = Math.max(1, Math.min(requestedComponents, currentData.cols, minFoldTrain - 1));
+    const requestedComponentBudget = Math.max(1, Math.min(requestedComponents, currentData.cols, minFoldTrain - 1));
+    const aomSelectorStarted = performance.now();
+    const aomPlsFit = fitAomPlsWithStableBudget(
+      currentData,
+      requestedComponentBudget,
+      foldCount,
+      operators.map((operator) => operator.kind),
+    );
+    const aomSelectorElapsed = performance.now() - aomSelectorStarted;
+    const componentBudget = aomPlsFit.budget;
     const rawPls = await fitCrossValidatedPls(currentData, componentBudget, foldCount, (fraction, component, total) => {
       setActivity({
         state: "running", progress: 26 + fraction, phase: "pls",
@@ -1356,31 +1409,31 @@ async function runComparison() {
     setActivity({
       state: "running", progress: 27, phase: "pls",
       title: "PLS · preprocessing HPO",
-      detail: `${searchProfile.pipelines.length} pipelines × ${componentBudget} component counts × ${searchProfile.repeats} fold layout${searchProfile.repeats > 1 ? "s" : ""}…`,
+      detail: `${searchProfile.pipelines.length} pipelines × ${componentBudget} component counts · same ${foldCount} folds · mean fold RMSE…`,
     });
     await yieldToBrowser();
-    const hpoPls = await fitPreprocessingHpoPls(currentData, componentBudget, foldCount, searchProfile.pipelines, searchProfile.repeats, (fraction, selectedPipeline, component, total, repeat, repeats) => {
+    const hpoPls = await fitPreprocessingHpoPls(currentData, componentBudget, foldCount, searchProfile.pipelines, (fraction, selectedPipeline, component, total) => {
       setActivity({
-        state: "running", progress: 27 + fraction * 56, phase: "pls",
+        state: "running", progress: 27 + fraction * 54, phase: "pls",
         title: "PLS · preprocessing HPO",
-        detail: `${selectedPipeline.name} · repeat ${repeat}/${repeats} · component ${component}/${total}.`,
+        detail: `${selectedPipeline.name} · component ${component}/${total} · shared ${foldCount}-fold plan.`,
       });
     });
 
+    assertProtocolParity(
+      hpoPls.rawCandidate
+        && hpoPls.rawCandidate.components === rawPls.components
+        && protocolScoresMatch(hpoPls.rawCandidate.cvRmse, rawPls.cvRmse),
+      "raw PLS and the raw subset of PLS-HPO do not select the same component count and score.",
+    );
     byId("run-note").textContent = `Step 3/6: native AOM-PLS is screening its ${operators.length}-operator strict-linear bank up to ${componentBudget} components.`;
     setActivity({
-      state: "running", progress: 83, phase: "aom-pls",
+      state: "running", progress: 84, phase: "aom-pls",
       title: "Running AOM-PLS",
       detail: `Native operator/component selection on the calibration rows…`,
     });
     await yieldToBrowser();
-    const aomPlsStarted = performance.now();
-    const aomPlsFit = fitAomPlsWithStableBudget(
-      currentData,
-      componentBudget,
-      foldCount,
-      operators.map((operator) => operator.kind),
-    );
+    const aomAuditStarted = performance.now();
     const aomPlsModel = aomPlsFit.model;
     const selectedOperator = operators[aomPlsModel.selectedOperator]
       || { kind: operators[0].kind };
@@ -1392,7 +1445,7 @@ async function runComparison() {
       aomPlsModel.score,
       (fraction, component, total) => {
         setActivity({
-          state: "running", progress: 83 + fraction * 3, phase: "aom-pls",
+          state: "running", progress: 84 + fraction * 3, phase: "aom-pls",
           title: "AOM-PLS · component audit",
           detail: `Confirming the native selection: prefix ${component}/${total} for the winning operator.`,
         });
@@ -1402,7 +1455,7 @@ async function runComparison() {
     const aomPls = {
       model: aomPlsModel,
       predictions: aomPlsPredictions,
-      elapsed: performance.now() - aomPlsStarted,
+      elapsed: aomSelectorElapsed + performance.now() - aomAuditStarted,
       components: aomComponentAudit.components,
       candidateFits: operators.length * aomPlsFit.budget * foldCount + 1,
       searchLabel: `${operators.length} ops × H≤${aomPlsFit.budget} + ${aomComponentAudit.checks} prefix checks`,
@@ -1410,27 +1463,34 @@ async function runComparison() {
 
     byId("run-note").textContent = `Step 4/6: selecting Ridge α on raw spectra, then screening preprocessing + α.`;
     setActivity({
-      state: "running", progress: 86, phase: "ridge",
+      state: "running", progress: 87, phase: "ridge",
       title: "Ridge · raw reference",
       detail: `Cross-validating ${RIDGE_ALPHAS.length} logarithmic regularisation values…`,
     });
     await yieldToBrowser();
     const rawRidge = await fitCrossValidatedRidge(currentData, foldCount, RIDGE_ALPHAS, (fraction, alpha) => {
       setActivity({
-        state: "running", progress: 86 + fraction, phase: "ridge",
+        state: "running", progress: 87 + fraction, phase: "ridge",
         title: "Ridge · raw reference",
         detail: `Calibration CV: α ${formatAlpha(alpha)}, ${foldCount} folds.`,
       });
     });
 
     byId("run-note").textContent = `Step 5/6: ${searchProfile.label} Ridge is screening ${searchProfile.pipelines.length} pipelines × ${RIDGE_ALPHAS.length} α values.`;
-    const hpoRidge = await fitPreprocessingHpoRidge(currentData, foldCount, RIDGE_ALPHAS, searchProfile.pipelines, searchProfile.repeats, (fraction, selectedPipeline, alpha, alphaIndex, alphaCount, repeat, repeats) => {
+    const hpoRidge = await fitPreprocessingHpoRidge(currentData, foldCount, RIDGE_ALPHAS, searchProfile.pipelines, (fraction, selectedPipeline, alpha, alphaIndex, alphaCount) => {
       setActivity({
-        state: "running", progress: 87 + fraction * 10, phase: "ridge",
+        state: "running", progress: 88 + fraction * 9, phase: "ridge",
         title: "Ridge · preprocessing HPO",
-        detail: `${selectedPipeline.name} · repeat ${repeat}/${repeats} · α ${alphaIndex}/${alphaCount} (${formatAlpha(alpha)}).`,
+        detail: `${selectedPipeline.name} · α ${alphaIndex}/${alphaCount} (${formatAlpha(alpha)}) · shared ${foldCount}-fold plan.`,
       });
     });
+    assertProtocolParity(
+      hpoRidge.rawCandidate
+        && hpoRidge.rawCandidate.alpha === rawRidge.alpha
+        && protocolScoresMatch(hpoRidge.rawCandidate.cvRmse, rawRidge.cvRmse),
+      "raw Ridge and the raw subset of Ridge-HPO do not select the same α and score.",
+    );
+    document.documentElement.dataset.protocolParity = "pass";
 
     byId("run-note").textContent = "Step 6/6: fitting the native compact AOM-Ridge simplex blender.";
     setActivity({
@@ -1478,7 +1538,7 @@ async function runComparison() {
     byId("ridge-aom-card-detail").textContent = `${RIDGE_ALPHAS.length} α values · ${foldCount}-fold internal CV · one blended raw-input model.`;
     renderMethodResult("pls-default", rawPls, rawPlsStats, `${rawPls.components} comp. · CV ${formatMetric(rawPls.cvRmse)}`);
     renderMethodResult("pls-hpo", hpoPls, hpoPlsStats, `${hpoPls.operator.short} · ${hpoPls.components} comp. · CV ${formatMetric(hpoPls.cvRmse)}`);
-    const aomBudgetNote = aomPlsFit.budget < componentBudget ? ` (stable limit; requested ${componentBudget})` : "";
+    const aomBudgetNote = aomPlsFit.budget < requestedComponentBudget ? ` (shared stable limit; requested ${requestedComponentBudget})` : "";
     renderMethodResult("aom-pls", aomPls, aomPlsStats, `${selected.short} · ${aomComponentAudit.components} comp. · CV ${formatMetric(aomPlsModel.score)}${aomBudgetNote}`);
     renderMethodResult("ridge-default", rawRidge, rawRidgeStats, `α ${formatAlpha(rawRidge.alpha)} · CV ${formatMetric(rawRidge.cvRmse)}`);
     renderMethodResult("ridge-hpo", hpoRidge, hpoRidgeStats, `${hpoRidge.operator.short} · α ${formatAlpha(hpoRidge.alpha)} · CV ${formatMetric(hpoRidge.cvRmse)}`);
@@ -1486,8 +1546,8 @@ async function runComparison() {
 
     setComparisonVerdict("rmse-delta", "delta-detail", aomPlsStats, hpoPlsStats, "PLS");
     setComparisonVerdict("ridge-rmse-delta", "ridge-delta-detail", aomRidgeStats, hpoRidgeStats, "Ridge");
-    byId("hpo-search-summary").textContent = `${searchProfile.label} · ${searchProfile.pipelines.length} pipelines · ${searchProfile.repeats} fold layout${searchProfile.repeats > 1 ? "s" : ""}`;
-    byId("hpo-protocol-detail").textContent = `${foldCount}-fold calibration CV; ${searchProfile.repeats} deterministic layout${searchProfile.repeats > 1 ? "s" : ""}. The ${currentData.testRows} validation rows stay untouched until final scoring.`;
+    byId("hpo-search-summary").textContent = `${searchProfile.label} · ${searchProfile.pipelines.length} pipelines · one shared fold plan`;
+    byId("hpo-protocol-detail").textContent = `PLS routes share components 1–${componentBudget}; raw, HPO and AOM share the same ${foldCount} contiguous folds and arithmetic mean of fold RMSEs. Only the search space and search mechanism differ. Raw-subset and native-identity parity checks passed. The ${currentData.testRows} validation rows stay untouched until final scoring.`;
     byId("hpo-pls-detail").textContent = `Screened ${searchProfile.pipelines.length} pipelines × components 1–${componentBudget}. Winner: ${hpoPls.operator.name}, ${hpoPls.components} components (CV RMSE ${formatMetric(hpoPls.cvRmse)}; ${hpoPls.candidateFits} fit calls).`;
     byId("hpo-ridge-detail").textContent = `Screened ${searchProfile.pipelines.length} pipelines × α {${RIDGE_ALPHAS.map(formatAlpha).join(", ")}}. Winner: ${hpoRidge.operator.name}, α ${formatAlpha(hpoRidge.alpha)} (CV RMSE ${formatMetric(hpoRidge.cvRmse)}; ${hpoRidge.candidateFits} fit calls).`;
     const namedResults = [
@@ -1501,7 +1561,7 @@ async function runComparison() {
       ? " Boundary transients are clipped only in this preview; fitting uses the complete transformed matrices."
       : "";
     byId("operator-explanation").textContent = `Panel B is the HPO winner (${hpoPls.operator.name}); panel C is the separate AOM-PLS selection (${selected.name}, ${aomComponentAudit.components} components). Independent y scales keep shape changes legible.${edgeNote}`;
-    byId("fairness-text").textContent = `${currentData.trainRows} calibration · ${currentData.testRows} held out · ${foldCount} folds · ${searchProfile.label}: ${searchProfile.pipelines.length} pipelines × ${searchProfile.repeats} layout${searchProfile.repeats > 1 ? "s" : ""}`;
+    byId("fairness-text").textContent = `${currentData.trainRows} calibration · ${currentData.testRows} held out · same ${foldCount} folds · mean fold RMSE · parity checks passed`;
 
     drawRmseChart([
       { rmse: rawPlsStats.rmse }, { rmse: hpoPlsStats.rmse }, { rmse: aomPlsStats.rmse },
@@ -1534,11 +1594,15 @@ async function runComparison() {
         && byId("operator-chart").children.length > 15
         && byId("aom-pls-selection").textContent.includes("comp.")
         && !byId("pls-hpo-card").textContent.includes("—")
+        && document.documentElement.dataset.protocolParity === "pass"
+        && byId("activity-progress").getAttribute("aria-valuenow") === "100"
+        && byId("activity-progress-bar").style.width === "100%"
         && byId("ridge-prediction-chart").children.length > 10 ? "pass" : "fail";
       document.documentElement.dataset.selftestViewport = `${window.innerWidth}/${document.documentElement.scrollWidth}`;
     }
   } catch (error) {
     console.error(error);
+    document.documentElement.dataset.protocolParity = "fail";
     const failedStage = byId("run-note").textContent;
     byId("run-note").textContent = `Fit failed during “${failedStage}”: ${error.message}`;
     byId("run-note").className = "form-status error";
@@ -1642,7 +1706,8 @@ async function initialise() {
   const requestedDataset = query.get("dataset");
   activeDatasetId = manifest.datasets.some((dataset) => dataset.id === requestedDataset)
     ? requestedDataset
-    : manifest.datasets[0].id;
+    : manifest.datasets.find((dataset) => dataset.id === manifest.defaultDataset)?.id
+      || manifest.datasets[0].id;
   renderDatasetOptions();
   await loadBundledDataset(activeDatasetId, false, false);
   if (!currentData) throw new Error("The initial dataset is unavailable.");

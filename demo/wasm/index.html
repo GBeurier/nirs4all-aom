@@ -64,7 +64,7 @@
         <p class="overline">How to use this page</p>
         <ol class="workflow-overview">
           <li><span>1</span><div><strong>Load your data</strong><small>Provide separate X/y files for calibration and validation, then inspect them.</small></div></li>
-          <li><span>2</span><div><strong>Set the search</strong><small>Choose a quick check or a broader repeated HPO, folds and up to 25 PLS components.</small></div></li>
+          <li><span>2</span><div><strong>Set the search</strong><small>Choose a quick check or broader HPO, folds and up to 25 PLS components.</small></div></li>
           <li><span>3</span><div><strong>Run and compare</strong><small>Follow all six fits, then compare PLS and Ridge on held-out rows.</small></div></li>
         </ol>
         <p class="privacy-note">No data are sent to a server.</p>
@@ -144,7 +144,7 @@
     <section id="experiment" class="section-block" aria-labelledby="experiment-title">
       <div class="section-heading">
         <div><span class="section-number">02</span><p class="kicker">Experiment</p><h2 id="experiment-title">Configure one fair comparison</h2></div>
-        <p>Every route sees the same response, folds and untouched validation rows. Conventional HPO explores a broad preprocessing library; AOM uses its compact, editable bank.</p>
+        <p>Every route uses the same response, PLS component grid, fold assignment, scoring rule and untouched validation rows. Conventional HPO explores a broad preprocessing library; AOM uses its compact, editable bank.</p>
       </div>
 
       <div class="experiment-layout">
@@ -152,7 +152,7 @@
           <div class="card-head"><div><p class="overline">Configuration</p><h3>Experiment controls</h3></div><span class="n4-badge">Editable</span></div>
           <label class="field">Search effort
             <select id="search-depth"><option value="quick">Quick check</option><option value="full" selected>Full HPO</option></select>
-            <small id="search-depth-note">Broad preprocessing library with repeated CV; typically 20–45 seconds on bundled examples.</small>
+            <small id="search-depth-note">Broad preprocessing library evaluated on the exact same folds and score as raw PLS and AOM.</small>
           </label>
           <label class="field">Maximum PLS components
             <select id="components"><option>5</option><option>10</option><option>15</option><option>20</option><option selected>25</option></select>
@@ -173,7 +173,7 @@
               <div id="operator-controls" class="operator-controls"></div>
             </fieldset>
           </details>
-          <button id="run" class="n4-button run-button" type="button" disabled><span>Run PLS and Ridge comparison</span><small id="run-search-summary">full repeated local search</small></button>
+          <button id="run" class="n4-button run-button" type="button" disabled><span>Run PLS and Ridge comparison</span><small id="run-search-summary">full protocol-matched HPO</small></button>
           <p id="run-note" class="form-status" aria-live="polite">Loading the data and WebAssembly engine.</p>
         </aside>
 
@@ -196,7 +196,7 @@
             <div><strong>Two model families</strong><span>PLS screens 1–H components; Ridge screens a logarithmic α grid</span></div>
             <div><strong>Three calibration routes</strong><span>Raw reference, external preprocessing HPO and native AOM</span></div>
           </div>
-          <div class="fairness-strip"><strong>Fairness lock</strong><span id="fairness-text">Same calibration rows · same held-out rows · same fold count</span></div>
+          <div class="fairness-strip"><strong>Fairness lock</strong><span id="fairness-text">Same calibration rows · same held-out rows · same fold assignment · same mean fold-RMSE score</span></div>
         </div>
       </div>
     </section>
@@ -229,7 +229,7 @@
       <details class="hpo-result-details n4-surface">
         <summary><span>HPO search detail</span><small id="hpo-search-summary">Available after the experiment</small></summary>
         <div class="hpo-detail-grid">
-          <div><strong>Protocol</strong><p id="hpo-protocol-detail">The selected search depth, folds and repetitions will appear here.</p></div>
+          <div><strong>Protocol</strong><p id="hpo-protocol-detail">The shared fold plan, scoring rule and parity checks will appear here.</p></div>
           <div><strong>PLS search</strong><p id="hpo-pls-detail">Component grid and winning preprocessing pipeline.</p></div>
           <div><strong>Ridge search</strong><p id="hpo-ridge-detail">Alpha grid and winning preprocessing pipeline.</p></div>
         </div>

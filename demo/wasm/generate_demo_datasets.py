@@ -26,7 +26,7 @@ class Recipe:
 
 RECIPES = (
     Recipe("food_composition", 101, "realistic", 1, "Protein (%)"),
-    Recipe("grain_starch", 707, "realistic", 3, "Starch (%)"),
+    Recipe("grain_starch", 713, "realistic", 3, "Starch (%)"),
     Recipe("batch_process", 303, "realistic", 0, "Water (%)", True, 4),
 )
 

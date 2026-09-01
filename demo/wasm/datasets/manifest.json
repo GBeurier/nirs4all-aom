@@ -1,4 +1,5 @@
 {
+  "defaultDataset": "grain_starch",
   "snapshot": {
     "repository": "https://github.com/GBeurier/nirs4all",
     "commit": "b4b04b8f49cf47cf9ae9b94017ab53c694cdf0d4",
@@ -25,7 +26,7 @@
       "signalType": "absorbance",
       "target": "starch percentage",
       "description": "Realistic synthetic grain spectra with recognisable NIR absorption bands, baseline variation, scattering and instrument noise; starch percentage is the response.",
-      "provenance": "Deterministic nirs4all SyntheticNIRSGenerator recipe (realistic complexity, seed 707); 90 calibration and 30 untouched validation samples.",
+      "provenance": "Deterministic nirs4all SyntheticNIRSGenerator recipe (realistic complexity, seed 713); 90 calibration and 30 untouched validation samples.",
       "sourcePath": "nirs4all/synthesis/generator.py"
     },
     {

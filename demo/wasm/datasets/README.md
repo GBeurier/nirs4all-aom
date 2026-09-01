@@ -11,6 +11,9 @@ examples cover realistic food composition, grain starch, and a four-batch
 process. See `manifest.json` for metadata and immutable source
 links. The source repository is licensed under AGPL-3.0-or-later.
 
+The default grain-starch illustration uses the documented seed 713 recipe;
+the other examples remain selectable from the page.
+
 Run `../sync_datasets.sh` to regenerate these files from a sibling `nirs4all`
 checkout. Update the manifest commit and verify the page whenever the generator
 snapshot changes.

@@ -9,11 +9,16 @@ chemometrician through the following path:
 - visualizes calibration and held-out spectra plus response distributions;
 - keeps the local-file importer visible and reports file-selection/validation errors in place;
 - cross-validates raw PLS from 1 to an effective maximum of 25 components;
-- offers a quick search and a full 33-pipeline preprocessing HPO with three
-  deterministic repeated fold layouts for PLS and Ridge;
+- offers a quick search and a full 83-pipeline preprocessing HPO for PLS and
+  Ridge;
+- evaluates raw, HPO and AOM candidates with the same deterministic fold
+  assignment and arithmetic mean of fold RMSEs; the raw route is an explicit
+  subset of HPO, and runtime parity gates verify both that subset and native
+  AOM identity before results are displayed;
 - runs native AOM-PLS over its editable strict-linear bank, then confirms the
   selected component count through exact native prefix checks (with an explicit
-  stable-budget fallback for small or rank-deficient browser datasets);
+  common stable-budget fallback applied to raw, HPO and AOM for small or
+  rank-deficient browser datasets);
 - cross-validates raw Ridge over a logarithmic alpha grid;
 - fits the native compact AOM-Ridge simplex blender;
 - reports all six calibration stages through a persistent progress indicator;
@@ -39,7 +44,7 @@ Add `?selftest=1` to run the browser parser and fit smoke test. A passing page
 sets `data-selftest="pass"` on the root HTML element. A bundled dataset can be
 selected directly with `?dataset=food_composition`, `grain_starch`, or
 `batch_process`.
-Use `?selftest=full` only when timing the complete repeated HPO automatically.
+Use `?selftest=full` only when timing the complete protocol-matched HPO automatically.
 
 The normal page does not launch a fit automatically: it waits for the user to
 inspect the active split and click **Run PLS and Ridge comparison**. Self-test
