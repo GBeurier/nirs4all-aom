@@ -1,0 +1,43 @@
+{
+  "snapshot": {
+    "repository": "https://github.com/GBeurier/nirs4all",
+    "commit": "b4b04b8f49cf47cf9ae9b94017ab53c694cdf0d4",
+    "generator": "examples/scripts/generate_test_datasets.py",
+    "license": "AGPL-3.0-or-later"
+  },
+  "datasets": [
+    {
+      "id": "B03_wavelength",
+      "label": "Wavelength absorbance",
+      "short": "200 features · 1100–2100 nm",
+      "unit": "nm",
+      "signalType": "absorbance",
+      "target": "synthetic concentration response",
+      "description": "Beer–Lambert-like synthetic absorbance spectra with wavelength headers, baseline variation and measurement noise.",
+      "provenance": "nirs4all sample fixture B03_wavelength; generated to exercise wavelength metadata and the standard four-file dataset contract.",
+      "sourcePath": "examples/sample_datasets/B03_wavelength"
+    },
+    {
+      "id": "B02_wavenumber",
+      "label": "Wavenumber absorbance",
+      "short": "200 features · 9090–4761 cm⁻¹",
+      "unit": "cm-1",
+      "signalType": "absorbance",
+      "target": "synthetic concentration response",
+      "description": "Beer–Lambert-like synthetic absorbance spectra exported with descending wavenumber headers.",
+      "provenance": "nirs4all sample fixture B02_wavenumber; generated to exercise wavenumber metadata and the standard four-file dataset contract.",
+      "sourcePath": "examples/sample_datasets/B02_wavenumber"
+    },
+    {
+      "id": "B04_reflectance",
+      "label": "Reflectance signal",
+      "short": "200 features · 1100–2100 nm",
+      "unit": "nm",
+      "signalType": "reflectance%",
+      "target": "synthetic concentration response",
+      "description": "Synthetic spectral fixture declared as reflectance percentage, with wavelength headers and a held-out validation partition.",
+      "provenance": "nirs4all sample fixture B04_reflectance; generated to exercise signal-type metadata and the standard four-file dataset contract.",
+      "sourcePath": "examples/sample_datasets/B04_reflectance"
+    }
+  ]
+}

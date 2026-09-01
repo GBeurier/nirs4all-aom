@@ -3,81 +3,223 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="AOM-PLS runs entirely in the browser through the n4m WebAssembly engine.">
-  <title>AOM-PLS · live WebAssembly demo</title>
+  <meta name="description" content="Inspect a nirs4all dataset and compare cross-validated raw PLS with AOM-PLS entirely in WebAssembly.">
+  <meta name="theme-color" content="#0d9488">
+  <title>AOM-PLS · interactive paper companion</title>
+  <link rel="icon" href="assets/nirs4all-ui/brands/nirs4all-formats/icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="assets/nirs4all-ui/styles/nirs4all-default.css">
+  <link rel="stylesheet" href="assets/nirs4all-ui/viz.css">
   <link rel="stylesheet" href="styles.css">
 </head>
-<body>
+<body class="n4-app n4-spectral-canvas">
+  <div class="n4-spectrum-strip" aria-hidden="true"></div>
+  <header class="site-header">
+    <a class="brand" href="https://github.com/GBeurier/nirs4all-methods" aria-label="nirs4all-methods repository">
+      <img src="assets/nirs4all-ui/brands/nirs4all-methods/horizontal.svg" alt="nirs4all-methods">
+    </a>
+    <nav aria-label="Page sections">
+      <a href="#data">Data</a>
+      <a href="#experiment">Experiment</a>
+      <a href="#results">Results</a>
+      <a href="#reproduce">Reproduce</a>
+    </nav>
+    <div class="runtime n4-badge" aria-live="polite">
+      <span id="runtime-dot" class="runtime-dot loading" aria-hidden="true"></span>
+      <span><strong id="runtime-status">Loading WASM</strong><small id="runtime-version">n4m engine</small></span>
+    </div>
+  </header>
+
   <main>
-    <header class="hero">
+    <section class="hero" aria-labelledby="page-title">
       <div>
-        <p class="eyebrow">nirs4all-aom · paper companion</p>
-        <h1>AOM-PLS, running locally in your browser</h1>
-        <p class="lede">A compact bank of strict-linear spectral operators is screened inside one PLS calibration. The selected model predicts raw spectra directly: no preprocessing pipeline is replayed.</p>
+        <p class="kicker">Interactive paper companion · no server involved</p>
+        <h1 id="page-title">See what AOM changes — from spectra to held-out predictions.</h1>
+        <p class="hero-copy">Choose a documented <code>nirs4all</code> fixture or bring separate <code>X</code> and <code>y</code> files. The page fits two models on exactly the same calibration rows: conventional raw-spectrum PLS and operator-adaptive AOM-PLS.</p>
+        <div class="hero-actions">
+          <a class="n4-button" href="#data">Start with the data</a>
+          <span>All parsing, fitting and prediction stay in this browser tab.</span>
+        </div>
       </div>
-      <div class="runtime" aria-live="polite">
-        <span id="runtime-dot" class="dot loading"></span>
-        <div><strong id="runtime-status">Loading WebAssembly…</strong><small id="runtime-version">n4m engine</small></div>
-      </div>
-    </header>
+      <aside class="question-card n4-surface" aria-label="Comparison in one sentence">
+        <span class="question-mark">?</span>
+        <p><strong>The question</strong>Does screening a small, auditable bank of linear spectral operators improve prediction over PLS on the untouched spectra?</p>
+        <div class="mini-flow" aria-hidden="true">
+          <span>same X/y</span><b>→</b><span>two routes</span><b>→</b><span>same test</span>
+        </div>
+      </aside>
+    </section>
 
-    <section class="panel controls" aria-labelledby="controls-title">
-      <div>
-        <p class="step">01 · Synthetic NIR calibration</p>
-        <h2 id="controls-title">Change the calibration conditions</h2>
-        <p>The reproducible example contains smooth absorption bands, slope variation and measurement noise. Training and test rows are kept separate.</p>
+    <section id="data" class="section-block" aria-labelledby="data-title">
+      <div class="section-heading">
+        <div><span class="section-number">01</span><p class="kicker">Data first</p><h2 id="data-title">Know exactly what enters the models</h2></div>
+        <p>Bundled examples are small synthetic format fixtures from the public <code>nirs4all</code> repository. They illustrate the workflow; they are not the paper benchmark data.</p>
       </div>
-      <div class="control-grid">
-        <label>Noise level <output id="noise-value">0.035</output>
-          <input id="noise" type="range" min="0.010" max="0.090" value="0.035" step="0.005">
-        </label>
-        <label>Maximum components
-          <select id="components">
-            <option>3</option><option selected>5</option><option>7</option><option>9</option>
-          </select>
-        </label>
-        <label>Internal folds
-          <select id="folds">
-            <option>3</option><option selected>5</option><option>7</option>
-          </select>
-        </label>
-        <button id="run" type="button" disabled>Run AOM-PLS</button>
+
+      <div id="dataset-options" class="dataset-options" role="radiogroup" aria-label="Bundled datasets"></div>
+
+      <div class="data-layout">
+        <article class="dataset-detail n4-surface">
+          <div class="card-head">
+            <div><p class="overline">Active dataset</p><h3 id="dataset-name">Loading…</h3></div>
+            <span id="dataset-kind" class="n4-badge">Bundled fixture</span>
+          </div>
+          <p id="dataset-description" class="muted"></p>
+          <dl class="metadata-grid">
+            <div><dt>Calibration</dt><dd id="train-shape">—</dd></div>
+            <div><dt>Validation</dt><dd id="test-shape">—</dd></div>
+            <div><dt>Spectral axis</dt><dd id="axis-range">—</dd></div>
+            <div><dt>Response</dt><dd id="target-range">—</dd></div>
+          </dl>
+          <div class="file-contract">
+            <span>Xcal.csv</span><span>Ycal.csv</span><span>Xval.csv</span><span>Yval.csv</span>
+          </div>
+          <p class="provenance"><strong>Provenance.</strong> <span id="dataset-provenance"></span> <a id="dataset-source-link" href="#" target="_blank" rel="noreferrer">Open the exact source snapshot ↗</a></p>
+        </article>
+
+        <details class="upload-card n4-surface">
+          <summary>
+            <span><span class="overline">Your data</span><strong>Load separate X and y files</strong></span>
+            <span class="summary-action">Open importer</span>
+          </summary>
+          <div class="upload-body">
+            <p>Use the standard nirs4all calibration/validation convention. CSV, TSV and TXT are accepted; comma, semicolon, tab and pipe delimiters are detected. X may have a numeric wavelength/wavenumber header; y must contain one numeric response column.</p>
+            <div class="upload-grid">
+              <label><span>X calibration <small>required</small></span><input id="x-cal-file" type="file" accept=".csv,.tsv,.txt,text/csv,text/tab-separated-values"></label>
+              <label><span>y calibration <small>required</small></span><input id="y-cal-file" type="file" accept=".csv,.tsv,.txt,text/csv,text/tab-separated-values"></label>
+              <label><span>X validation/test <small>required</small></span><input id="x-val-file" type="file" accept=".csv,.tsv,.txt,text/csv,text/tab-separated-values"></label>
+              <label><span>y validation/test <small>required</small></span><input id="y-val-file" type="file" accept=".csv,.tsv,.txt,text/csv,text/tab-separated-values"></label>
+            </div>
+            <div class="upload-options">
+              <label>Axis unit<select id="upload-unit"><option value="index">Feature index</option><option value="nm">nm</option><option value="cm-1">cm⁻¹</option></select></label>
+              <label>Signal type<select id="upload-signal"><option value="absorbance">Absorbance</option><option value="reflectance%">Reflectance %</option><option value="unknown">Other / unknown</option></select></label>
+              <label class="header-option"><input id="upload-header" type="checkbox" checked> X first row contains feature headers</label>
+              <button id="load-upload" class="secondary-button" type="button">Validate and use files</button>
+            </div>
+            <p id="upload-status" class="form-status" aria-live="polite">Files never leave your device.</p>
+          </div>
+        </details>
+      </div>
+
+      <div class="inspection-grid">
+        <article class="chart-panel n4-surface">
+          <div class="chart-title"><div><p class="overline">X · spectra</p><h3>Calibration and held-out spectra</h3></div><div class="legend"><span class="legend-key train"></span>Calibration <span class="legend-key test"></span>Validation</div></div>
+          <svg id="spectra-chart" class="n4viz" viewBox="0 0 760 360" role="img" aria-label="Spectra in the calibration and validation partitions"></svg>
+        </article>
+        <article class="chart-panel n4-surface">
+          <div class="chart-title"><div><p class="overline">y · response</p><h3>Target distribution by split</h3></div></div>
+          <svg id="target-chart" class="n4viz" viewBox="0 0 520 360" role="img" aria-label="Target distributions in calibration and validation partitions"></svg>
+        </article>
       </div>
     </section>
 
-    <section class="results" aria-labelledby="results-title">
-      <div class="result-heading">
-        <div><p class="step">02 · Results</p><h2 id="results-title">One global operator, one deployable model</h2></div>
-        <p id="run-note" class="run-note">The first fit starts when the WASM engine is ready.</p>
+    <section id="experiment" class="section-block" aria-labelledby="experiment-title">
+      <div class="section-heading">
+        <div><span class="section-number">02</span><p class="kicker">Controlled comparison</p><h2 id="experiment-title">One split, two modelling routes</h2></div>
+        <p>The response and held-out rows are identical. Only the calibration route changes. Lower cross-validation and validation RMSE is better.</p>
       </div>
-      <div class="metric-grid">
-        <article class="metric accent"><span>Selected global operator</span><strong id="operator">—</strong><small id="operator-index">compact WASM bank</small></article>
-        <article class="metric"><span>AOM test RMSE</span><strong id="aom-rmse">—</strong><small id="aom-r2">R² —</small></article>
-        <article class="metric"><span>Plain PLS test RMSE</span><strong id="pls-rmse">—</strong><small>same component budget</small></article>
-        <article class="metric"><span>Fit time</span><strong id="fit-time">—</strong><small>browser wall time</small></article>
-      </div>
-      <div class="panel chart-card">
-        <div><h3>Held-out predictions</h3><p>Points on the diagonal match the measured synthetic response.</p></div>
-        <svg id="prediction-chart" viewBox="0 0 720 390" role="img" aria-label="Measured versus predicted test values"></svg>
+
+      <div class="experiment-layout">
+        <aside class="config-card n4-surface">
+          <div class="card-head"><div><p class="overline">Configuration</p><h3>Experiment controls</h3></div><span class="n4-badge">Editable</span></div>
+          <label class="field">Maximum PLS components
+            <select id="components"><option>2</option><option>3</option><option selected>5</option><option>7</option><option>10</option><option>15</option></select>
+            <small>Both routes may use from 1 up to this budget.</small>
+          </label>
+          <label class="field">Contiguous CV folds
+            <select id="folds"><option>3</option><option selected>5</option><option>6</option><option>8</option></select>
+            <small>The same deterministic fold assignment is used.</small>
+          </label>
+          <fieldset>
+            <legend>Strict-linear AOM bank</legend>
+            <div id="operator-controls" class="operator-controls"></div>
+          </fieldset>
+          <button id="run" class="n4-button run-button" type="button" disabled><span>Run fair comparison</span><small>local WebAssembly</small></button>
+          <p id="run-note" class="form-status" aria-live="polite">Waiting for the WebAssembly engine.</p>
+        </aside>
+
+        <div class="routes">
+          <article class="route-card baseline n4-surface">
+            <div class="route-label"><span>A</span><div><p>Conventional reference</p><h3>Raw-spectrum PLS</h3></div></div>
+            <div class="route-flow"><span>raw X</span><b>→</b><span>CV selects components</span><b>→</b><span>PLS</span><b>→</b><span>ŷ test</span></div>
+            <p>No spectral operator is applied. Component count is chosen by CV, then PLS is refitted on every calibration row.</p>
+          </article>
+          <div class="versus"><span>versus</span><i></i></div>
+          <article class="route-card adaptive n4-surface">
+            <div class="route-label"><span>B</span><div><p>Proposed method</p><h3>AOM-PLS</h3></div></div>
+            <div class="route-flow"><span>raw X</span><b>→</b><span>CV screens bank + components</span><b>→</b><span>one operator + PLS</span><b>→</b><span>ŷ test</span></div>
+            <p>The winner is folded back to the original feature grid. Deployment predicts directly from raw X; no preprocessing pipeline must be replayed.</p>
+          </article>
+          <div class="fairness-strip"><strong>Fairness lock</strong><span id="fairness-text">Same calibration rows · same held-out rows · same component budget</span></div>
+        </div>
       </div>
     </section>
 
-    <section class="panel audit" aria-labelledby="audit-title">
-      <div><p class="step">03 · Audit trail</p><h2 id="audit-title">What this page proves</h2></div>
-      <ul>
-        <li>The fit calls the native <code>n4m_model_selection_aom_pls_select</code> path compiled to WebAssembly.</li>
-        <li>The default bank contains identity, polynomial detrending, Savitzky–Golay smoothing, Savitzky–Golay derivative and finite difference.</li>
-        <li>The returned coefficients live on the original wavelength grid and predictions use the raw held-out spectra.</li>
-        <li>No observations or spectra leave the browser.</li>
-      </ul>
+    <section id="results" class="section-block" aria-labelledby="results-title">
+      <div class="section-heading results-heading">
+        <div><span class="section-number">03</span><p class="kicker">Held-out evidence</p><h2 id="results-title">Read the difference, not just a score</h2></div>
+        <p id="result-summary">Run the comparison to populate the operator audit, performance table and diagnostic plots.</p>
+      </div>
+
+      <div class="selection-banner n4-surface">
+        <div><p class="overline">AOM selection</p><strong id="operator">—</strong><small id="operator-detail">The selected operator will appear here.</small></div>
+        <div class="selection-arrow" aria-hidden="true">→</div>
+        <div><p class="overline">Independent validation delta</p><strong id="rmse-delta">—</strong><small id="delta-detail">relative RMSE versus raw PLS</small></div>
+      </div>
+
+      <div class="results-table-wrap n4-surface">
+        <table class="results-table">
+          <thead><tr><th scope="col">Held-out metric</th><th scope="col"><span class="method-dot baseline"></span>Raw PLS</th><th scope="col"><span class="method-dot adaptive"></span>AOM-PLS</th><th scope="col">AOM difference</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">RMSE <small>lower is better</small></th><td id="pls-rmse">—</td><td id="aom-rmse">—</td><td id="rmse-change">—</td></tr>
+            <tr><th scope="row">MAE <small>lower is better</small></th><td id="pls-mae">—</td><td id="aom-mae">—</td><td id="mae-change">—</td></tr>
+            <tr><th scope="row">R² <small>higher is better</small></th><td id="pls-r2">—</td><td id="aom-r2">—</td><td id="r2-change">—</td></tr>
+            <tr><th scope="row">Calibration selection <small>contiguous CV</small></th><td id="pls-cv">—</td><td id="aom-cv">—</td><td id="selection-note">—</td></tr>
+            <tr><th scope="row">Browser fit time <small>indicative wall time</small></th><td id="pls-time">—</td><td id="aom-time">—</td><td id="time-change">—</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="diagnostic-grid">
+        <article class="chart-panel prediction-panel n4-surface">
+          <div class="chart-title"><div><p class="overline">Independent validation</p><h3>Measured vs predicted</h3></div><div class="legend"><span class="legend-key pls"></span>Raw PLS <span class="legend-key aom"></span>AOM-PLS</div></div>
+          <svg id="prediction-chart" class="n4viz" viewBox="0 0 700 420" role="img" aria-label="Measured versus predicted validation responses"></svg>
+        </article>
+        <article class="chart-panel n4-surface">
+          <div class="chart-title"><div><p class="overline">Treatment difference</p><h3 id="operator-preview-title">Raw vs selected operator view</h3></div></div>
+          <svg id="operator-chart" class="n4viz" viewBox="0 0 560 420" role="img" aria-label="A representative raw spectrum compared with its AOM-selected transformed view"></svg>
+          <p id="operator-explanation" class="chart-footnote">AOM will select one operator from the configured bank.</p>
+        </article>
+        <article class="chart-panel coefficients-panel n4-surface">
+          <div class="chart-title"><div><p class="overline">Deployable model</p><h3>Coefficients on the original spectral grid</h3></div><div class="legend"><span class="legend-key pls"></span>Raw PLS <span class="legend-key aom"></span>AOM-PLS</div></div>
+          <svg id="coefficient-chart" class="n4viz" viewBox="0 0 1280 360" role="img" aria-label="Raw PLS and AOM-PLS regression coefficients on the original feature grid"></svg>
+          <p class="chart-footnote">Both coefficient vectors align with the input columns. AOM folds its selected linear operator into a single raw-input model.</p>
+        </article>
+      </div>
     </section>
 
-    <footer>
-      <span>Reference Python package: <a href="https://pypi.org/project/nirs4all-aom/">nirs4all-aom</a></span>
-      <span>Portable engine: <a href="https://github.com/GBeurier/nirs4all-methods">nirs4all-methods / n4m</a></span>
-      <span>Source: <a href="https://github.com/GBeurier/nirs4all-aom">GitHub</a></span>
-    </footer>
+    <section id="reproduce" class="section-block reproduce" aria-labelledby="reproduce-title">
+      <div class="section-heading">
+        <div><span class="section-number">04</span><p class="kicker">Audit and reproduce</p><h2 id="reproduce-title">What this demonstration establishes</h2></div>
+        <p>This companion is deliberately narrower than the paper benchmark. It makes one complete calibration auditable and portable.</p>
+      </div>
+      <div class="audit-grid">
+        <article class="n4-surface"><span>01</span><h3>Traceable inputs</h3><p>The bundled snapshots point to their exact nirs4all source. Uploaded files are parsed locally and never transmitted.</p></article>
+        <article class="n4-surface"><span>02</span><h3>Comparable models</h3><p>Both routes see the same X, y, folds and validation rows. The displayed metrics come only from the held-out partition.</p></article>
+        <article class="n4-surface"><span>03</span><h3>Native browser fit</h3><p>AOM selection calls the n4m native C ABI compiled to WebAssembly; raw PLS uses the same portable engine.</p></article>
+        <article class="n4-surface"><span>04</span><h3>Deployable outcome</h3><p>AOM returns original-grid coefficients and an intercept, so raw spectra can be predicted without replaying preprocessing.</p></article>
+      </div>
+      <div class="technical-note n4-surface">
+        <div><p class="overline">Scope note</p><h3>Illustration, not a benchmark claim</h3></div>
+        <p>The included datasets were generated to exercise nirs4all formats and spectral metadata. Results can favor either route and should not be generalized. See the paper and supplementary material for the multi-dataset evaluation.</p>
+      </div>
+    </section>
   </main>
+
+  <footer>
+    <div><img src="assets/nirs4all-ui/brands/nirs4all-methods/horizontal.svg" alt="nirs4all-methods"><p>AOM-PLS browser companion</p></div>
+    <div class="footer-links"><a href="https://pypi.org/project/nirs4all-aom/">Python · PyPI</a><a href="https://github.com/GBeurier/nirs4all-methods">Portable engine · GitHub</a><a href="https://github.com/GBeurier/nirs4all-aom">Demo source · GitHub</a></div>
+    <p class="license-note">No analytics · no data upload · open source under the repository license.</p>
+  </footer>
   <script type="module" src="demo.js"></script>
 </body>
 </html>
