@@ -5,6 +5,9 @@ import {
   fitModel,
   fitPls,
   loadModule,
+  ppCreate,
+  ppDestroy,
+  ppTransform,
   predictModel,
   predictPls,
   version,
@@ -29,6 +32,50 @@ const OPERATORS = [
   { kind: 15, name: "Finite difference", short: "centered · order 1", detail: "Applies the default centered first finite difference." },
 ];
 
+const pipeline = (id, name, short, steps = []) => ({ id, name, short, steps });
+const sg = (window, polyorder, deriv = 0) => ({ op: "SavitzkyGolay", params: [window, polyorder, deriv, 1, 0] });
+const HPO_PIPELINES = [
+  pipeline("raw", "Raw spectrum", "raw X"),
+  pipeline("detrend-1", "Linear detrending", "detrend d1", [{ op: "Detrend", params: [1] }]),
+  pipeline("detrend-2", "Quadratic detrending", "detrend d2", [{ op: "Detrend", params: [2] }]),
+  pipeline("snv", "Standard normal variate", "SNV", [{ op: "StandardNormalVariate", params: [] }]),
+  pipeline("gaussian-05", "Gaussian smoothing σ0.5", "Gaussian σ0.5", [{ op: "GaussianFilter", params: [.5] }]),
+  pipeline("gaussian-1", "Gaussian smoothing σ1", "Gaussian σ1", [{ op: "GaussianFilter", params: [1] }]),
+  pipeline("gaussian-2", "Gaussian smoothing σ2", "Gaussian σ2", [{ op: "GaussianFilter", params: [2] }]),
+  pipeline("gaussian-4", "Gaussian smoothing σ4", "Gaussian σ4", [{ op: "GaussianFilter", params: [4] }]),
+  pipeline("sg-s5", "Savitzky–Golay smoothing 5", "SG 5/2 d0", [sg(5, 2)]),
+  pipeline("sg-s7", "Savitzky–Golay smoothing 7", "SG 7/2 d0", [sg(7, 2)]),
+  pipeline("sg-s11", "Savitzky–Golay smoothing 11", "SG 11/2 d0", [sg(11, 2)]),
+  pipeline("sg-s15", "Savitzky–Golay smoothing 15", "SG 15/3 d0", [sg(15, 3)]),
+  pipeline("sg-d1-5", "Savitzky–Golay derivative 5", "SG 5/2 d1", [sg(5, 2, 1)]),
+  pipeline("sg-d1-7", "Savitzky–Golay derivative 7", "SG 7/2 d1", [sg(7, 2, 1)]),
+  pipeline("sg-d1-11", "Savitzky–Golay derivative 11", "SG 11/2 d1", [sg(11, 2, 1)]),
+  pipeline("sg-d1-15", "Savitzky–Golay derivative 15", "SG 15/3 d1", [sg(15, 3, 1)]),
+  pipeline("sg-d2-7", "Savitzky–Golay second derivative 7", "SG 7/3 d2", [sg(7, 3, 2)]),
+  pipeline("sg-d2-11", "Savitzky–Golay second derivative 11", "SG 11/3 d2", [sg(11, 3, 2)]),
+  pipeline("sg-d2-15", "Savitzky–Golay second derivative 15", "SG 15/3 d2", [sg(15, 3, 2)]),
+  pipeline("diff-1", "First finite derivative", "difference d1", [{ op: "Derivative", params: [1] }]),
+  pipeline("diff-2", "Second finite derivative", "difference d2", [{ op: "Derivative", params: [2] }]),
+  pipeline("snv-sg-s5", "SNV then SG smoothing 5", "SNV → SG 5/2", [{ op: "StandardNormalVariate", params: [] }, sg(5, 2)]),
+  pipeline("snv-sg-s11", "SNV then SG smoothing 11", "SNV → SG 11/2", [{ op: "StandardNormalVariate", params: [] }, sg(11, 2)]),
+  pipeline("snv-sg-d1-7", "SNV then SG derivative 7", "SNV → SG 7/2 d1", [{ op: "StandardNormalVariate", params: [] }, sg(7, 2, 1)]),
+  pipeline("snv-sg-d1-11", "SNV then SG derivative 11", "SNV → SG 11/2 d1", [{ op: "StandardNormalVariate", params: [] }, sg(11, 2, 1)]),
+  pipeline("d1-sg-s5", "Linear detrending then SG smoothing 5", "detrend → SG 5/2", [{ op: "Detrend", params: [1] }, sg(5, 2)]),
+  pipeline("d1-sg-s11", "Linear detrending then SG smoothing 11", "detrend → SG 11/2", [{ op: "Detrend", params: [1] }, sg(11, 2)]),
+  pipeline("d1-sg-d1-7", "Linear detrending then SG derivative 7", "detrend → SG 7/2 d1", [{ op: "Detrend", params: [1] }, sg(7, 2, 1)]),
+  pipeline("d1-sg-d1-11", "Linear detrending then SG derivative 11", "detrend → SG 11/2 d1", [{ op: "Detrend", params: [1] }, sg(11, 2, 1)]),
+  pipeline("gaussian-1-snv", "Gaussian σ1 then SNV", "Gaussian σ1 → SNV", [{ op: "GaussianFilter", params: [1] }, { op: "StandardNormalVariate", params: [] }]),
+  pipeline("gaussian-2-snv", "Gaussian σ2 then SNV", "Gaussian σ2 → SNV", [{ op: "GaussianFilter", params: [2] }, { op: "StandardNormalVariate", params: [] }]),
+  pipeline("sg-s5-snv", "SG smoothing 5 then SNV", "SG 5/2 → SNV", [sg(5, 2), { op: "StandardNormalVariate", params: [] }]),
+  pipeline("sg-s11-snv", "SG smoothing 11 then SNV", "SG 11/2 → SNV", [sg(11, 2), { op: "StandardNormalVariate", params: [] }]),
+];
+
+const QUICK_PIPELINE_IDS = new Set(["raw", "detrend-1", "sg-s5", "sg-d1-5", "diff-1"]);
+const SEARCH_PROFILES = {
+  quick: { id: "quick", label: "Quick check", pipelines: HPO_PIPELINES.filter((item) => QUICK_PIPELINE_IDS.has(item.id)), repeats: 1 },
+  full: { id: "full", label: "Full HPO", pipelines: HPO_PIPELINES, repeats: 3 },
+};
+
 const byId = (id) => document.getElementById(id);
 let manifest = null;
 let currentData = null;
@@ -36,18 +83,49 @@ let activeDatasetId = null;
 let runtimeReady = false;
 let comparisonSerial = 0;
 let loadingDatasetId = null;
+let activityRunStarted = null;
+let lastActivityProgress = 0;
+let lastActivityAnnouncement = "";
 
 const PHASES = ["data", "pls", "aom-pls", "ridge", "aom-ridge", "results"];
 const RIDGE_ALPHAS = [1e-8, 1e-6, 1e-4, 1e-2, 1, 1e2, 1e4];
 
 function setActivity({ state, progress, title, detail, phase = null }) {
   const container = byId("activity");
-  const boundedProgress = Math.max(0, Math.min(100, Math.round(progress)));
+  const previousState = container.dataset.state;
+  if (state === "running" && previousState !== "running") {
+    activityRunStarted = performance.now();
+    lastActivityProgress = 0;
+  }
+  let boundedProgress = Math.max(0, Math.min(100, Number(progress)));
+  if (state === "running") boundedProgress = Math.max(lastActivityProgress, boundedProgress);
+  lastActivityProgress = boundedProgress;
+  const roundedProgress = Math.round(boundedProgress);
   container.dataset.state = state;
   byId("activity-title").textContent = title;
   byId("activity-detail").textContent = detail;
-  byId("activity-progress-bar").style.width = `${boundedProgress}%`;
-  byId("activity-progress").setAttribute("aria-valuenow", String(boundedProgress));
+  byId("activity-progress-bar").style.width = `${boundedProgress.toFixed(2)}%`;
+  byId("activity-progress").setAttribute("aria-valuenow", String(roundedProgress));
+  byId("activity-percent").textContent = `${roundedProgress}%`;
+  if (state === "running" && activityRunStarted !== null) {
+    const elapsedSeconds = (performance.now() - activityRunStarted) / 1000;
+    const computeFraction = Math.max(0, Math.min(1, (boundedProgress - 25) / 75));
+    const etaSeconds = elapsedSeconds >= 3 && computeFraction >= .1
+      ? elapsedSeconds * (1 - computeFraction) / computeFraction
+      : null;
+    byId("activity-time").textContent = etaSeconds === null
+      ? `${elapsedSeconds.toFixed(0)} s elapsed · estimating…`
+      : `${elapsedSeconds.toFixed(0)} s elapsed · about ${Math.max(0, Math.round(etaSeconds))} s left`;
+  } else if (state === "complete" && activityRunStarted !== null) {
+    byId("activity-time").textContent = `Completed in ${((performance.now() - activityRunStarted) / 1000).toFixed(1)} s`;
+  } else {
+    byId("activity-time").textContent = state === "loading" ? "Loading…" : state === "error" ? "Stopped" : "Ready";
+  }
+  const announcement = `${state}: ${title}`;
+  if (announcement !== lastActivityAnnouncement) {
+    byId("activity-announcement").textContent = `${title}. ${detail}`;
+    lastActivityAnnouncement = announcement;
+  }
   const action = byId("activity-action");
   if (state === "complete") {
     action.hidden = false;
@@ -152,13 +230,30 @@ function updateUploadReadiness() {
 }
 
 function setControlsLocked(locked) {
-  document.querySelectorAll(".dataset-option, #components, #folds, #operator-controls input, .upload-card input, .upload-card select")
+  document.querySelectorAll(".dataset-option, #search-depth, #components, #folds, #operator-controls input, .upload-card input, .upload-card select")
     .forEach((control) => { control.disabled = locked; });
   if (locked) byId("load-upload").disabled = true;
   else {
     const uploadInputs = ["x-cal-file", "y-cal-file", "x-val-file", "y-val-file"].map((id) => byId(id));
     byId("load-upload").disabled = uploadInputs.some((input) => !input.files?.[0]);
   }
+}
+
+function selectedSearchProfile() {
+  return SEARCH_PROFILES[byId("search-depth").value] || SEARCH_PROFILES.full;
+}
+
+function updateSearchDepthUi(markStale = true) {
+  const profile = selectedSearchProfile();
+  const full = profile.id === "full";
+  byId("search-depth-note").textContent = full
+    ? `Broad library: ${profile.pipelines.length} pipelines with ${profile.repeats} repeated fold layouts; typically 20–45 seconds on bundled examples (device dependent).`
+    : `${profile.pipelines.length} representative pipelines with one fold layout for a fast interface check.`;
+  byId("hpo-scope").textContent = full
+    ? "The full search covers raw spectra, SNV, two detrending orders, several Gaussian and Savitzky–Golay smoothers, first/second derivatives and selected two-step chains. Repeated deterministic fold layouts are averaged before the winner is refitted."
+    : "The quick check screens raw spectra, linear detrending, one Savitzky–Golay smoother, one Savitzky–Golay derivative and one finite derivative. It is useful for checking files, not for an exhaustive comparison.";
+  byId("run-search-summary").textContent = full ? "full repeated local HPO" : "quick local check";
+  if (markStale) markResultsStale();
 }
 
 function svgElement(name, attributes = {}) {
@@ -385,17 +480,17 @@ function drawSpectra(data) {
     width, height, margin, axis: data.axis, yMin, yMax,
     xLabel: axisUnit(data.meta.unit), yLabel: signalLabel(data.meta.signalType),
   });
-  const addPartition = (buffer, rows, color, limit) => {
+  const addPartition = (buffer, rows, color, limit, partition) => {
     const step = Math.max(1, Math.ceil(rows / limit));
     for (let row = 0; row < rows; row += step) {
       const values = buffer.subarray(row * data.cols, (row + 1) * data.cols);
-      svg.append(svgElement("path", { d: pathFromValues(values, scales.x, scales.y), class: "plot-line sample", stroke: color }));
+      svg.append(svgElement("path", { d: pathFromValues(values, scales.x, scales.y), class: `plot-line sample ${partition}`, stroke: color }));
     }
     const mean = meanRows(buffer, rows, data.cols);
-    svg.append(svgElement("path", { d: pathFromValues(mean, scales.x, scales.y), class: "plot-line mean n4viz-line-mean", stroke: color }));
+    svg.append(svgElement("path", { d: pathFromValues(mean, scales.x, scales.y), class: `plot-line mean n4viz-line-mean ${partition}`, stroke: color }));
   };
-  addPartition(data.trainX.data, data.trainRows, COLORS.train, 28);
-  addPartition(data.testX.data, data.testRows, COLORS.test, 14);
+  addPartition(data.trainX.data, data.trainRows, COLORS.train, 28, "train");
+  addPartition(data.testX.data, data.testRows, COLORS.test, 14, "test");
 }
 
 function drawTargetHistogram(data) {
@@ -412,7 +507,7 @@ function drawTargetHistogram(data) {
     const result = new Array(bins).fill(0);
     for (const value of values) {
       const raw = Math.floor((value - min) / (max - min) * bins);
-      result[Math.max(0, Math.min(bins - 1, raw))] += 1;
+      result[Math.max(0, Math.min(bins - 1, raw))] += 100 / values.length;
     }
     return result;
   };
@@ -439,7 +534,7 @@ function drawTargetHistogram(data) {
   }
   svg.append(svgElement("line", { x1: margin.left, y1: height - margin.bottom, x2: width - margin.right, y2: height - margin.bottom, class: "n4viz-axis" }));
   addText(svg, data.meta.targetName, { x: margin.left + (width - margin.left - margin.right) / 2, y: height - 8, class: "n4viz-axis-label", "text-anchor": "middle" });
-  addText(svg, "samples", { x: 14, y: height / 2, class: "n4viz-axis-label", transform: `rotate(-90 14 ${height / 2})`, "text-anchor": "middle" });
+  addText(svg, "within-split (%)", { x: 14, y: height / 2, class: "n4viz-axis-label", transform: `rotate(-90 14 ${height / 2})`, "text-anchor": "middle" });
   [["Calibration", COLORS.train], ["Validation", COLORS.test]].forEach(([label, color], index) => {
     const offset = 315 + index * 90;
     svg.append(svgElement("rect", { x: offset, y: 16, width: 8, height: 8, rx: 2, fill: color }));
@@ -533,6 +628,11 @@ function setDatasetUi(data) {
   byId("fairness-text").textContent = `${data.trainRows} calibration rows · ${data.testRows} held-out rows · ${data.cols} shared features`;
   drawSpectra(data);
   drawTargetHistogram(data);
+  const [signalMin, signalMax] = extent([...data.trainX.data, ...data.testX.data]);
+  const trainMean = data.trainY.reduce((sum, value) => sum + value, 0) / data.trainY.length;
+  const testMean = data.testY.reduce((sum, value) => sum + value, 0) / data.testY.length;
+  byId("spectra-summary").textContent = `${data.trainRows + data.testRows} spectra across ${data.cols} wavelengths; ${data.meta.signalType} spans ${compactNumber(signalMin)} to ${compactNumber(signalMax)}.`;
+  byId("target-summary").textContent = `${data.meta.targetName}: ${compactNumber(targetMin)} to ${compactNumber(targetMax)}; calibration mean ${compactNumber(trainMean)}, validation mean ${compactNumber(testMean)}.`;
   resetResults();
 }
 
@@ -565,7 +665,7 @@ async function loadBundledDataset(id, runAfterLoad = false, announceReady = true
       trainRows: trainX.rows, testRows: testX.rows, cols: trainX.cols, axis: trainX.axis,
       meta: {
         label: dataset.label,
-        kind: "Bundled fixture",
+        kind: "Bundled example",
         unit: dataset.unit,
         signalType: dataset.signalType,
         targetName: trainY.targetName || dataset.target,
@@ -653,9 +753,12 @@ function selectRows(buffer, rowIndices, cols) {
   return output;
 }
 
-function contiguousFolds(rows, count) {
+function contiguousFolds(rows, count, offset = 0) {
   const folds = Array.from({ length: count }, () => []);
-  for (let row = 0; row < rows; row += 1) folds[Math.floor(row * count / rows)].push(row);
+  for (let position = 0; position < rows; position += 1) {
+    const row = (position + offset) % rows;
+    folds[Math.floor(position * count / rows)].push(row);
+  }
   return folds;
 }
 
@@ -677,18 +780,20 @@ function metrics(actual, predicted) {
   };
 }
 
-async function fitCrossValidatedPls(data, maxComponents, foldCount, onProgress) {
+async function scorePlsCandidates(data, maxComponents, foldCount, foldOffset = 0, onProgress) {
   let elapsed = 0;
-  const folds = contiguousFolds(data.trainRows, foldCount);
+  const folds = contiguousFolds(data.trainRows, foldCount, foldOffset);
   const allRows = Array.from({ length: data.trainRows }, (_, index) => index);
   const maxAllowed = Math.max(1, Math.min(maxComponents, data.cols, ...folds.map((held) => data.trainRows - held.length - 1)));
   const candidates = [];
-  const totalFits = maxAllowed * folds.length + 1;
-  let completedFits = 0;
+  const totalUnits = maxAllowed * folds.length;
+  let completedUnits = 0;
+  let candidateFits = 0;
   for (let components = 1; components <= maxAllowed; components += 1) {
     const oof = new Float64Array(data.trainRows);
     let validCandidate = true;
-    for (const heldRows of folds) {
+    for (let foldIndex = 0; foldIndex < folds.length; foldIndex += 1) {
+      const heldRows = folds[foldIndex];
       const held = new Set(heldRows);
       const fitRows = allRows.filter((row) => !held.has(row));
       const xFit = selectRows(data.trainX.data, fitRows, data.cols);
@@ -698,80 +803,135 @@ async function fitCrossValidatedPls(data, maxComponents, foldCount, onProgress) 
       try {
         const model = fitPls(matrix(xFit, fitRows.length, data.cols), matrix(yFit, fitRows.length, 1), components);
         const predictions = predictPls(model, matrix(xHeld, heldRows.length, data.cols)).data;
+        candidateFits += 1;
         elapsed += performance.now() - fitStarted;
         heldRows.forEach((row, index) => { oof[row] = predictions[index]; });
       } catch (error) {
         elapsed += performance.now() - fitStarted;
         validCandidate = false;
       }
-      completedFits += 1;
-      onProgress?.(completedFits / totalFits, components, maxAllowed);
-      if (!validCandidate) break;
+      completedUnits += 1;
+      if (!validCandidate) {
+        completedUnits += folds.length - foldIndex - 1;
+        break;
+      }
+      onProgress?.(completedUnits / totalUnits, components, maxAllowed);
     }
     if (validCandidate) candidates.push({ components, rmse: metrics(data.trainY, oof).rmse });
+    onProgress?.(completedUnits / totalUnits, components, maxAllowed);
     await yieldToBrowser();
   }
   if (candidates.length === 0) throw new Error("No numerically stable PLS component count was found.");
+  return { candidates, elapsed, maxAllowed, candidateFits };
+}
+
+async function fitCrossValidatedPls(data, maxComponents, foldCount, onProgress) {
+  const scored = await scorePlsCandidates(data, maxComponents, foldCount, 0, onProgress);
+  const candidates = [...scored.candidates];
   candidates.sort((left, right) => left.rmse - right.rmse || left.components - right.components);
   const selected = candidates[0];
   const finalFitStarted = performance.now();
   const model = fitPls(matrix(data.trainX.data, data.trainRows, data.cols), matrix(data.trainY, data.trainRows, 1), selected.components);
-  completedFits += 1;
-  onProgress?.(completedFits / totalFits, selected.components, maxAllowed);
   const predictions = predictPls(model, matrix(data.testX.data, data.testRows, data.cols)).data;
-  elapsed += performance.now() - finalFitStarted;
-  return { model, predictions, components: selected.components, cvRmse: selected.rmse, elapsed, maxAllowed, candidateFits: completedFits };
-}
-
-function transformedDataset(data, operator) {
-  if (operator.kind === 0) return data;
+  onProgress?.(1, selected.components, scored.maxAllowed);
   return {
-    ...data,
-    trainX: matrix(operatorView(data.trainX.data, data.trainRows, data.cols, operator.kind), data.trainRows, data.cols),
-    testX: matrix(operatorView(data.testX.data, data.testRows, data.cols, operator.kind), data.testRows, data.cols),
+    model,
+    predictions,
+    components: selected.components,
+    cvRmse: selected.rmse,
+    elapsed: scored.elapsed + performance.now() - finalFitStarted,
+    maxAllowed: scored.maxAllowed,
+    candidateFits: scored.candidateFits + 1,
   };
 }
 
-async function fitPreprocessingHpoPls(data, maxComponents, foldCount, operators, onProgress) {
+function transformWithPipeline(buffer, rows, cols, selectedPipeline) {
+  let transformed = buffer;
+  for (const step of selectedPipeline.steps) {
+    const operator = ppCreate(step.op, step.params);
+    try {
+      transformed = ppTransform(operator, transformed, rows, cols);
+    } finally {
+      ppDestroy(operator);
+    }
+  }
+  return transformed;
+}
+
+function transformedDataset(data, selectedPipeline) {
+  if (selectedPipeline.steps.length === 0) return data;
+  return {
+    ...data,
+    trainX: matrix(transformWithPipeline(data.trainX.data, data.trainRows, data.cols, selectedPipeline), data.trainRows, data.cols),
+    testX: matrix(transformWithPipeline(data.testX.data, data.testRows, data.cols, selectedPipeline), data.testRows, data.cols),
+  };
+}
+
+async function fitPreprocessingHpoPls(data, maxComponents, foldCount, pipelines, repeats, onProgress) {
   const candidates = [];
   let elapsed = 0;
   let candidateFits = 0;
-  for (let operatorIndex = 0; operatorIndex < operators.length; operatorIndex += 1) {
-    const operator = operators[operatorIndex];
+  for (let pipelineIndex = 0; pipelineIndex < pipelines.length; pipelineIndex += 1) {
+    const selectedPipeline = pipelines[pipelineIndex];
     const transformStarted = performance.now();
-    const transformed = transformedDataset(data, operator);
-    elapsed += performance.now() - transformStarted;
     try {
-      const result = await fitCrossValidatedPls(transformed, maxComponents, foldCount, (fraction, component, total) => {
-        onProgress?.((operatorIndex + fraction) / operators.length, operator, component, total);
+      const transformed = transformedDataset(data, selectedPipeline);
+      elapsed += performance.now() - transformStarted;
+      const aggregated = new Map();
+      let maxAllowed = 1;
+      for (let repeat = 0; repeat < repeats; repeat += 1) {
+        const foldOffset = Math.round(repeat * data.trainRows / repeats) % data.trainRows;
+        const scored = await scorePlsCandidates(transformed, maxComponents, foldCount, foldOffset, (fraction, component, total) => {
+          const overall = (pipelineIndex * repeats + repeat + fraction) / (pipelines.length * repeats);
+          onProgress?.(overall, selectedPipeline, component, total, repeat + 1, repeats);
+        });
+        elapsed += scored.elapsed;
+        candidateFits += scored.candidateFits;
+        maxAllowed = scored.maxAllowed;
+        scored.candidates.forEach(({ components, rmse }) => {
+          const aggregate = aggregated.get(components) || { sum: 0, count: 0 };
+          aggregate.sum += rmse;
+          aggregate.count += 1;
+          aggregated.set(components, aggregate);
+        });
+      }
+      aggregated.forEach((aggregate, components) => {
+        if (aggregate.count === repeats) {
+          candidates.push({ pipeline: selectedPipeline, pipelineIndex, components, cvRmse: aggregate.sum / aggregate.count, maxAllowed });
+        }
       });
-      elapsed += result.elapsed;
-      candidateFits += result.candidateFits;
-      candidates.push({ operator, result });
     } catch (error) {
-      onProgress?.((operatorIndex + 1) / operators.length, operator, maxComponents, maxComponents);
+      elapsed += performance.now() - transformStarted;
+      onProgress?.((pipelineIndex + 1) / pipelines.length, selectedPipeline, maxComponents, maxComponents, repeats, repeats);
     }
   }
   if (candidates.length === 0) throw new Error("No numerically stable PLS preprocessing route was found.");
-  candidates.sort((left, right) => left.result.cvRmse - right.result.cvRmse
-    || left.result.components - right.result.components
-    || left.operator.kind - right.operator.kind);
+  candidates.sort((left, right) => left.cvRmse - right.cvRmse
+    || left.components - right.components
+    || left.pipelineIndex - right.pipelineIndex);
   const selected = candidates[0];
-  return { ...selected.result, operator: selected.operator, elapsed, candidateFits };
+  const finalData = transformedDataset(data, selected.pipeline);
+  const finalFitStarted = performance.now();
+  const model = fitPls(matrix(finalData.trainX.data, finalData.trainRows, finalData.cols), matrix(finalData.trainY, finalData.trainRows, 1), selected.components);
+  const predictions = predictPls(model, matrix(finalData.testX.data, finalData.testRows, finalData.cols)).data;
+  elapsed += performance.now() - finalFitStarted;
+  return { model, predictions, components: selected.components, cvRmse: selected.cvRmse, operator: selected.pipeline, elapsed, candidateFits: candidateFits + 1 };
 }
 
-async function fitCrossValidatedRidge(data, foldCount, alphas, onProgress) {
+async function scoreRidgeCandidates(data, foldCount, alphas, foldOffset = 0, onProgress) {
   let elapsed = 0;
-  const folds = contiguousFolds(data.trainRows, foldCount);
+  const folds = contiguousFolds(data.trainRows, foldCount, foldOffset);
   const allRows = Array.from({ length: data.trainRows }, (_, index) => index);
   const candidates = [];
-  const totalFits = alphas.length * folds.length + 1;
-  let completedFits = 0;
+  const totalUnits = alphas.length * folds.length;
+  let completedUnits = 0;
+  let candidateFits = 0;
   for (let alphaIndex = 0; alphaIndex < alphas.length; alphaIndex += 1) {
     const alpha = alphas[alphaIndex];
     const oof = new Float64Array(data.trainRows);
     let validCandidate = true;
-    for (const heldRows of folds) {
+    for (let foldIndex = 0; foldIndex < folds.length; foldIndex += 1) {
+      const heldRows = folds[foldIndex];
       const held = new Set(heldRows);
       const fitRows = allRows.filter((row) => !held.has(row));
       const xFit = selectRows(data.trainX.data, fitRows, data.cols);
@@ -781,20 +941,31 @@ async function fitCrossValidatedRidge(data, foldCount, alphas, onProgress) {
       try {
         const model = fitModel("Ridge", matrix(xFit, fitRows.length, data.cols), matrix(yFit, fitRows.length, 1), 1, [alpha]);
         const predictions = predictModel(model, matrix(xHeld, heldRows.length, data.cols)).data;
+        candidateFits += 1;
         elapsed += performance.now() - fitStarted;
         heldRows.forEach((row, index) => { oof[row] = predictions[index]; });
       } catch (error) {
         elapsed += performance.now() - fitStarted;
         validCandidate = false;
       }
-      completedFits += 1;
-      onProgress?.(completedFits / totalFits, alpha, alphaIndex + 1, alphas.length);
-      if (!validCandidate) break;
+      completedUnits += 1;
+      if (!validCandidate) {
+        completedUnits += folds.length - foldIndex - 1;
+        break;
+      }
+      onProgress?.(completedUnits / totalUnits, alpha, alphaIndex + 1, alphas.length);
     }
     if (validCandidate) candidates.push({ alpha, rmse: metrics(data.trainY, oof).rmse });
+    onProgress?.(completedUnits / totalUnits, alpha, alphaIndex + 1, alphas.length);
     await yieldToBrowser();
   }
   if (candidates.length === 0) throw new Error("No numerically stable Ridge regularisation value was found.");
+  return { candidates, elapsed, candidateFits };
+}
+
+async function fitCrossValidatedRidge(data, foldCount, alphas, onProgress) {
+  const scored = await scoreRidgeCandidates(data, foldCount, alphas, 0, onProgress);
+  const candidates = [...scored.candidates];
   candidates.sort((left, right) => left.rmse - right.rmse || left.alpha - right.alpha);
   const selected = candidates[0];
   const finalFitStarted = performance.now();
@@ -806,38 +977,57 @@ async function fitCrossValidatedRidge(data, foldCount, alphas, onProgress) {
     [selected.alpha],
   );
   const predictions = predictModel(model, matrix(data.testX.data, data.testRows, data.cols)).data;
-  elapsed += performance.now() - finalFitStarted;
-  completedFits += 1;
-  onProgress?.(completedFits / totalFits, selected.alpha, alphas.length, alphas.length);
-  return { model, predictions, alpha: selected.alpha, cvRmse: selected.rmse, elapsed, candidateFits: completedFits };
+  onProgress?.(1, selected.alpha, alphas.length, alphas.length);
+  return { model, predictions, alpha: selected.alpha, cvRmse: selected.rmse, elapsed: scored.elapsed + performance.now() - finalFitStarted, candidateFits: scored.candidateFits + 1 };
 }
 
-async function fitPreprocessingHpoRidge(data, foldCount, alphas, operators, onProgress) {
+async function fitPreprocessingHpoRidge(data, foldCount, alphas, pipelines, repeats, onProgress) {
   const candidates = [];
   let elapsed = 0;
   let candidateFits = 0;
-  for (let operatorIndex = 0; operatorIndex < operators.length; operatorIndex += 1) {
-    const operator = operators[operatorIndex];
+  for (let pipelineIndex = 0; pipelineIndex < pipelines.length; pipelineIndex += 1) {
+    const selectedPipeline = pipelines[pipelineIndex];
     const transformStarted = performance.now();
-    const transformed = transformedDataset(data, operator);
-    elapsed += performance.now() - transformStarted;
     try {
-      const result = await fitCrossValidatedRidge(transformed, foldCount, alphas, (fraction, alpha, alphaIndex, alphaCount) => {
-        onProgress?.((operatorIndex + fraction) / operators.length, operator, alpha, alphaIndex, alphaCount);
+      const transformed = transformedDataset(data, selectedPipeline);
+      elapsed += performance.now() - transformStarted;
+      const aggregated = new Map();
+      for (let repeat = 0; repeat < repeats; repeat += 1) {
+        const foldOffset = Math.round(repeat * data.trainRows / repeats) % data.trainRows;
+        const scored = await scoreRidgeCandidates(transformed, foldCount, alphas, foldOffset, (fraction, alpha, alphaIndex, alphaCount) => {
+          const overall = (pipelineIndex * repeats + repeat + fraction) / (pipelines.length * repeats);
+          onProgress?.(overall, selectedPipeline, alpha, alphaIndex, alphaCount, repeat + 1, repeats);
+        });
+        elapsed += scored.elapsed;
+        candidateFits += scored.candidateFits;
+        scored.candidates.forEach(({ alpha, rmse }) => {
+          const aggregate = aggregated.get(alpha) || { sum: 0, count: 0 };
+          aggregate.sum += rmse;
+          aggregate.count += 1;
+          aggregated.set(alpha, aggregate);
+        });
+      }
+      aggregated.forEach((aggregate, alpha) => {
+        if (aggregate.count === repeats) {
+          candidates.push({ pipeline: selectedPipeline, pipelineIndex, alpha, cvRmse: aggregate.sum / aggregate.count });
+        }
       });
-      elapsed += result.elapsed;
-      candidateFits += result.candidateFits;
-      candidates.push({ operator, result });
     } catch (error) {
-      onProgress?.((operatorIndex + 1) / operators.length, operator, alphas.at(-1), alphas.length, alphas.length);
+      elapsed += performance.now() - transformStarted;
+      onProgress?.((pipelineIndex + 1) / pipelines.length, selectedPipeline, alphas.at(-1), alphas.length, alphas.length, repeats, repeats);
     }
   }
   if (candidates.length === 0) throw new Error("No numerically stable Ridge preprocessing route was found.");
-  candidates.sort((left, right) => left.result.cvRmse - right.result.cvRmse
-    || left.result.alpha - right.result.alpha
-    || left.operator.kind - right.operator.kind);
+  candidates.sort((left, right) => left.cvRmse - right.cvRmse
+    || left.alpha - right.alpha
+    || left.pipelineIndex - right.pipelineIndex);
   const selected = candidates[0];
-  return { ...selected.result, operator: selected.operator, elapsed, candidateFits };
+  const finalData = transformedDataset(data, selected.pipeline);
+  const finalFitStarted = performance.now();
+  const model = fitModel("Ridge", matrix(finalData.trainX.data, finalData.trainRows, finalData.cols), matrix(finalData.trainY, finalData.trainRows, 1), 1, [selected.alpha]);
+  const predictions = predictModel(model, matrix(finalData.testX.data, finalData.testRows, finalData.cols)).data;
+  elapsed += performance.now() - finalFitStarted;
+  return { model, predictions, alpha: selected.alpha, cvRmse: selected.cvRmse, operator: selected.pipeline, elapsed, candidateFits: candidateFits + 1 };
 }
 
 function formatMetric(value) {
@@ -884,9 +1074,17 @@ function drawPredictionChart(id, actual, series) {
   const xValue = (value) => margin.left + (value - min) / (max - min) * (width - margin.left - margin.right);
   svg.append(svgElement("line", { x1: xValue(min), y1: scales.y(min), x2: xValue(max), y2: scales.y(max), class: "identity-line" }));
   series.forEach((item, seriesIndex) => {
-    item.predictions.forEach((value, index) => svg.append(svgElement("circle", {
-      cx: xValue(actual[index]), cy: scales.y(value), r: 5.4 - seriesIndex * .45, class: `prediction-point ${item.className}`,
-    })));
+    item.predictions.forEach((value, index) => {
+      const cx = xValue(actual[index]);
+      const cy = scales.y(value);
+      if (seriesIndex === 0) {
+        svg.append(svgElement("circle", { cx, cy, r: 5, class: `prediction-point ${item.className}` }));
+      } else if (seriesIndex === 1) {
+        svg.append(svgElement("rect", { x: cx - 4.4, y: cy - 4.4, width: 8.8, height: 8.8, rx: 1, class: `prediction-point ${item.className}` }));
+      } else {
+        svg.append(svgElement("path", { d: `M${cx},${cy - 5} L${cx + 5},${cy} L${cx},${cy + 5} L${cx - 5},${cy} Z`, class: `prediction-point ${item.className}` }));
+      }
+    });
   });
 }
 
@@ -1071,6 +1269,7 @@ async function runComparison() {
   const serial = ++comparisonSerial;
   const button = byId("run");
   const operators = selectedOperators();
+  const searchProfile = selectedSearchProfile();
   resetResults();
   setControlsLocked(true);
   button.disabled = true;
@@ -1091,30 +1290,30 @@ async function runComparison() {
     const componentBudget = Math.max(1, Math.min(requestedComponents, currentData.cols, minFoldTrain - 1));
     const rawPls = await fitCrossValidatedPls(currentData, componentBudget, foldCount, (fraction, component, total) => {
       setActivity({
-        state: "running", progress: 26 + fraction * 8, phase: "pls",
+        state: "running", progress: 26 + fraction, phase: "pls",
         title: "PLS · raw reference",
         detail: `Calibration CV: component ${component}/${total}, ${foldCount} folds.`,
       });
     });
 
-    byId("run-note").textContent = `Step 2/6: conventional PLS HPO is screening ${operators.length} operators × ${componentBudget} component counts.`;
+    byId("run-note").textContent = `Step 2/6: ${searchProfile.label} PLS is screening ${searchProfile.pipelines.length} pipelines × ${componentBudget} component counts.`;
     setActivity({
-      state: "running", progress: 34, phase: "pls",
+      state: "running", progress: 27, phase: "pls",
       title: "PLS · preprocessing HPO",
-      detail: `External CV grid: ${operators.length} operators × ${componentBudget} component counts…`,
+      detail: `${searchProfile.pipelines.length} pipelines × ${componentBudget} component counts × ${searchProfile.repeats} fold layout${searchProfile.repeats > 1 ? "s" : ""}…`,
     });
     await yieldToBrowser();
-    const hpoPls = await fitPreprocessingHpoPls(currentData, componentBudget, foldCount, operators, (fraction, operator, component, total) => {
+    const hpoPls = await fitPreprocessingHpoPls(currentData, componentBudget, foldCount, searchProfile.pipelines, searchProfile.repeats, (fraction, selectedPipeline, component, total, repeat, repeats) => {
       setActivity({
-        state: "running", progress: 34 + fraction * 18, phase: "pls",
+        state: "running", progress: 27 + fraction * 56, phase: "pls",
         title: "PLS · preprocessing HPO",
-        detail: `${operator.name}: component ${component}/${total}, ${foldCount} folds.`,
+        detail: `${selectedPipeline.name} · repeat ${repeat}/${repeats} · component ${component}/${total}.`,
       });
     });
 
-    byId("run-note").textContent = `Step 3/6: native AOM-PLS is screening the same ${operators.length}-operator bank up to ${componentBudget} components.`;
+    byId("run-note").textContent = `Step 3/6: native AOM-PLS is screening its ${operators.length}-operator strict-linear bank up to ${componentBudget} components.`;
     setActivity({
-      state: "running", progress: 52, phase: "aom-pls",
+      state: "running", progress: 83, phase: "aom-pls",
       title: "Running AOM-PLS",
       detail: `Native operator/component selection on the calibration rows…`,
     });
@@ -1138,31 +1337,31 @@ async function runComparison() {
 
     byId("run-note").textContent = `Step 4/6: selecting Ridge α on raw spectra, then screening preprocessing + α.`;
     setActivity({
-      state: "running", progress: 63, phase: "ridge",
+      state: "running", progress: 85, phase: "ridge",
       title: "Ridge · raw reference",
       detail: `Cross-validating ${RIDGE_ALPHAS.length} logarithmic regularisation values…`,
     });
     await yieldToBrowser();
     const rawRidge = await fitCrossValidatedRidge(currentData, foldCount, RIDGE_ALPHAS, (fraction, alpha) => {
       setActivity({
-        state: "running", progress: 63 + fraction * 5, phase: "ridge",
+        state: "running", progress: 85 + fraction, phase: "ridge",
         title: "Ridge · raw reference",
         detail: `Calibration CV: α ${formatAlpha(alpha)}, ${foldCount} folds.`,
       });
     });
 
-    byId("run-note").textContent = `Step 5/6: conventional Ridge HPO is screening ${operators.length} operators × ${RIDGE_ALPHAS.length} α values.`;
-    const hpoRidge = await fitPreprocessingHpoRidge(currentData, foldCount, RIDGE_ALPHAS, operators, (fraction, operator, alpha) => {
+    byId("run-note").textContent = `Step 5/6: ${searchProfile.label} Ridge is screening ${searchProfile.pipelines.length} pipelines × ${RIDGE_ALPHAS.length} α values.`;
+    const hpoRidge = await fitPreprocessingHpoRidge(currentData, foldCount, RIDGE_ALPHAS, searchProfile.pipelines, searchProfile.repeats, (fraction, selectedPipeline, alpha, alphaIndex, alphaCount, repeat, repeats) => {
       setActivity({
-        state: "running", progress: 68 + fraction * 16, phase: "ridge",
+        state: "running", progress: 86 + fraction * 11, phase: "ridge",
         title: "Ridge · preprocessing HPO",
-        detail: `${operator.name}: α ${formatAlpha(alpha)}, ${foldCount} folds.`,
+        detail: `${selectedPipeline.name} · repeat ${repeat}/${repeats} · α ${alphaIndex}/${alphaCount} (${formatAlpha(alpha)}).`,
       });
     });
 
     byId("run-note").textContent = "Step 6/6: fitting the native compact AOM-Ridge simplex blender.";
     setActivity({
-      state: "running", progress: 85, phase: "aom-ridge",
+      state: "running", progress: 97, phase: "aom-ridge",
       title: "Running AOM-Ridge Blender",
       detail: `Blending compact operator-chain × Ridge-α candidates with ${foldCount}-fold calibration CV…`,
     });
@@ -1183,7 +1382,7 @@ async function runComparison() {
     if (serial !== comparisonSerial) return;
 
     setActivity({
-      state: "running", progress: 94, phase: "results",
+      state: "running", progress: 99, phase: "results",
       title: "Calculating held-out results",
       detail: `Comparing six prediction vectors on ${currentData.testRows} untouched validation rows…`,
     });
@@ -1220,7 +1419,7 @@ async function runComparison() {
       ? " Boundary transients are clipped only in this preview; fitting uses the complete transformed matrix."
       : "";
     byId("operator-explanation").textContent = `${selected.detail} The two panels use independent y scales so shape changes remain legible.${edgeNote}`;
-    byId("fairness-text").textContent = `${currentData.trainRows} calibration · ${currentData.testRows} held out · ${foldCount} folds · PLS H 1–${componentBudget} · Ridge ${RIDGE_ALPHAS.length}-α grid`;
+    byId("fairness-text").textContent = `${currentData.trainRows} calibration · ${currentData.testRows} held out · ${foldCount} folds · ${searchProfile.label}: ${searchProfile.pipelines.length} pipelines × ${searchProfile.repeats} layout${searchProfile.repeats > 1 ? "s" : ""}`;
 
     drawRmseChart([
       { rmse: rawPlsStats.rmse }, { rmse: hpoPlsStats.rmse }, { rmse: aomPlsStats.rmse },
@@ -1337,21 +1536,25 @@ function parserSelfTest() {
 }
 
 async function initialise() {
+  const query = new URLSearchParams(location.search);
+  if (query.has("selftest") && query.get("selftest") !== "full") byId("search-depth").value = "quick";
   renderOperatorControls();
   setupCodeWorkbench();
+  updateSearchDepthUi(false);
   resetResults();
   setActivity({ state: "loading", progress: 4, phase: "data", title: "Initialising the demonstration", detail: "Loading the bundled dataset catalogue…" });
   byId("run").addEventListener("click", runComparison);
   byId("load-upload").addEventListener("click", loadUploadedFiles);
   byId("components").addEventListener("change", markResultsStale);
   byId("folds").addEventListener("change", markResultsStale);
+  byId("search-depth").addEventListener("change", () => updateSearchDepthUi(true));
   ["x-cal-file", "y-cal-file", "x-val-file", "y-val-file"].forEach((id) => byId(id).addEventListener("change", updateUploadReadiness));
   updateUploadReadiness();
 
   const manifestResponse = await fetch("datasets/manifest.json");
   if (!manifestResponse.ok) throw new Error(`Dataset manifest failed to load (${manifestResponse.status}).`);
   manifest = await manifestResponse.json();
-  const requestedDataset = new URLSearchParams(location.search).get("dataset");
+  const requestedDataset = query.get("dataset");
   activeDatasetId = manifest.datasets.some((dataset) => dataset.id === requestedDataset)
     ? requestedDataset
     : manifest.datasets[0].id;
@@ -1380,7 +1583,7 @@ async function initialise() {
     byId("run-note").className = "form-status error";
     setActivity({ state: "error", progress: 20, phase: "data", title: "WebAssembly could not start", detail: error.message });
   }
-  if (runtimeReady && currentData && new URLSearchParams(location.search).has("selftest")) await runComparison();
+  if (runtimeReady && currentData && query.has("selftest")) await runComparison();
 }
 
 window.__AOM_DEMO__ = { parseXText, parseYText, validatePartitions, parserSelfTest };

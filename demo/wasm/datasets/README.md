@@ -1,16 +1,16 @@
-# Bundled nirs4all dataset snapshots
+# Bundled nirs4all synthetic examples
 
-The three bundled examples are synthetic **format fixtures**, not the datasets
+The three bundled examples are realistic synthetic spectra, not the datasets
 used for the paper benchmark. Each keeps the standard separate-file contract:
 `Xcal.csv`, `Ycal.csv`, `Xval.csv`, and `Yval.csv`.
 
-They are copied verbatim from `nirs4all/examples/sample_datasets` at commit
-`b4b04b8f49cf47cf9ae9b94017ab53c694cdf0d4`. The generator creates 60
-Beer–Lambert-like spectra (48 calibration, 12 validation), 200 spectral
-features, baseline variation and noise. See `manifest.json` for per-dataset
-metadata and immutable source links. The source repository is licensed under
-AGPL-3.0-or-later.
+`generate_demo_datasets.py` calls `nirs4all.synthesis.SyntheticNIRSGenerator`
+from commit `b4b04b8f49cf47cf9ae9b94017ab53c694cdf0d4`. Each recipe creates 120 spectra
+(90 calibration, 30 validation) on 301 wavelengths from 1000 to 2500 nm. The
+examples cover realistic food composition, a more complex scattering powder,
+and a four-batch process. See `manifest.json` for metadata and immutable source
+links. The source repository is licensed under AGPL-3.0-or-later.
 
-Run `../sync_datasets.sh` to refresh these files from a sibling `nirs4all`
-checkout. Update the manifest commit and verify the page whenever snapshots are
-refreshed.
+Run `../sync_datasets.sh` to regenerate these files from a sibling `nirs4all`
+checkout. Update the manifest commit and verify the page whenever the generator
+snapshot changes.

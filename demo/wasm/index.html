@@ -31,17 +31,21 @@
   </header>
 
   <section id="activity" class="activity-strip" data-state="loading">
-    <div class="activity-status" role="status" aria-live="polite" aria-atomic="true">
+    <div class="activity-status">
       <span id="activity-dot" class="activity-dot" aria-hidden="true"></span>
       <div><strong id="activity-title">Initialising the demonstration</strong><small id="activity-detail">Loading the dataset description…</small></div>
     </div>
-    <div id="activity-progress" class="activity-progress" role="progressbar" aria-label="Experiment progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="5">
-      <span id="activity-progress-bar" style="width: 5%"></span>
+    <div class="activity-progress-stack">
+      <div id="activity-progress" class="activity-progress" role="progressbar" aria-label="Experiment progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="5">
+        <span id="activity-progress-bar" style="width: 5%"></span>
+      </div>
+      <div class="activity-progress-meta"><strong id="activity-percent">5%</strong><small id="activity-time">Loading…</small></div>
     </div>
     <ol class="activity-phases" aria-label="Experiment stages">
       <li data-phase="data">1 · Data</li><li data-phase="pls">2 · PLS</li><li data-phase="aom-pls">3 · AOM-PLS</li><li data-phase="ridge">4 · Ridge</li><li data-phase="aom-ridge">5 · AOM-Ridge</li><li data-phase="results">6 · Results</li>
     </ol>
     <a id="activity-action" href="#results" hidden>View results ↓</a>
+    <p id="activity-announcement" class="sr-only" role="status" aria-live="polite" aria-atomic="true">Initialising the demonstration.</p>
   </section>
 
   <main>
@@ -60,7 +64,7 @@
         <p class="overline">How to use this page</p>
         <ol class="workflow-overview">
           <li><span>1</span><div><strong>Load your data</strong><small>Provide separate X/y files for calibration and validation, then inspect them.</small></div></li>
-          <li><span>2</span><div><strong>Set the search</strong><small>Choose folds, up to 25 PLS components and the shared operator bank.</small></div></li>
+          <li><span>2</span><div><strong>Set the search</strong><small>Choose a quick check or a broader repeated HPO, folds and up to 25 PLS components.</small></div></li>
           <li><span>3</span><div><strong>Run and compare</strong><small>Follow all six fits, then compare PLS and Ridge on held-out rows.</small></div></li>
         </ol>
         <p class="privacy-note">No data are sent to a server.</p>
@@ -70,7 +74,7 @@
     <section id="data" class="section-block" aria-labelledby="data-title">
       <div class="section-heading">
         <div><span class="section-number">01</span><p class="kicker">Dataset</p><h2 id="data-title">Start with your spectra and reference values</h2></div>
-        <p>Load your fixed calibration/validation split first. If you are exploring the method, use a small documented format fixture from <code>nirs4all</code>.</p>
+        <p>Load your fixed calibration/validation split first. If you are exploring the method, use one of the documented synthetic NIR examples from <code>nirs4all</code>.</p>
       </div>
 
       <div class="data-layout">
@@ -100,7 +104,7 @@
         <article class="dataset-detail n4-surface">
           <div class="card-head">
             <div><p class="overline">Active dataset</p><h3 id="dataset-name">Loading…</h3></div>
-            <span id="dataset-kind" class="n4-badge">Bundled fixture</span>
+            <span id="dataset-kind" class="n4-badge">Bundled example</span>
           </div>
           <p id="dataset-description" class="muted"></p>
           <dl class="metadata-grid">
@@ -118,19 +122,21 @@
       </div>
 
       <div id="bundled-datasets" class="fixture-picker">
-        <div><p class="overline">No files at hand?</p><h3>Try the complete workflow with a bundled fixture</h3></div>
-        <p>These synthetic format fixtures illustrate the interface; they are not the paper benchmark data.</p>
+        <div><p class="overline">No files at hand?</p><h3>Try the complete workflow with a bundled example</h3></div>
+        <p>These realistic synthetic spectra illustrate the workflow; they are not the paper benchmark data.</p>
       </div>
       <div id="dataset-options" class="dataset-options" role="radiogroup" aria-label="Bundled datasets"></div>
 
       <div class="inspection-grid">
         <article class="chart-panel n4-surface">
           <div class="chart-title"><div><p class="overline">X · spectra</p><h3>Calibration and held-out spectra</h3></div><div class="legend"><span class="legend-key train"></span>Calibration <span class="legend-key test"></span>Validation</div></div>
-          <svg id="spectra-chart" class="n4viz" viewBox="0 0 760 360" role="img" aria-label="Spectra in the calibration and validation partitions"></svg>
+          <svg id="spectra-chart" class="n4viz" viewBox="0 0 760 360" role="img" aria-label="Spectra in the calibration and validation partitions" aria-describedby="spectra-summary"></svg>
+          <p id="spectra-summary" class="chart-footnote">A concise spectral summary will appear with the dataset.</p>
         </article>
         <article class="chart-panel n4-surface">
           <div class="chart-title"><div><p class="overline">y · response</p><h3>Target distribution by split</h3></div></div>
-          <svg id="target-chart" class="n4viz" viewBox="0 0 520 360" role="img" aria-label="Target distributions in calibration and validation partitions"></svg>
+          <svg id="target-chart" class="n4viz" viewBox="0 0 520 360" role="img" aria-label="Target distributions in calibration and validation partitions" aria-describedby="target-summary"></svg>
+          <p id="target-summary" class="chart-footnote">A concise target summary will appear with the dataset.</p>
         </article>
       </div>
     </section>
@@ -138,12 +144,16 @@
     <section id="experiment" class="section-block" aria-labelledby="experiment-title">
       <div class="section-heading">
         <div><span class="section-number">02</span><p class="kicker">Experiment</p><h2 id="experiment-title">Configure one fair comparison</h2></div>
-        <p>Every route sees the same response, folds and untouched validation rows. PLS-HPO and AOM-PLS share the enabled operator bank; AOM-Ridge uses its documented compact blender.</p>
+        <p>Every route sees the same response, folds and untouched validation rows. Conventional HPO explores a broad preprocessing library; AOM uses its compact, editable bank.</p>
       </div>
 
       <div class="experiment-layout">
         <aside class="config-card n4-surface">
           <div class="card-head"><div><p class="overline">Configuration</p><h3>Experiment controls</h3></div><span class="n4-badge">Editable</span></div>
+          <label class="field">Search effort
+            <select id="search-depth"><option value="quick">Quick check</option><option value="full" selected>Full HPO</option></select>
+            <small id="search-depth-note">Broad preprocessing library with repeated CV; typically 20–45 seconds on bundled examples.</small>
+          </label>
           <label class="field">Maximum PLS components
             <select id="components"><option>5</option><option>10</option><option>15</option><option>20</option><option selected>25</option></select>
             <small>PLS routes screen every count from 1 to this limit; the effective limit is safely clamped to the data.</small>
@@ -152,11 +162,18 @@
             <select id="folds"><option>3</option><option selected>5</option><option>6</option><option>8</option></select>
             <small>The same deterministic fold assignment is used.</small>
           </label>
-          <fieldset>
-            <legend>Shared strict-linear operator bank</legend>
-            <div id="operator-controls" class="operator-controls"></div>
-          </fieldset>
-          <button id="run" class="n4-button run-button" type="button" disabled><span>Run PLS and Ridge comparison</span><small>six local WebAssembly fits</small></button>
+          <details class="config-details">
+            <summary>What the HPO searches</summary>
+            <p id="hpo-scope">Smoothing, derivatives, detrending, SNV, Gaussian filtering and selected two-step chains.</p>
+          </details>
+          <details class="config-details">
+            <summary>Advanced · AOM operator bank</summary>
+            <fieldset>
+              <legend>Strict-linear views used by AOM-PLS</legend>
+              <div id="operator-controls" class="operator-controls"></div>
+            </fieldset>
+          </details>
+          <button id="run" class="n4-button run-button" type="button" disabled><span>Run PLS and Ridge comparison</span><small id="run-search-summary">full repeated local search</small></button>
           <p id="run-note" class="form-status" aria-live="polite">Loading the data and WebAssembly engine.</p>
         </aside>
 
@@ -168,7 +185,7 @@
             </article>
             <article class="route-card hpo n4-surface">
               <div class="route-label"><span>2</span><div><p>Conventional search</p><h3>Preprocessing HPO</h3></div></div>
-              <p>External CV screens every enabled operator with every PLS component count or Ridge regularisation value, then refits the winning pipeline.</p>
+              <p>External CV screens a preprocessing library with every PLS component count or Ridge regularisation value, then refits the winning pipeline.</p>
             </article>
             <article class="route-card adaptive n4-surface">
               <div class="route-label"><span>3</span><div><p>Proposed route</p><h3>AOM</h3></div></div>
@@ -179,7 +196,7 @@
             <div><strong>Two model families</strong><span>PLS screens 1–H components; Ridge screens a logarithmic α grid</span></div>
             <div><strong>Three calibration routes</strong><span>Raw reference, external preprocessing HPO and native AOM</span></div>
           </div>
-          <div class="fairness-strip"><strong>Fairness lock</strong><span id="fairness-text">Same calibration rows · same held-out rows · same folds and search bank</span></div>
+          <div class="fairness-strip"><strong>Fairness lock</strong><span id="fairness-text">Same calibration rows · same held-out rows · same fold count</span></div>
         </div>
       </div>
     </section>
@@ -214,25 +231,25 @@
       <div class="diagnostic-grid">
         <article class="chart-panel performance-panel n4-surface">
           <div class="chart-title"><div><p class="overline">Independent validation</p><h3>RMSE by family and calibration route</h3></div><div class="legend"><span class="legend-key baseline"></span>Raw <span class="legend-key hpo"></span>HPO <span class="legend-key aom"></span>AOM</div></div>
-          <svg id="rmse-chart" class="n4viz" viewBox="0 0 1280 420" role="img" aria-label="Validation RMSE for six PLS and Ridge calibration routes"></svg>
+          <svg id="rmse-chart" class="n4viz" viewBox="0 0 1280 420" role="img" aria-label="Validation RMSE for six PLS and Ridge calibration routes" aria-describedby="result-summary"></svg>
         </article>
         <article class="chart-panel prediction-panel n4-surface">
           <div class="chart-title"><div><p class="overline">PLS · independent validation</p><h3>Measured vs predicted</h3></div><div class="legend"><span class="legend-key baseline"></span>Raw <span class="legend-key hpo"></span>HPO <span class="legend-key aom"></span>AOM</div></div>
-          <svg id="pls-prediction-chart" class="n4viz" viewBox="0 0 620 420" role="img" aria-label="Measured versus predicted PLS responses"></svg>
+          <svg id="pls-prediction-chart" class="n4viz" viewBox="0 0 620 420" role="img" aria-label="Measured versus predicted PLS responses" aria-describedby="result-summary"></svg>
         </article>
         <article class="chart-panel prediction-panel n4-surface">
           <div class="chart-title"><div><p class="overline">Ridge · independent validation</p><h3>Measured vs predicted</h3></div><div class="legend"><span class="legend-key baseline"></span>Raw <span class="legend-key hpo"></span>HPO <span class="legend-key aom"></span>AOM</div></div>
-          <svg id="ridge-prediction-chart" class="n4viz" viewBox="0 0 620 420" role="img" aria-label="Measured versus predicted Ridge responses"></svg>
+          <svg id="ridge-prediction-chart" class="n4viz" viewBox="0 0 620 420" role="img" aria-label="Measured versus predicted Ridge responses" aria-describedby="result-summary"></svg>
         </article>
         <article class="chart-panel operator-panel n4-surface">
           <div class="chart-title"><div><p class="overline">Treatment difference</p><h3 id="operator-preview-title">Raw vs selected operator view</h3></div></div>
-          <svg id="operator-chart" class="n4viz" viewBox="0 0 560 420" role="img" aria-label="A representative raw spectrum compared with its AOM-selected transformed view"></svg>
+          <svg id="operator-chart" class="n4viz" viewBox="0 0 560 420" role="img" aria-label="A representative raw spectrum compared with its AOM-selected transformed view" aria-describedby="operator-explanation"></svg>
           <p id="operator-explanation" class="chart-footnote">AOM will select one operator from the configured bank.</p>
         </article>
         <article class="chart-panel coefficients-panel n4-surface">
           <div class="chart-title"><div><p class="overline">Deployable PLS model</p><h3>Coefficients on the original spectral grid</h3></div><div class="legend"><span class="legend-key baseline"></span>Raw PLS <span class="legend-key aom"></span>AOM-PLS</div></div>
-          <svg id="coefficient-chart" class="n4viz" viewBox="0 0 1280 360" role="img" aria-label="Raw PLS and AOM-PLS regression coefficients on the original feature grid"></svg>
-          <p class="chart-footnote">Both coefficient vectors align with the input columns. AOM folds its selected linear operator into a single raw-input model.</p>
+          <svg id="coefficient-chart" class="n4viz" viewBox="0 0 1280 360" role="img" aria-label="Raw PLS and AOM-PLS regression coefficients on the original feature grid" aria-describedby="coefficient-summary"></svg>
+          <p id="coefficient-summary" class="chart-footnote">Both coefficient vectors align with the input columns. AOM folds its selected linear operator into a single raw-input model.</p>
         </article>
       </div>
       <div class="paper-context n4-surface">

@@ -16,6 +16,7 @@
 
 * { box-sizing: border-box; }
 body { margin: 0; min-width: 320px; }
+.sr-only { position: absolute !important; width: 1px !important; height: 1px !important; padding: 0 !important; margin: -1px !important; overflow: hidden !important; clip: rect(0, 0, 0, 0) !important; white-space: nowrap !important; border: 0 !important; }
 button, input, select { font: inherit; }
 button, summary { -webkit-tap-highlight-color: transparent; }
 a { color: var(--n4-color-primary-hover); text-underline-offset: 3px; }
@@ -58,14 +59,15 @@ nav a:hover { color: var(--n4-color-primary-hover); }
   z-index: 45;
   top: 69px;
   display: grid;
-  grid-template-columns: minmax(260px, .9fr) minmax(180px, 1fr) auto auto;
+  grid-template-columns: minmax(260px, .85fr) minmax(230px, 1fr) auto auto;
   align-items: center;
   gap: 18px;
   width: min(var(--page-width), calc(100% - 40px));
-  min-height: 64px;
+  min-height: 76px;
   margin: 0 auto;
   padding: 10px 14px;
-  border: 1px solid var(--n4-color-border);
+  border: 2px solid color-mix(in srgb, var(--n4-color-primary) 34%, var(--n4-color-border));
+  border-top-width: 4px;
   border-radius: 0 0 10px 10px;
   background: rgba(255, 255, 255, .96);
   box-shadow: 0 12px 30px -24px rgba(15, 23, 42, .7);
@@ -82,8 +84,11 @@ nav a:hover { color: var(--n4-color-primary-hover); }
 .activity-strip[data-state="ready"] .activity-dot,
 .activity-strip[data-state="complete"] .activity-dot { background: var(--n4-color-success); box-shadow: 0 0 0 4px rgba(16, 185, 129, .12); }
 .activity-strip[data-state="error"] .activity-dot { background: var(--n4-color-danger); box-shadow: 0 0 0 4px rgba(225, 29, 72, .1); }
-.activity-progress { overflow: hidden; height: 7px; border-radius: 999px; background: #e8eef2; }
+.activity-progress-stack { display: grid; gap: 6px; min-width: 0; }
+.activity-progress { overflow: hidden; height: 12px; border: 1px solid #d6e1e6; border-radius: 999px; background: #e8eef2; box-shadow: inset 0 1px 2px rgba(15, 23, 42, .08); }
 .activity-progress span { display: block; width: 0; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--n4-color-primary-hover), var(--n4-color-cyan)); transition: width 180ms ease; }
+.activity-progress-meta { display: flex; justify-content: space-between; align-items: center; color: var(--n4-color-muted); font: 650 .61rem/1 var(--n4-font-mono); }
+.activity-progress-meta strong { color: var(--n4-color-primary-hover); font-size: .7rem; }
 .activity-strip[data-state="error"] .activity-progress span { background: var(--n4-color-danger); }
 .activity-phases { display: flex; gap: 5px; margin: 0; padding: 0; list-style: none; }
 .activity-phases li { padding: 5px 7px; border-radius: 5px; color: #94a3b8; font: 700 .57rem/1 var(--n4-font-mono); white-space: nowrap; }
@@ -177,8 +182,11 @@ select { width: 100%; min-height: 39px; padding: 0 10px; border: 1px solid var(-
 .chart-title { align-items: center; margin-bottom: 8px; }
 .legend { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 6px; color: var(--n4-color-muted); font-size: .66rem; }
 .legend-key, .method-dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; }
+.legend-key.train, .legend-key.test { width: 14px; height: 3px; border-radius: 0; }
+.legend-key.test { background: repeating-linear-gradient(90deg, var(--test) 0 4px, transparent 4px 6px); }
+.legend-key.hpo { border-radius: 2px; }
+.legend-key.aom { border-radius: 1px; transform: rotate(45deg); }
 .legend-key.train { background: var(--train); }
-.legend-key.test { background: var(--test); }
 .legend-key.pls, .legend-key.baseline, .method-dot.baseline { background: var(--baseline); }
 .legend-key.hpo, .method-dot.hpo { background: var(--hpo); }
 .legend-key.aom, .method-dot.adaptive { background: var(--adaptive); }
@@ -186,10 +194,11 @@ select { width: 100%; min-height: 39px; padding: 0 10px; border: 1px solid var(-
 .plot-line { fill: none; stroke-linecap: round; stroke-linejoin: round; }
 .plot-line.sample { stroke-width: 1; opacity: .12; }
 .plot-line.mean { stroke-width: 2.6; }
+.plot-line.test { stroke-dasharray: 5 3; }
 .plot-line.raw { stroke: var(--baseline); }
 .plot-line.processed { stroke: var(--adaptive); }
 .plot-line.coefficient-pls { stroke: var(--baseline); stroke-width: 1.8; opacity: .9; }
-.plot-line.coefficient-aom { stroke: var(--adaptive); stroke-width: 1.8; opacity: .9; }
+.plot-line.coefficient-aom { stroke: var(--adaptive); stroke-width: 1.8; stroke-dasharray: 6 3; opacity: .9; }
 
 .experiment-layout { display: grid; grid-template-columns: 340px 1fr; gap: 18px; align-items: stretch; }
 .config-card { padding: 24px; background: rgba(255, 255, 255, .92); }
@@ -198,6 +207,11 @@ select { width: 100%; min-height: 39px; padding: 0 10px; border: 1px solid var(-
 fieldset { margin: 22px 0 0; padding: 0; border: 0; }
 legend { margin-bottom: 9px; font-size: .72rem; font-weight: 800; }
 .operator-controls { display: grid; gap: 6px; }
+.config-details { margin-top: 16px; border: 1px solid var(--n4-color-border); border-radius: 8px; background: var(--n4-color-bg-alt); }
+.config-details summary { padding: 11px 12px; color: var(--ink-soft); font-size: .7rem; font-weight: 800; cursor: pointer; }
+.config-details > p { margin: 0; padding: 0 12px 12px; color: var(--n4-color-muted); font-size: .68rem; line-height: 1.5; }
+.config-details fieldset { margin: 0; padding: 0 12px 12px; }
+.config-details legend { color: var(--n4-color-muted); font-size: .64rem; }
 .operator-check { display: flex; align-items: center; gap: 9px; padding: 8px 9px; border: 1px solid var(--n4-color-border); border-radius: 7px; background: var(--n4-color-bg-alt); color: var(--ink-soft); font-size: .7rem; cursor: pointer; }
 .operator-check input { accent-color: var(--n4-color-primary); }
 .operator-check span { flex: 1; }
@@ -349,7 +363,7 @@ footer p { margin: 6px 0 0; font-size: .7rem; }
 
 @media (max-width: 900px) {
   .activity-strip { top: 69px; grid-template-columns: 1fr auto; gap: 8px 12px; padding: 9px 11px; }
-  .activity-progress { grid-column: 1 / -1; }
+  .activity-progress-stack { grid-column: 1 / -1; }
   .activity-phases { display: none; }
   .activity-status small { max-width: 58vw; }
 }

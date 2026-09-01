@@ -5,16 +5,15 @@ complete, inspectable calibration experiment. In one browser tab it guides a
 chemometrician through the following path:
 
 - starts from local, separate `Xcal/Ycal/Xval/Yval` (or train/test) CSV/TSV files;
-- offers three traceable `nirs4all` synthetic format fixtures when no local data are available;
+- offers three traceable, visually realistic `nirs4all` synthetic NIR examples when no local data are available;
 - visualizes calibration and held-out spectra plus response distributions;
 - keeps the local-file importer visible and reports file-selection/validation errors in place;
 - cross-validates raw PLS from 1 to an effective maximum of 25 components;
-- runs conventional preprocessing HPO over the enabled operator bank and PLS
-  component counts;
-- runs native AOM-PLS over the same enabled bank (with an explicit stable-budget
+- offers a quick search and a full 33-pipeline preprocessing HPO with three
+  deterministic repeated fold layouts for PLS and Ridge;
+- runs native AOM-PLS over its editable strict-linear bank (with an explicit stable-budget
   fallback for small or rank-deficient browser datasets);
-- cross-validates raw Ridge over a logarithmic alpha grid, then runs the same
-  preprocessing HPO for Ridge;
+- cross-validates raw Ridge over a logarithmic alpha grid;
 - fits the native compact AOM-Ridge simplex blender;
 - reports all six calibration stages through a persistent progress indicator;
 - compares all six routes on the same untouched validation rows; and
@@ -37,8 +36,9 @@ python3 -m http.server 8765
 
 Add `?selftest=1` to run the browser parser and fit smoke test. A passing page
 sets `data-selftest="pass"` on the root HTML element. A bundled dataset can be
-selected directly with `?dataset=B02_wavenumber`, `B03_wavelength`, or
-`B04_reflectance`.
+selected directly with `?dataset=food_composition`, `powder_scatter`, or
+`batch_process`.
+Use `?selftest=full` only when timing the complete repeated HPO automatically.
 
 The normal page does not launch a fit automatically: it waits for the user to
 inspect the active split and click **Run PLS and Ridge comparison**. Self-test
@@ -64,8 +64,9 @@ unchanged from `nirs4all-ui`. Refresh them from a sibling checkout with:
 ./sync_ui_assets.sh
 ```
 
-The bundled fixtures are verbatim snapshots from `nirs4all`. Refresh them from
-a sibling checkout with:
+The bundled examples are regenerated deterministically with
+`nirs4all.synthesis.SyntheticNIRSGenerator`. Refresh them from a sibling
+checkout with:
 
 ```bash
 ./sync_datasets.sh
