@@ -6,22 +6,24 @@ chemometrician through the following path:
 
 - offers an explicit, mutually exclusive choice between local files and bundled examples;
 - starts from local, separate `Xcal/Ycal/Xval/Yval` (or train/test) CSV/TSV files;
-- offers three traceable, visually realistic `nirs4all` synthetic NIR examples when no local data are available;
+- offers three traceable public measured NIR snapshots from `nirs4all-datasets` when no local data are available;
 - visualizes calibration and held-out spectra plus response distributions;
 - keeps the local-file importer visible and reports file-selection/validation errors in place;
-- cross-validates raw PLS from 1 to an effective maximum of 25 components;
+- offers Raw, SNV, or calibration-fitted MSC as the shared upstream input for
+  the reference, HPO, and AOM routes;
+- cross-validates input-reference PLS from 1 to an effective maximum of 25 components;
 - offers quick and full model grids over one editable preprocessing bank;
 - builds the same ordered chains for HPO and AOM, with a selectable maximum
   chain length of one, two, or three operators;
-- evaluates raw, HPO and AOM candidates with the same deterministic fold
-  assignment and pooled out-of-fold RMSE; the raw route is an explicit
+- evaluates input-reference, HPO and AOM candidates with the same deterministic fold
+  assignment and pooled out-of-fold RMSE; the identity route is an explicit
   subset of HPO, and runtime assertions verify that its selected component and
   CV score match exactly before results are displayed;
 - executes conventional PLS-HPO as explicit materialized pipeline × component
   × fold fits, independently of the native AOM selector;
 - runs native AOM-PLS over the shared strict-linear chain descriptor (with an
   explicit stable-budget fallback for small or rank-deficient browser data);
-- cross-validates raw Ridge over a logarithmic alpha grid;
+- cross-validates input-reference Ridge over a logarithmic alpha grid;
 - fits native AOM-PLS and AOM-Ridge over the same configurable strict-linear
   preprocessing chains and model grids used by the external HPO routes;
 - reports all six calibration stages through a persistent progress indicator;
@@ -29,8 +31,8 @@ chemometrician through the following path:
 - displays every HPO preprocessing pipeline with its best PLS/Ridge CV setting
   and score, explains the selected parameters in plain language, and compares
   the HPO and AOM spectral views, validation metrics, and measured-versus-predicted values;
-- closes the experiment with a split-specific conclusion kept explicitly
-  separate from the paper's 32-dataset evidence; and
+- keeps each split-specific verdict explicitly separate from the paper's
+  32-dataset evidence; and
 - ends with accessible tabs containing the released PyPI and R-universe install
   commands, executable Python/R examples, and links to both source repositories.
 
@@ -48,10 +50,11 @@ python3 -m http.server 8765
 
 Add `?selftest=1` to run the browser parser and fit smoke test. A passing page
 sets `data-selftest="pass"` on the root HTML element. A bundled dataset can be
-selected directly with `?dataset=food_composition`, `grain_starch`, or
-`batch_process`.
+selected directly with `?dataset=cartilage_thickness`,
+`leaf_litter_nitrogen`, or `leaf_water_potential`. Add `?input=raw`,
+`?input=snv`, or `?input=msc` to select the shared upstream input.
 Use `?selftest=full` only when timing the complete protocol-matched HPO automatically.
-The self-test also verifies that raw X is present exactly once, that Identity
+The self-test also verifies that the selected input identity is present exactly once, that Identity
 is locked, and that the native chain descriptor matches the displayed shared
 bank.
 
@@ -61,7 +64,7 @@ mode runs all six routes automatically.
 
 The browser times describe only this compact local run and are intentionally
 separated from the paper's runtime claim. In the paper, AOM is compared with the
-full preprocessing-HPO protocol, not with the inexpensive raw reference.
+full preprocessing-HPO protocol, not with the inexpensive input reference.
 
 ## Reproducible inputs
 
@@ -81,17 +84,16 @@ unchanged from `nirs4all-ui`. Refresh them from a sibling checkout with:
 ./sync_ui_assets.sh
 ```
 
-The bundled examples are regenerated deterministically with
-`nirs4all.synthesis.SyntheticNIRSGenerator`. Refresh them from a sibling
-checkout with:
+The bundled snapshots are regenerated deterministically from public measured
+sources in `nirs4all-datasets`. Refresh them from a sibling checkout with:
 
 ```bash
 ./sync_datasets.sh
 ```
 
 If the sibling repositories live elsewhere, set `NIRS4ALL_UI_DIR` or
-`NIRS4ALL_DIR`. Dataset provenance and immutable source links live in
-`datasets/manifest.json`.
+`NIRS4ALL_DATASETS_DIR`. Dataset provenance, licenses, reductions and immutable
+source links live in `datasets/manifest.json` and `datasets/README.md`.
 
 ## External file contract
 

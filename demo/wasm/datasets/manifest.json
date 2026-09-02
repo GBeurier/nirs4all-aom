@@ -1,44 +1,47 @@
 {
-  "defaultDataset": "grain_starch",
+  "defaultDataset": "cartilage_thickness",
   "snapshot": {
-    "repository": "https://github.com/GBeurier/nirs4all",
-    "commit": "b4b04b8f49cf47cf9ae9b94017ab53c694cdf0d4",
-    "generator": "nirs4all.synthesis.SyntheticNIRSGenerator",
-    "license": "AGPL-3.0-or-later"
+    "repository": "https://github.com/GBeurier/nirs4all-datasets",
+    "commit": "60a0b6073bd3842bdd0b2e3439ffcbda0ad4615d",
+    "generator": "demo/wasm/generate_demo_datasets.py",
+    "license": "Per-dataset open-data licenses listed below"
   },
   "datasets": [
     {
-      "id": "food_composition",
-      "label": "Food protein",
-      "short": "Food spectra · predict protein",
+      "id": "cartilage_thickness",
+      "label": "Equine cartilage",
+      "short": "Measured NIR · thickness",
+      "kind": "Public measured data",
       "unit": "nm",
       "signalType": "absorbance",
-      "target": "protein percentage",
-      "description": "Realistic synthetic food spectra with broad NIR bands, scattering, baseline variation and instrument noise; protein percentage is the response.",
-      "provenance": "Deterministic nirs4all SyntheticNIRSGenerator recipe (realistic complexity, seed 101); 90 calibration and 30 untouched validation samples.",
-      "sourcePath": "nirs4all/synthesis/generator.py"
+      "target": "cartilage thickness (mm)",
+      "description": "Measured NIR absorbance from equine articular cartilage, used to predict non-calcified cartilage thickness.",
+      "provenance": "CC BY 4.0 · Sarin et al., Scientific Data 6, 164 (2019), doi:10.1038/s41597-019-0170-y. Browser snapshot: 120 of 869 measurement locations; replicate acquisitions averaged within location; deterministic 90/30 split; 700–1050 nm retained at every fourth measured wavelength.",
+      "sourcePath": "datasets/cartilage_spectroscopy_scientificdata_nir"
     },
     {
-      "id": "grain_starch",
-      "label": "Grain starch",
-      "short": "Grain spectra · predict starch",
+      "id": "leaf_litter_nitrogen",
+      "label": "Leaf-litter nitrogen",
+      "short": "Measured NIR · N mass",
+      "kind": "Public measured data",
       "unit": "nm",
-      "signalType": "absorbance",
-      "target": "starch percentage",
-      "description": "Realistic synthetic grain spectra with recognisable NIR absorption bands, baseline variation, scattering and instrument noise; starch percentage is the response.",
-      "provenance": "Deterministic nirs4all SyntheticNIRSGenerator recipe (realistic complexity, seed 713); 90 calibration and 30 untouched validation samples.",
-      "sourcePath": "nirs4all/synthesis/generator.py"
+      "signalType": "reflectance",
+      "target": "leaf-litter nitrogen (% dry mass)",
+      "description": "Measured intact and ground leaf-litter reflectance from Cedar Creek and Minneapolis, used to predict nitrogen on a dry-mass basis.",
+      "provenance": "CC BY 4.0 · Kothari, Hobbie and Cavender-Bares (2024), doi:10.5061/dryad.hdr7sqvrk. Browser snapshot: deterministic 120-observation subset and target-balanced 90/30 split; 1000–2400 nm retained at every eighth measured wavelength.",
+      "sourcePath": "datasets/ecosis_intact_and_ground_leaf_litter_spectra_from_cedar_creek_reflectance_nirs"
     },
     {
-      "id": "batch_process",
-      "label": "Multi-batch water",
-      "short": "Process spectra · four batches",
+      "id": "leaf_water_potential",
+      "label": "Leaf drydown",
+      "short": "Measured NIR · water potential",
+      "kind": "Public measured data",
       "unit": "nm",
-      "signalType": "absorbance",
-      "target": "water percentage",
-      "description": "A four-batch process example with batch offsets, scattering and environmental variation superimposed on recognisable NIR absorption bands; water percentage is the response.",
-      "provenance": "Deterministic nirs4all SyntheticNIRSGenerator recipe (realistic complexity, four batches, seed 303); 90 calibration and 30 untouched validation samples.",
-      "sourcePath": "nirs4all/synthesis/generator.py"
+      "signalType": "reflectance",
+      "target": "leaf water potential (MPa)",
+      "description": "Measured reflectance during tabletop leaf drydowns, used to predict leaf water potential across species and drying stages.",
+      "provenance": "PDDL 1.0 · Allen, Anderegg, Roberts and Trugman (2025), EcoSIS doi:10.21232/egGyynzX. Browser snapshot: three real drying stages per leaf; 36 leaves for calibration and 12 disjoint leaves for validation; 1000–2400 nm retained at every eighth measured wavelength.",
+      "sourcePath": "datasets/ecosis_tabletop_leaf_drydowns_to_relate_leaf_spectra_and_leaf_reflectance_nirs"
     }
   ]
 }

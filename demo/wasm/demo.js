@@ -5,6 +5,7 @@ import {
   loadModule,
   ppCreate,
   ppDestroy,
+  ppFit,
   ppTransform,
   predictModel,
   version,
@@ -22,17 +23,22 @@ const COLORS = {
 };
 
 const OPERATORS = [
-  { id: "raw", kind: 0, params: [], steps: [], name: "Identity", short: "raw X", detail: "No spectral transformation; the raw view is always included." },
+  { id: "raw", kind: 0, params: [], steps: [], name: "Identity", short: "no added operator", detail: "No additional strict-linear transformation; the selected input view is always included." },
   { id: "detrend-1", kind: 7, params: [1], steps: [{ op: "Detrend", params: [1] }], name: "Linear detrending", short: "detrend · degree 1", detail: "Subtracts a least-squares linear baseline." },
   { id: "detrend-2", kind: 7, params: [2], steps: [{ op: "Detrend", params: [2] }], name: "Quadratic detrending", short: "detrend · degree 2", detail: "Subtracts a least-squares quadratic baseline." },
   { id: "sg-s7", kind: 8, params: [7, 2], steps: [{ op: "SavitzkyGolay", params: [7, 2, 0, 1, 0] }], name: "Savitzky–Golay smoothing 7", short: "SG 7/2 · smoothing", detail: "Seven-point, second-degree Savitzky–Golay smoothing." },
   { id: "sg-s11", kind: 8, params: [11, 3], steps: [{ op: "SavitzkyGolay", params: [11, 3, 0, 1, 0] }], name: "Savitzky–Golay smoothing 11", short: "SG 11/3 · smoothing", detail: "Eleven-point, third-degree Savitzky–Golay smoothing." },
   { id: "sg-d1-7", kind: 9, params: [7, 2, 1], steps: [{ op: "SavitzkyGolay", params: [7, 2, 1, 1, 0] }], name: "Savitzky–Golay first derivative", short: "SG 7/2 · derivative 1", detail: "Seven-point first Savitzky–Golay derivative." },
   { id: "sg-d2-11", kind: 9, params: [11, 3, 2], steps: [{ op: "SavitzkyGolay", params: [11, 3, 2, 1, 0] }], name: "Savitzky–Golay second derivative", short: "SG 11/3 · derivative 2", detail: "Eleven-point second Savitzky–Golay derivative." },
-  { id: "diff-1", kind: 15, params: [1], steps: [{ op: "Derivative", params: [1] }], name: "Finite difference", short: "finite difference · order 1", detail: "Centered first finite difference." },
   { id: "gaussian-1", kind: 18, params: [1], steps: [{ op: "GaussianFilter", params: [1] }], name: "Gaussian smoothing σ1", short: "Gaussian · σ1", detail: "Gaussian smoothing with σ = 1." },
   { id: "gaussian-2", kind: 18, params: [2], steps: [{ op: "GaussianFilter", params: [2] }], name: "Gaussian smoothing σ2", short: "Gaussian · σ2", detail: "Gaussian smoothing with σ = 2." },
 ];
+
+const INPUT_BASES = {
+  raw: { id: "raw", name: "Raw spectra", short: "Raw X", op: null },
+  snv: { id: "snv", name: "SNV spectra", short: "SNV(X)", op: "StandardNormalVariate" },
+  msc: { id: "msc", name: "MSC spectra", short: "MSC(X)", op: "MSC" },
+};
 
 const pipeline = (id, name, short, steps = []) => ({ id, name, short, steps });
 const IDENTITY_OPERATOR = OPERATORS.find((item) => item.id === "raw");
@@ -227,7 +233,7 @@ function setDatasetSourceMode(mode, markStale = false) {
 
 function setControlsLocked(locked) {
   controlsLocked = locked;
-  document.querySelectorAll("#search-depth, #components, #folds, #preprocessing-order")
+  document.querySelectorAll("#input-basis, #search-depth, #components, #folds, #preprocessing-order")
     .forEach((control) => { control.disabled = locked; });
   document.querySelectorAll("#operator-controls input")
     .forEach((control) => { control.disabled = locked || control.value === IDENTITY_OPERATOR.id; });
@@ -239,6 +245,10 @@ function selectedSearchProfile() {
   return { id, label: id === "quick" ? "Quick check" : "Full comparison", pipelines: buildSharedPipelines() };
 }
 
+function selectedInputBase() {
+  return INPUT_BASES[byId("input-basis").value] || INPUT_BASES.raw;
+}
+
 function updateSearchDepthUi(markStale = true) {
   const profile = selectedSearchProfile();
   const full = profile.id === "full";
@@ -246,8 +256,11 @@ function updateSearchDepthUi(markStale = true) {
     ? `${profile.pipelines.length} shared chains · complete component and Ridge α grids · device-dependent runtime.`
     : `${profile.pipelines.length} shared chains · reduced model grids for a faster interface check.`;
   const bankWarning = profile.pipelines.length > 60 ? " Large bank: expect a longer browser run." : "";
-  byId("shared-bank-summary").textContent = `${profile.pipelines.length} shared chains, from raw identity up to order ${byId("preprocessing-order").value}. HPO and AOM search them in the same listed order.${bankWarning}`;
+  const inputBase = selectedInputBase();
+  byId("shared-bank-summary").textContent = `${profile.pipelines.length} shared chains, from identity up to order ${byId("preprocessing-order").value}, applied after ${inputBase.short}. HPO and AOM search them in the same listed order.${bankWarning}`;
   byId("run-search-summary").textContent = full ? "full shared-bank comparison" : "quick shared-bank check";
+  byId("reference-route-title").textContent = inputBase.name;
+  byId("reference-route-copy").textContent = `PLS selects its component count by CV and Ridge selects α on ${inputBase.short}. No additional strict-linear operator is tested.`;
   if (markStale) markResultsStale();
 }
 
@@ -547,15 +560,15 @@ function plotPlaceholder(id, message, viewBox = [0, 0, 700, 420]) {
 function resetResults() {
   lastOperatorChart = null;
   [
-    "pls-default-selection", "pls-default-rmse", "pls-default-mae", "pls-default-r2", "pls-default-time", "pls-default-workload",
-    "pls-hpo-selection", "pls-hpo-rmse", "pls-hpo-mae", "pls-hpo-r2", "pls-hpo-time", "pls-hpo-workload",
-    "aom-pls-selection", "aom-pls-rmse", "aom-pls-mae", "aom-pls-r2", "aom-pls-time", "aom-pls-workload",
-    "ridge-default-selection", "ridge-default-rmse", "ridge-default-mae", "ridge-default-r2", "ridge-default-time", "ridge-default-workload",
-    "ridge-hpo-selection", "ridge-hpo-rmse", "ridge-hpo-mae", "ridge-hpo-r2", "ridge-hpo-time", "ridge-hpo-workload",
-    "aom-ridge-selection", "aom-ridge-rmse", "aom-ridge-mae", "aom-ridge-r2", "aom-ridge-time", "aom-ridge-workload",
+    "pls-default-selection", "pls-default-model", "pls-default-cv", "pls-default-rmse", "pls-default-r2", "pls-default-time", "pls-default-workload",
+    "pls-hpo-selection", "pls-hpo-model", "pls-hpo-cv", "pls-hpo-rmse", "pls-hpo-r2", "pls-hpo-time", "pls-hpo-workload",
+    "aom-pls-selection", "aom-pls-model", "aom-pls-cv", "aom-pls-rmse", "aom-pls-r2", "aom-pls-time", "aom-pls-workload",
+    "ridge-default-selection", "ridge-default-model", "ridge-default-cv", "ridge-default-rmse", "ridge-default-r2", "ridge-default-time", "ridge-default-workload",
+    "ridge-hpo-selection", "ridge-hpo-model", "ridge-hpo-cv", "ridge-hpo-rmse", "ridge-hpo-r2", "ridge-hpo-time", "ridge-hpo-workload",
+    "aom-ridge-selection", "aom-ridge-model", "aom-ridge-cv", "aom-ridge-rmse", "aom-ridge-r2", "aom-ridge-time", "aom-ridge-workload",
   ].forEach((id) => { byId(id).textContent = "—"; });
   byId("pls-raw-card").textContent = "—";
-  byId("pls-raw-card-detail").textContent = "The untuned raw baseline will appear here.";
+  byId("pls-raw-card-detail").textContent = "The selected-input reference will appear here.";
   byId("pls-hpo-card").textContent = "—";
   byId("pls-hpo-card-detail").textContent = "The winning HPO pipeline will appear here.";
   byId("operator").textContent = "—";
@@ -563,15 +576,15 @@ function resetResults() {
   byId("ridge-hpo-card").textContent = "—";
   byId("ridge-hpo-card-detail").textContent = "The winning HPO pipeline will appear here.";
   byId("ridge-raw-card").textContent = "—";
-  byId("ridge-raw-card-detail").textContent = "The untuned raw baseline will appear here.";
+  byId("ridge-raw-card-detail").textContent = "The selected-input reference will appear here.";
   byId("ridge-aom-card").textContent = "—";
   byId("ridge-aom-card-detail").textContent = "The AOM-selected shared chain will appear here.";
   byId("rmse-delta").textContent = "Awaiting results";
   byId("rmse-delta").className = "";
-  byId("delta-detail").textContent = "Run the experiment to compare Raw, HPO and AOM directly.";
+  byId("delta-detail").textContent = "Run the experiment to compare Input, HPO and AOM directly.";
   byId("ridge-rmse-delta").textContent = "Awaiting results";
   byId("ridge-rmse-delta").className = "";
-  byId("ridge-delta-detail").textContent = "Run the experiment to compare Raw, HPO and AOM directly.";
+  byId("ridge-delta-detail").textContent = "Run the experiment to compare Input, HPO and AOM directly.";
   byId("hpo-search-summary").textContent = "Available after the experiment";
   byId("hpo-protocol-detail").textContent = "The shared fold plan and score definition will appear here.";
   byId("hpo-pls-detail").textContent = "Component grid and winning preprocessing pipeline.";
@@ -584,12 +597,6 @@ function resetResults() {
   byId("pretreatment-aom-setting").textContent = "Operator, components and validation RMSE will appear here.";
   byId("operator-preview-title").textContent = "Two routes, two selected spectral views";
   byId("operator-explanation").textContent = "The two comparisons will appear after fitting. Shapes are standardized only for this display; models use the complete transformed values.";
-  byId("local-conclusion-title").textContent = "Run the comparison to obtain a local conclusion";
-  byId("local-conclusion-copy").textContent = "The conclusion will distinguish the held-out result from the broader evidence reported in the paper.";
-  byId("conclusion-pls").textContent = "Awaiting results";
-  byId("conclusion-pls-detail").textContent = "Raw, HPO and AOM on held-out rows.";
-  byId("conclusion-ridge").textContent = "Awaiting results";
-  byId("conclusion-ridge-detail").textContent = "Raw, HPO and AOM on held-out rows.";
   plotPlaceholder("rmse-chart", "Awaiting six fitted routes", [0, 0, 1280, 420]);
   plotPlaceholder("pls-prediction-chart", "Awaiting the PLS comparison", [0, 0, 620, 420]);
   plotPlaceholder("ridge-prediction-chart", "Awaiting the Ridge comparison", [0, 0, 620, 420]);
@@ -648,7 +655,7 @@ function setDatasetUi(data) {
   } else {
     link.hidden = true;
   }
-  byId("fairness-text").textContent = `${data.trainRows} calibration rows · ${data.testRows} held-out rows · raw baseline always included`;
+  byId("fairness-text").textContent = `${data.trainRows} calibration rows · ${data.testRows} held-out rows · selected-input identity always included`;
   drawSpectra(data);
   drawTargetHistogram(data);
   const [signalMin, signalMax] = extent([...data.trainX.data, ...data.testX.data]);
@@ -689,7 +696,7 @@ async function loadBundledDataset(id, runAfterLoad = false, announceReady = true
       trainRows: trainX.rows, testRows: testX.rows, cols: trainX.cols, axis: trainX.axis,
       meta: {
         label: dataset.label,
-        kind: "Bundled example",
+        kind: dataset.kind || "Bundled dataset",
         unit: dataset.unit,
         signalType: dataset.signalType,
         targetName: trainY.targetName || dataset.target,
@@ -745,7 +752,7 @@ function combinations(items, size, start = 0, prefix = [], output = []) {
 function buildSharedPipelines() {
   const active = selectedOperators().filter((operator) => operator.id !== "raw");
   const maxOrder = Math.max(1, Math.min(3, Number(byId("preprocessing-order").value)));
-  const pipelines = [pipeline("raw", "Raw spectrum", "raw X")];
+  const pipelines = [pipeline("raw", "Identity", "no added operator")];
   for (let order = 1; order <= maxOrder; order += 1) {
     combinations(active, order).forEach((chain) => {
       pipelines.push(pipeline(
@@ -943,6 +950,21 @@ function transformedDataset(data, selectedPipeline, includeValidation = true) {
       ? matrix(transformWithPipeline(data.testX.data, data.testRows, data.cols, selectedPipeline), data.testRows, data.cols)
       : data.testX,
   };
+}
+
+function prepareInputDataset(data, inputBase) {
+  if (inputBase.id === "raw") return data;
+  const operator = ppCreate(inputBase.op);
+  try {
+    ppFit(operator, data.trainX.data, data.trainRows, data.cols);
+    return {
+      ...data,
+      trainX: matrix(ppTransform(operator, data.trainX.data, data.trainRows, data.cols), data.trainRows, data.cols),
+      testX: matrix(ppTransform(operator, data.testX.data, data.testRows, data.cols), data.testRows, data.cols),
+    };
+  } finally {
+    ppDestroy(operator);
+  }
 }
 
 async function fitPreprocessingHpoPls(data, maxComponents, foldCount, pipelines, onProgress) {
@@ -1189,7 +1211,7 @@ function drawRmseChart(results) {
     const top = y(item.rmse);
     svg.append(svgElement("rect", { x, y: top, width: barWidth, height: height - margin.bottom - top, rx: 7, fill: colors[routeIndex], opacity: routeIndex === 1 ? .84 : .92 }));
     addText(svg, formatMetric(item.rmse), { x: x + barWidth / 2, y: top - 10, class: "bar-value", "text-anchor": "middle" });
-    addText(svg, ["Raw", "HPO", "AOM"][routeIndex], { x: x + barWidth / 2, y: height - margin.bottom + 22, class: "n4viz-tick", "text-anchor": "middle" });
+    addText(svg, ["Input", "HPO", "AOM"][routeIndex], { x: x + barWidth / 2, y: height - margin.bottom + 22, class: "n4viz-tick", "text-anchor": "middle" });
   });
   addText(svg, "PLS", { x: groupCenters[0], y: height - 16, class: "bar-family", "text-anchor": "middle" });
   addText(svg, "Ridge", { x: groupCenters[1], y: height - 16, class: "bar-family", "text-anchor": "middle" });
@@ -1307,27 +1329,59 @@ function componentLabel(count) {
   return `${count} PLS latent component${count === 1 ? "" : "s"}`;
 }
 
-function renderModelSetting(cell, setting) {
+function abbreviatedOperator(operator) {
+  const labels = {
+    "detrend-1": "DT1",
+    "detrend-2": "DT2",
+    "sg-s7": "SG(7,2,0)",
+    "sg-s11": "SG(11,3,0)",
+    "sg-d1-7": "SG(7,2,1)",
+    "sg-d2-11": "SG(11,3,2)",
+    "gaussian-1": "GF(σ1)",
+    "gaussian-2": "GF(σ2)",
+  };
+  return labels[operator.id] || operator.name;
+}
+
+function abbreviatedPipeline(inputBase, selectedPipeline) {
+  const operators = selectedPipeline?.operators || [];
+  return [inputBase.id.toUpperCase(), ...(operators.length ? operators.map(abbreviatedOperator) : ["ID"])].join(" → ");
+}
+
+function renderPipeline(cell, label) {
+  cell.replaceChildren();
+  const pipelineLabel = document.createElement("strong");
+  pipelineLabel.className = "pipeline-label";
+  pipelineLabel.textContent = label;
+  cell.append(pipelineLabel);
+}
+
+function renderWorkload(cell, workload) {
   cell.replaceChildren();
   const wrapper = document.createElement("div");
-  wrapper.className = "model-setting";
-  const title = document.createElement("strong");
-  title.textContent = setting.title;
-  const detail = document.createElement("span");
-  detail.textContent = setting.detail;
-  const selection = document.createElement("small");
-  selection.textContent = setting.selection;
-  wrapper.append(title, detail, selection);
+  wrapper.className = "workload-lines";
+  [
+    ["Model HPO", workload.modelGrid],
+    ["CV", `${workload.folds} folds`],
+    ["PP", workload.preprocessing],
+  ].forEach(([label, value]) => {
+    const line = document.createElement("span");
+    const key = document.createElement("b");
+    key.textContent = label;
+    line.append(key, document.createTextNode(value));
+    wrapper.append(line);
+  });
   cell.append(wrapper);
 }
 
 function renderMethodResult(prefix, result, stats, setting) {
-  renderModelSetting(byId(`${prefix}-selection`), setting);
+  renderPipeline(byId(`${prefix}-selection`), setting.pipeline);
+  byId(`${prefix}-model`).textContent = setting.model;
+  byId(`${prefix}-cv`).textContent = formatMetric(result.cvRmse);
   byId(`${prefix}-rmse`).textContent = formatMetric(stats.rmse);
-  byId(`${prefix}-mae`).textContent = formatMetric(stats.mae);
   byId(`${prefix}-r2`).textContent = formatMetric(stats.r2);
   byId(`${prefix}-time`).textContent = formatTime(result.elapsed);
-  byId(`${prefix}-workload`).textContent = result.searchLabel || `${result.candidateFits ?? 1} fit calls`;
+  renderWorkload(byId(`${prefix}-workload`), setting.workload);
 }
 
 function resetHpoScoreTable() {
@@ -1389,7 +1443,7 @@ function renderHpoScoreTable(pipelines, plsResults, ridgeResults, hpoPls, hpoRid
 
 function routeComparison(rawStats, hpoStats, aomStats) {
   const routes = [
-    { key: "raw", label: "Raw", stats: rawStats },
+    { key: "raw", label: "Input", stats: rawStats },
     { key: "hpo", label: "HPO", stats: hpoStats },
     { key: "aom", label: "AOM", stats: aomStats },
   ];
@@ -1404,26 +1458,6 @@ function winnerHeadline(comparison) {
 
 function comparisonValues(comparison) {
   return comparison.routes.map((route) => `${route.label} ${formatMetric(route.stats.rmse)}`).join(" · ");
-}
-
-function renderLocalConclusion(rawPlsStats, hpoPlsStats, aomPlsStats, rawRidgeStats, hpoRidgeStats, aomRidgeStats, hpoPls, selected) {
-  const pls = routeComparison(rawPlsStats, hpoPlsStats, aomPlsStats);
-  const ridge = routeComparison(rawRidgeStats, hpoRidgeStats, aomRidgeStats);
-  const plsHeadline = winnerHeadline(pls);
-  const ridgeHeadline = winnerHeadline(ridge);
-  let title = "The best calibration route differs by model family in this run";
-  if (plsHeadline === ridgeHeadline) {
-    const sharedLabels = pls.winners.map((route) => route.label).join(" & ");
-    title = pls.winners.length === 1
-      ? `${sharedLabels} is best for both model families in this run`
-      : `${sharedLabels} share the best result for both model families in this run`;
-  }
-  byId("local-conclusion-title").textContent = title;
-  byId("local-conclusion-copy").textContent = `This conclusion compares all three routes on this held-out split only. HPO selected ${hpoPls.operator.name}; AOM selected ${selected.name}. The 32-dataset evidence remains in the paper summary below.`;
-  byId("conclusion-pls").textContent = comparisonValues(pls);
-  byId("conclusion-pls-detail").textContent = `${plsHeadline} on validation RMSE.`;
-  byId("conclusion-ridge").textContent = comparisonValues(ridge);
-  byId("conclusion-ridge-detail").textContent = `${ridgeHeadline} on validation RMSE.`;
 }
 
 function setComparisonVerdict(valueId, detailId, rawStats, hpoStats, aomStats, family) {
@@ -1464,40 +1498,42 @@ async function runComparison() {
   const serial = ++comparisonSerial;
   const button = byId("run");
   const searchProfile = selectedSearchProfile();
+  const inputBase = selectedInputBase();
   document.documentElement.dataset.protocolParity = "checking";
   resetResults();
   setControlsLocked(true);
   button.disabled = true;
   button.querySelector("span").textContent = "Comparison in progress…";
-  byId("run-note").textContent = "Step 1/6: selecting the raw PLS component count by calibration CV.";
+  byId("run-note").textContent = `Step 1/6: preparing ${inputBase.short} and selecting the input-reference PLS component count by calibration CV.`;
   byId("run-note").className = "form-status";
   setActivity({
     state: "running", progress: 26, phase: "pls",
-    title: "PLS · raw reference",
-    detail: "Cross-validating component counts on the raw calibration spectra…",
+    title: "PLS · input reference",
+    detail: `Cross-validating component counts on ${inputBase.short}…`,
   });
   await yieldToBrowser();
 
   try {
+    const runData = prepareInputDataset(currentData, inputBase);
     const requestedComponents = Number(byId("components").value);
-    const foldCount = Math.max(2, Math.min(Number(byId("folds").value), currentData.trainRows));
-    const minFoldTrain = currentData.trainRows - Math.ceil(currentData.trainRows / foldCount);
+    const foldCount = Math.max(2, Math.min(Number(byId("folds").value), runData.trainRows));
+    const minFoldTrain = runData.trainRows - Math.ceil(runData.trainRows / foldCount);
     const profileComponentLimit = searchProfile.id === "quick" ? 5 : requestedComponents;
-    const requestedComponentBudget = Math.max(1, Math.min(profileComponentLimit, currentData.cols, minFoldTrain - 1));
+    const requestedComponentBudget = Math.max(1, Math.min(profileComponentLimit, runData.cols, minFoldTrain - 1));
     const ridgeAlphas = searchProfile.id === "quick" ? [1e-4, 1, 1e4] : RIDGE_ALPHAS;
     const aomSelectorStarted = performance.now();
     const aomPlsFit = fitAomPlsWithStableBudget(
-      currentData,
+      runData,
       requestedComponentBudget,
       foldCount,
       searchProfile.pipelines,
     );
     const aomSelectorElapsed = performance.now() - aomSelectorStarted;
     const componentBudget = aomPlsFit.budget;
-    const rawPls = await fitCrossValidatedPls(currentData, componentBudget, foldCount, (fraction, component, total) => {
+    const rawPls = await fitCrossValidatedPls(runData, componentBudget, foldCount, (fraction, component, total) => {
       setActivity({
         state: "running", progress: 26 + fraction, phase: "pls",
-        title: "PLS · raw reference",
+        title: "PLS · input reference",
         detail: `Calibration CV: component ${component}/${total}, ${foldCount} folds.`,
       });
     });
@@ -1509,7 +1545,7 @@ async function runComparison() {
       detail: `${searchProfile.pipelines.length} pipelines × ${componentBudget} component counts · same ${foldCount} folds · pooled out-of-fold RMSE…`,
     });
     await yieldToBrowser();
-    const hpoPls = await fitPreprocessingHpoPls(currentData, componentBudget, foldCount, searchProfile.pipelines, (fraction, selectedPipeline, component, total) => {
+    const hpoPls = await fitPreprocessingHpoPls(runData, componentBudget, foldCount, searchProfile.pipelines, (fraction, selectedPipeline, component, total) => {
       setActivity({
         state: "running", progress: 27 + fraction * 54, phase: "pls",
         title: "PLS · preprocessing HPO",
@@ -1521,7 +1557,7 @@ async function runComparison() {
       hpoPls.rawCandidate
         && hpoPls.rawCandidate.components === rawPls.components
         && protocolScoresMatch(hpoPls.rawCandidate.cvRmse, rawPls.cvRmse),
-      "raw PLS and the raw subset of PLS-HPO do not select the same component count and score.",
+      "the input-reference PLS and the identity subset of PLS-HPO do not select the same component count and score.",
     );
     byId("run-note").textContent = `Step 3/6: native AOM-PLS is screening the same ${searchProfile.pipelines.length} chains up to ${componentBudget} components.`;
     setActivity({
@@ -1532,33 +1568,34 @@ async function runComparison() {
     await yieldToBrowser();
     const aomPlsModel = aomPlsFit.model;
     const aomComponentAudit = { components: Math.round(aomPlsModel.selectedParameter), score: aomPlsModel.score };
-    const aomPlsPredictions = predictModel(aomPlsModel, matrix(currentData.testX.data, currentData.testRows, currentData.cols)).data;
+    const aomPlsPredictions = predictModel(aomPlsModel, matrix(runData.testX.data, runData.testRows, runData.cols)).data;
     const aomPls = {
       model: aomPlsModel,
       predictions: aomPlsPredictions,
       elapsed: aomSelectorElapsed,
       components: aomComponentAudit.components,
+      cvRmse: aomComponentAudit.score,
       candidateFits: searchProfile.pipelines.length * aomPlsFit.budget * foldCount + 1,
       searchLabel: `${searchProfile.pipelines.length} chains × ${aomPlsFit.budget} components`,
     };
 
-    byId("run-note").textContent = `Step 4/6: selecting Ridge α on raw spectra, then screening preprocessing + α.`;
+    byId("run-note").textContent = `Step 4/6: selecting Ridge α on ${inputBase.short}, then screening preprocessing + α.`;
     setActivity({
       state: "running", progress: 87, phase: "ridge",
-      title: "Ridge · raw reference",
+      title: "Ridge · input reference",
       detail: `Cross-validating ${ridgeAlphas.length} logarithmic regularisation values…`,
     });
     await yieldToBrowser();
-    const rawRidge = await fitCrossValidatedRidge(currentData, foldCount, ridgeAlphas, (fraction, alpha) => {
+    const rawRidge = await fitCrossValidatedRidge(runData, foldCount, ridgeAlphas, (fraction, alpha) => {
       setActivity({
         state: "running", progress: 87 + fraction, phase: "ridge",
-        title: "Ridge · raw reference",
+        title: "Ridge · input reference",
         detail: `Calibration CV: α ${formatAlpha(alpha)}, ${foldCount} folds.`,
       });
     });
 
     byId("run-note").textContent = `Step 5/6: ${searchProfile.label} Ridge is screening ${searchProfile.pipelines.length} pipelines × ${ridgeAlphas.length} α values.`;
-    const hpoRidge = await fitPreprocessingHpoRidge(currentData, foldCount, ridgeAlphas, searchProfile.pipelines, (fraction, selectedPipeline, alpha, alphaIndex, alphaCount) => {
+    const hpoRidge = await fitPreprocessingHpoRidge(runData, foldCount, ridgeAlphas, searchProfile.pipelines, (fraction, selectedPipeline, alpha, alphaIndex, alphaCount) => {
       setActivity({
         state: "running", progress: 88 + fraction * 9, phase: "ridge",
         title: "Ridge · preprocessing HPO",
@@ -1569,7 +1606,7 @@ async function runComparison() {
       hpoRidge.rawCandidate
         && hpoRidge.rawCandidate.alpha === rawRidge.alpha
         && protocolScoresMatch(hpoRidge.rawCandidate.cvRmse, rawRidge.cvRmse),
-      "raw Ridge and the raw subset of Ridge-HPO do not select the same α and score.",
+      "the input-reference Ridge and the identity subset of Ridge-HPO do not select the same α and score.",
     );
     byId("run-note").textContent = "Step 6/6: native AOM-Ridge is screening the same preprocessing chains and α grid.";
     setActivity({
@@ -1580,14 +1617,14 @@ async function runComparison() {
     await yieldToBrowser();
     const aomRidgeStarted = performance.now();
     const aomRidgeModel = fitAomChain(
-      matrix(currentData.trainX.data, currentData.trainRows, currentData.cols),
-      matrix(currentData.trainY, currentData.trainRows, 1),
+      matrix(runData.trainX.data, runData.trainRows, runData.cols),
+      matrix(runData.trainY, runData.trainRows, 1),
       nativeChainDescriptor(searchProfile.pipelines),
       { head: "ridge", nFolds: foldCount, ridgeLambdas: ridgeAlphas },
     );
     const aomRidge = {
       model: aomRidgeModel,
-      predictions: predictModel(aomRidgeModel, matrix(currentData.testX.data, currentData.testRows, currentData.cols)).data,
+      predictions: predictModel(aomRidgeModel, matrix(runData.testX.data, runData.testRows, runData.cols)).data,
       elapsed: performance.now() - aomRidgeStarted,
       alpha: aomRidgeModel.selectedParameter,
       cvRmse: aomRidgeModel.score,
@@ -1605,78 +1642,91 @@ async function runComparison() {
     setActivity({
       state: "running", progress: 99, phase: "results",
       title: "Calculating held-out results",
-      detail: `Comparing six prediction vectors on ${currentData.testRows} untouched validation rows…`,
+      detail: `Comparing six prediction vectors on ${runData.testRows} untouched validation rows…`,
     });
     await yieldToBrowser();
 
-    const rawPlsStats = metrics(currentData.testY, rawPls.predictions);
-    const hpoPlsStats = metrics(currentData.testY, hpoPls.predictions);
-    const aomPlsStats = metrics(currentData.testY, aomPls.predictions);
-    const rawRidgeStats = metrics(currentData.testY, rawRidge.predictions);
-    const hpoRidgeStats = metrics(currentData.testY, hpoRidge.predictions);
-    const aomRidgeStats = metrics(currentData.testY, aomRidge.predictions);
+    const rawPlsStats = metrics(runData.testY, rawPls.predictions);
+    const hpoPlsStats = metrics(runData.testY, hpoPls.predictions);
+    const aomPlsStats = metrics(runData.testY, aomPls.predictions);
+    const rawRidgeStats = metrics(runData.testY, rawRidge.predictions);
+    const hpoRidgeStats = metrics(runData.testY, hpoRidge.predictions);
+    const aomRidgeStats = metrics(runData.testY, aomRidge.predictions);
     const selected = searchProfile.pipelines[aomPlsModel.selectedChain] || searchProfile.pipelines[0];
+    const identityPipeline = searchProfile.pipelines[0];
+    const activeOperatorCount = selectedOperators().filter((operator) => operator.id !== IDENTITY_OPERATOR.id).length;
+    const preprocessingOrder = Math.max(1, Math.min(3, Number(byId("preprocessing-order").value)));
+    const plsWorkloads = {
+      reference: { modelGrid: `${componentBudget} components`, folds: foldCount, preprocessing: "Identity only" },
+      hpo: { modelGrid: `${componentBudget} components`, folds: foldCount, preprocessing: `${searchProfile.pipelines.length} combinations` },
+      aom: { modelGrid: `${componentBudget} components`, folds: foldCount, preprocessing: `${activeOperatorCount} operators × order ${preprocessingOrder}` },
+    };
+    const ridgeWorkloads = {
+      reference: { modelGrid: `${ridgeAlphas.length} α values`, folds: foldCount, preprocessing: "Identity only" },
+      hpo: { modelGrid: `${ridgeAlphas.length} α values`, folds: foldCount, preprocessing: `${searchProfile.pipelines.length} combinations` },
+      aom: { modelGrid: `${ridgeAlphas.length} α values`, folds: foldCount, preprocessing: `${activeOperatorCount} operators × order ${preprocessingOrder}` },
+    };
 
-    byId("pls-raw-card").textContent = "Raw spectrum";
+    byId("pls-raw-card").textContent = inputBase.name;
     byId("pls-raw-card-detail").textContent = `${componentLabel(rawPls.components)} · ${foldCount}-fold calibration CV RMSE ${formatMetric(rawPls.cvRmse)}`;
     byId("pls-hpo-card").textContent = hpoPls.operator.name;
     byId("pls-hpo-card-detail").textContent = `${describePipeline(hpoPls.operator)} · ${componentLabel(hpoPls.components)} · ${foldCount}-fold calibration CV RMSE ${formatMetric(hpoPls.cvRmse)}`;
     byId("operator").textContent = selected.name;
     byId("operator-detail").textContent = `${describePipeline(selected)} · ${componentLabel(aomComponentAudit.components)} · ${foldCount}-fold calibration CV RMSE ${formatMetric(aomPlsModel.score)}`;
-    byId("ridge-raw-card").textContent = "Raw spectrum";
+    byId("ridge-raw-card").textContent = inputBase.name;
     byId("ridge-raw-card-detail").textContent = `Ridge α = ${formatAlpha(rawRidge.alpha)} · ${foldCount}-fold calibration CV RMSE ${formatMetric(rawRidge.cvRmse)}`;
     byId("ridge-hpo-card").textContent = hpoRidge.operator.name;
     byId("ridge-hpo-card-detail").textContent = `${describePipeline(hpoRidge.operator)} · Ridge regularisation α = ${formatAlpha(hpoRidge.alpha)} · ${foldCount}-fold calibration CV RMSE ${formatMetric(hpoRidge.cvRmse)}`;
     byId("ridge-aom-card").textContent = aomRidge.operator.name;
     byId("ridge-aom-card-detail").textContent = `${describePipeline(aomRidge.operator)} · Ridge α = ${formatAlpha(aomRidge.alpha)} · ${foldCount}-fold calibration CV RMSE ${formatMetric(aomRidge.cvRmse)}`;
     renderMethodResult("pls-default", rawPls, rawPlsStats, {
-      title: "Raw spectrum",
-      detail: `${componentLabel(rawPls.components)} · no spectral pretreatment`,
-      selection: `${foldCount}-fold calibration CV RMSE ${formatMetric(rawPls.cvRmse)}`,
+      pipeline: abbreviatedPipeline(inputBase, identityPipeline),
+      model: `${rawPls.components} comp.`,
+      workload: plsWorkloads.reference,
     });
     renderMethodResult("pls-hpo", hpoPls, hpoPlsStats, {
-      title: hpoPls.operator.name,
-      detail: `${describePipeline(hpoPls.operator)} · ${componentLabel(hpoPls.components)}`,
-      selection: `${foldCount}-fold calibration CV RMSE ${formatMetric(hpoPls.cvRmse)}`,
+      pipeline: abbreviatedPipeline(inputBase, hpoPls.operator),
+      model: `${hpoPls.components} comp.`,
+      workload: plsWorkloads.hpo,
     });
     const aomBudgetNote = aomPlsFit.budget < requestedComponentBudget ? ` (shared stable limit; requested ${requestedComponentBudget})` : "";
     renderMethodResult("aom-pls", aomPls, aomPlsStats, {
-      title: selected.name,
-      detail: `${describePipeline(selected)} · ${componentLabel(aomComponentAudit.components)}${aomBudgetNote}`,
-      selection: `${foldCount}-fold calibration CV RMSE ${formatMetric(aomPlsModel.score)}`,
+      pipeline: abbreviatedPipeline(inputBase, selected),
+      model: `${aomComponentAudit.components} comp.${aomBudgetNote}`,
+      workload: plsWorkloads.aom,
     });
     renderMethodResult("ridge-default", rawRidge, rawRidgeStats, {
-      title: "Raw spectrum",
-      detail: `Ridge regularisation α = ${formatAlpha(rawRidge.alpha)} · no spectral pretreatment`,
-      selection: `${foldCount}-fold calibration CV RMSE ${formatMetric(rawRidge.cvRmse)}`,
+      pipeline: abbreviatedPipeline(inputBase, identityPipeline),
+      model: `α ${formatAlpha(rawRidge.alpha)}`,
+      workload: ridgeWorkloads.reference,
     });
     renderMethodResult("ridge-hpo", hpoRidge, hpoRidgeStats, {
-      title: hpoRidge.operator.name,
-      detail: `${describePipeline(hpoRidge.operator)} · Ridge regularisation α = ${formatAlpha(hpoRidge.alpha)}`,
-      selection: `${foldCount}-fold calibration CV RMSE ${formatMetric(hpoRidge.cvRmse)}`,
+      pipeline: abbreviatedPipeline(inputBase, hpoRidge.operator),
+      model: `α ${formatAlpha(hpoRidge.alpha)}`,
+      workload: ridgeWorkloads.hpo,
     });
     renderMethodResult("aom-ridge", aomRidge, aomRidgeStats, {
-      title: aomRidge.operator.name,
-      detail: `${describePipeline(aomRidge.operator)} · Ridge regularisation α = ${formatAlpha(aomRidge.alpha)}`,
-      selection: `${foldCount}-fold calibration CV RMSE ${formatMetric(aomRidge.cvRmse)}`,
+      pipeline: abbreviatedPipeline(inputBase, aomRidge.operator),
+      model: `α ${formatAlpha(aomRidge.alpha)}`,
+      workload: ridgeWorkloads.aom,
     });
 
     const plsVerdict = setComparisonVerdict("rmse-delta", "delta-detail", rawPlsStats, hpoPlsStats, aomPlsStats, "PLS");
     const ridgeVerdict = setComparisonVerdict("ridge-rmse-delta", "ridge-delta-detail", rawRidgeStats, hpoRidgeStats, aomRidgeStats, "Ridge");
     byId("hpo-search-summary").textContent = `${searchProfile.label} · ${searchProfile.pipelines.length} pipelines · one shared fold plan`;
-    byId("hpo-protocol-detail").textContent = `Raw, HPO and AOM share the same ${foldCount} contiguous folds and pooled out-of-fold RMSE. HPO and AOM also receive the exact same ${searchProfile.pipelines.length} preprocessing chains, PLS component grid and Ridge α grid. Parity audit passed: HPO's Raw spectrum candidate exactly matches the standalone Raw reference (${componentLabel(rawPls.components)}, CV RMSE ${formatMetric(rawPls.cvRmse)}). The ${currentData.testRows} validation rows stay untouched until final scoring.`;
+    byId("hpo-protocol-detail").textContent = `Input reference, HPO and AOM all start from ${inputBase.short}, share the same ${foldCount} contiguous folds and use pooled out-of-fold RMSE. HPO and AOM also receive the exact same ${searchProfile.pipelines.length} strict-linear chains, PLS component grid and Ridge α grid. Parity audit passed: HPO's Identity candidate exactly matches the standalone input reference (${componentLabel(rawPls.components)}, CV RMSE ${formatMetric(rawPls.cvRmse)}). The ${runData.testRows} validation rows stay untouched until final scoring.`;
     byId("hpo-pls-detail").textContent = `Screened ${searchProfile.pipelines.length} pipelines × components 1–${componentBudget}. Winner: ${hpoPls.operator.name}, ${hpoPls.components} components (CV RMSE ${formatMetric(hpoPls.cvRmse)}; ${hpoPls.candidateFits} fit calls).`;
     byId("hpo-ridge-detail").textContent = `Screened ${searchProfile.pipelines.length} pipelines × α {${ridgeAlphas.map(formatAlpha).join(", ")}}. Winner: ${hpoRidge.operator.name}, α ${formatAlpha(hpoRidge.alpha)} (CV RMSE ${formatMetric(hpoRidge.cvRmse)}; ${hpoRidge.candidateFits} fit calls).`;
     renderHpoScoreTable(searchProfile.pipelines, hpoPls.pipelineResults, hpoRidge.pipelineResults, hpoPls, hpoRidge);
     const namedResults = [
-      { name: "raw PLS", stats: rawPlsStats }, { name: "PLS-HPO", stats: hpoPlsStats }, { name: "AOM-PLS", stats: aomPlsStats },
-      { name: "raw Ridge", stats: rawRidgeStats }, { name: "Ridge-HPO", stats: hpoRidgeStats }, { name: "AOM-Ridge", stats: aomRidgeStats },
+      { name: `${inputBase.short} PLS`, stats: rawPlsStats }, { name: "PLS-HPO", stats: hpoPlsStats }, { name: "AOM-PLS", stats: aomPlsStats },
+      { name: `${inputBase.short} Ridge`, stats: rawRidgeStats }, { name: "Ridge-HPO", stats: hpoRidgeStats }, { name: "AOM-Ridge", stats: aomRidgeStats },
     ];
     const bestRmse = Math.min(...namedResults.map((item) => item.stats.rmse));
     const bestResults = namedResults.filter((item) => protocolScoresMatch(item.stats.rmse, bestRmse));
     const bestNames = bestResults.map((item) => item.name).join(bestResults.length > 2 ? ", " : " and ");
     const bestVerb = bestResults.length === 1 ? "has" : "share";
-    byId("result-summary").textContent = `On these ${currentData.testRows} held-out rows, ${bestNames} ${bestVerb} the lowest RMSE (${formatMetric(bestRmse)}). This is one local result; the paper-context panel below reports the 32-dataset evidence.`;
+    byId("result-summary").textContent = `On these ${runData.testRows} held-out rows, ${bestNames} ${bestVerb} the lowest RMSE (${formatMetric(bestRmse)}). This is one local result; the paper-context panel below reports the 32-dataset evidence.`;
     byId("pretreatment-hpo-name").textContent = hpoPls.operator.name;
     byId("pretreatment-hpo-setting").textContent = `${describePipeline(hpoPls.operator)} · ${componentLabel(hpoPls.components)} · ${foldCount}-fold calibration CV RMSE ${formatMetric(hpoPls.cvRmse)} · validation RMSE ${formatMetric(hpoPlsStats.rmse)}`;
     byId("pretreatment-aom-name").textContent = selected.name;
@@ -1685,31 +1735,30 @@ async function runComparison() {
     const edgeNote = pipelinePreviewTrim(hpoPls.operator) > 0 || pipelinePreviewTrim(selected) > 0
       ? " Boundary transients are clipped only in this preview; fitting uses the complete transformed matrices."
       : "";
-    byId("operator-explanation").textContent = `Each card compares the same representative raw spectrum (dashed) with the selected spectral view (solid). Each curve is standardized separately for shape comparison only; fitting uses complete transformed values. Exact settings, CV scores and validation scores are stated above.${edgeNote}`;
-    renderLocalConclusion(rawPlsStats, hpoPlsStats, aomPlsStats, rawRidgeStats, hpoRidgeStats, aomRidgeStats, hpoPls, selected);
-    byId("fairness-text").textContent = `${currentData.trainRows} calibration · ${currentData.testRows} held out · raw included · same ${foldCount} folds · pooled OOF RMSE · parity checks passed`;
+    byId("operator-explanation").textContent = `Each card compares the same representative ${inputBase.short} spectrum (dashed) with the selected strict-linear view (solid). Each curve is standardized separately for shape comparison only; fitting uses complete transformed values. Exact settings, CV scores and validation scores are stated above.${edgeNote}`;
+    byId("fairness-text").textContent = `${runData.trainRows} calibration · ${runData.testRows} held out · shared input ${inputBase.short} · identity included · same ${foldCount} folds · pooled OOF RMSE · parity checks passed`;
 
     drawRmseChart([
       { rmse: rawPlsStats.rmse }, { rmse: hpoPlsStats.rmse }, { rmse: aomPlsStats.rmse },
       { rmse: rawRidgeStats.rmse }, { rmse: hpoRidgeStats.rmse }, { rmse: aomRidgeStats.rmse },
     ]);
-    drawPredictionChart("pls-prediction-chart", currentData.testY, [
+    drawPredictionChart("pls-prediction-chart", runData.testY, [
       { predictions: rawPls.predictions, className: "baseline" },
       { predictions: hpoPls.predictions, className: "hpo" },
       { predictions: aomPls.predictions, className: "aom" },
     ]);
-    drawPredictionChart("ridge-prediction-chart", currentData.testY, [
+    drawPredictionChart("ridge-prediction-chart", runData.testY, [
       { predictions: rawRidge.predictions, className: "baseline" },
       { predictions: hpoRidge.predictions, className: "hpo" },
       { predictions: aomRidge.predictions, className: "aom" },
     ]);
-    drawOperatorChart(currentData, hpoPls.operator, selected);
+    drawOperatorChart(runData, hpoPls.operator, selected);
     byId("run-note").textContent = `Complete: ${currentData.meta.label}; all metrics use the untouched validation partition.`;
     byId("run-note").className = "form-status success";
     setActivity({
       state: "complete", progress: 100, phase: "results",
       title: "Comparison complete",
-      detail: `Six routes complete · best local RMSE ${formatMetric(bestRmse)} (${bestNames}) · ${currentData.testRows} held-out rows.`,
+      detail: `Six routes complete · best local RMSE ${formatMetric(bestRmse)} (${bestNames}) · ${runData.testRows} held-out rows.`,
     });
 
     if (new URLSearchParams(location.search).has("selftest")) {
@@ -1718,7 +1767,8 @@ async function runComparison() {
         && namedResults.every((item) => Number.isFinite(item.stats.rmse))
         && byId("rmse-chart").children.length > 10
         && byId("operator-chart").children.length > 15
-        && byId("aom-pls-selection").textContent.includes("PLS latent component")
+        && byId("aom-pls-selection").textContent.includes(inputBase.id.toUpperCase())
+        && byId("aom-pls-model").textContent.includes("comp.")
         && byId("hpo-all-scores").children.length === searchProfile.pipelines.length
         && byId("hpo-all-scores").querySelector('tr[data-pipeline="raw"]')?.cells[2].textContent === formatMetric(rawPls.cvRmse)
         && !byId("pls-hpo-card").textContent.includes("—")
@@ -1826,6 +1876,8 @@ function selectionContractSelfTest() {
     && sharedPipelines.filter((item) => item.id === "raw").length === 1
     && operatorIds[0] === "raw"
     && operatorIds.filter((id) => id === "raw").length === 1
+    && !operatorIds.includes("diff-1")
+    && Boolean(INPUT_BASES[selectedInputBase().id])
     && descriptor.chainOffsets.length === sharedPipelines.length + 1
     && identityControl?.checked
     && identityControl?.disabled;
@@ -1834,6 +1886,7 @@ function selectionContractSelfTest() {
 async function initialise() {
   const query = new URLSearchParams(location.search);
   if (query.has("selftest") && query.get("selftest") !== "full") byId("search-depth").value = "quick";
+  if (INPUT_BASES[query.get("input")]) byId("input-basis").value = query.get("input");
   renderOperatorControls();
   setupCodeWorkbench();
   updateSearchDepthUi(false);
@@ -1845,6 +1898,7 @@ async function initialise() {
   byId("source-bundled").addEventListener("change", () => setDatasetSourceMode("bundled", true));
   byId("components").addEventListener("change", markResultsStale);
   byId("folds").addEventListener("change", markResultsStale);
+  byId("input-basis").addEventListener("change", () => updateSearchDepthUi(true));
   byId("search-depth").addEventListener("change", () => updateSearchDepthUi(true));
   byId("preprocessing-order").addEventListener("change", () => updateSearchDepthUi(true));
   ["x-cal-file", "y-cal-file", "x-val-file", "y-val-file"].forEach((id) => byId(id).addEventListener("change", () => {

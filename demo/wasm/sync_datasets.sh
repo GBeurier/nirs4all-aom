@@ -3,16 +3,16 @@ set -euo pipefail
 
 demo_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 aom_root="$(cd -- "$demo_dir/../.." && pwd)"
-nirs4all_root="${NIRS4ALL_DIR:-$(cd -- "$aom_root/.." && pwd)/nirs4all}"
-python_bin="${NIRS4ALL_PYTHON:-$nirs4all_root/.venv/bin/python}"
+nirs4all_datasets_root="${NIRS4ALL_DATASETS_DIR:-$(cd -- "$aom_root/.." && pwd)/nirs4all-datasets}"
+python_bin="${NIRS4ALL_PYTHON:-python3}"
 
-if [[ ! -x "$python_bin" ]]; then
-  echo "Missing nirs4all Python environment: $python_bin" >&2
+if [[ ! -d "$nirs4all_datasets_root/datasets" ]]; then
+  echo "Missing nirs4all-datasets checkout: $nirs4all_datasets_root" >&2
   exit 1
 fi
 
 "$python_bin" "$demo_dir/generate_demo_datasets.py" \
-  --nirs4all-dir "$nirs4all_root" \
+  --datasets-dir "$nirs4all_datasets_root" \
   --output-dir "$demo_dir/datasets"
 
-echo "Regenerated bundled spectral examples with nirs4all from $nirs4all_root"
+echo "Regenerated public measured-data snapshots from $nirs4all_datasets_root"

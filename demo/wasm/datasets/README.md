@@ -1,19 +1,27 @@
-# Bundled nirs4all synthetic examples
+# Bundled public measured NIR snapshots
 
-The three bundled examples are realistic synthetic spectra, not the datasets
-used for the paper benchmark. Each keeps the standard separate-file contract:
-`Xcal.csv`, `Ycal.csv`, `Xval.csv`, and `Yval.csv`.
+The browser demo contains three compact snapshots of public measured datasets,
+not synthetic spectra and not the complete paper benchmark. Each uses the same
+separate-file contract: `Xcal.csv`, `Ycal.csv`, `Xval.csv`, and `Yval.csv`.
 
-`generate_demo_datasets.py` calls `nirs4all.synthesis.SyntheticNIRSGenerator`
-from commit `b4b04b8f49cf47cf9ae9b94017ab53c694cdf0d4`. Each recipe creates 120 spectra
-(90 calibration, 30 validation) on 301 wavelengths from 1000 to 2500 nm. The
-examples cover realistic food composition, grain starch, and a four-batch
-process. See `manifest.json` for metadata and immutable source
-links. The source repository is licensed under AGPL-3.0-or-later.
+`generate_demo_datasets.py` reads the standardized source files from
+`nirs4all-datasets` commit `60a0b6073bd3842bdd0b2e3439ffcbda0ad4615d`.
+It performs only documented, deterministic browser reductions:
 
-The default grain-starch illustration uses the documented seed 713 recipe;
-the other examples remain selectable from the page.
+- **Equine cartilage (CC BY 4.0):** 120 real measurement locations sampled
+  deterministically from 869; the replicate spectra at each location are
+  averaged, the 700–1050 nm range is retained, and locations are split 90/30.
+- **Leaf-litter nitrogen (CC BY 4.0):** 120 real observations sampled
+  deterministically from 322 and split 90/30 with the response range spread
+  across both partitions; the 1000–2400 nm range is retained.
+- **Leaf drydown (PDDL 1.0):** three measured drying stages from each of 48
+  leaves. The split is by leaf (36 calibration, 12 validation), so a leaf never
+  occurs on both sides; the 1000–2400 nm range is retained.
 
-Run `../sync_datasets.sh` to regenerate these files from a sibling `nirs4all`
-checkout. Update the manifest commit and verify the page whenever the generator
-snapshot changes.
+To keep full browser HPO responsive, cartilage keeps every fourth measured
+wavelength and the EcoSIS datasets every eighth measured wavelength within the
+stated ranges. No spectra or response values are simulated. Exact sources,
+citations, licenses, and transformations are also recorded in `manifest.json`.
+
+Run `./sync_datasets.sh` with a sibling `nirs4all-datasets` checkout, or set
+`NIRS4ALL_DATASETS_DIR`, to reproduce the CSV snapshots.

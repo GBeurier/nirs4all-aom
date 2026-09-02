@@ -74,7 +74,7 @@
     <section id="data" class="section-block" aria-labelledby="data-title">
       <div class="section-heading">
         <div><span class="section-number">01</span><p class="kicker">Dataset</p><h2 id="data-title">Start with your spectra and reference values</h2></div>
-        <p>Load your fixed calibration/validation split first. If you are exploring the method, use one of the documented synthetic NIR examples from <code>nirs4all</code>.</p>
+        <p>Load your fixed calibration/validation split first. If you are exploring the method, use one of the documented public measured NIR datasets below.</p>
       </div>
 
       <div class="source-choice-layout" aria-label="Choose one dataset source">
@@ -112,7 +112,7 @@
             </label>
             <span class="n4-badge">Synthetic</span>
           </div>
-          <p>Choose one example to inspect and run. These realistic synthetic spectra illustrate the workflow; they are not the paper benchmark data.</p>
+          <p>Choose one public dataset to inspect and run. These are compact deterministic snapshots of measured spectra, with exact source, citation, license and split documented below.</p>
           <div id="dataset-options" class="dataset-options" role="radiogroup" aria-label="Test datasets"></div>
         </article>
       </div>
@@ -120,7 +120,7 @@
       <article class="dataset-detail n4-surface">
           <div class="card-head">
             <div><p class="overline">Active dataset</p><h3 id="dataset-name">Loading…</h3></div>
-            <span id="dataset-kind" class="n4-badge">Bundled example</span>
+            <span id="dataset-kind" class="n4-badge">Public measured data</span>
           </div>
           <p id="dataset-description" class="muted"></p>
           <dl class="metadata-grid">
@@ -158,9 +158,13 @@
       <div class="experiment-layout">
         <aside class="config-card n4-surface">
           <div class="card-head"><div><p class="overline">Configuration</p><h3>Experiment controls</h3></div><span class="n4-badge">Editable</span></div>
+          <label class="field">Input spectra
+            <select id="input-basis"><option value="raw" selected>Raw</option><option value="snv">SNV</option><option value="msc">MSC</option></select>
+            <small>This upstream input is shared by the reference, HPO and AOM. MSC is fitted on calibration X only, then replayed on validation X.</small>
+          </label>
           <label class="field">Search effort
             <select id="search-depth"><option value="quick">Quick check</option><option value="full" selected>Full HPO</option></select>
-            <small id="search-depth-note">Broad preprocessing library evaluated on the exact same folds and score as raw PLS and AOM.</small>
+            <small id="search-depth-note">Broad preprocessing library evaluated on the exact same folds and score as the input reference and AOM.</small>
           </label>
           <label class="field">Maximum PLS components
             <select id="components"><option>5</option><option>10</option><option>15</option><option>20</option><option selected>25</option></select>
@@ -180,7 +184,7 @@
               <legend>Strict-linear preprocessing available to both HPO and AOM</legend>
               <div id="operator-controls" class="operator-controls"></div>
             </fieldset>
-            <p id="shared-bank-summary">Identity is always included. Select preprocessing operators to build the common search bank.</p>
+            <p id="shared-bank-summary">Identity is always included after the selected input spectra. Select preprocessing operators to build the common search bank.</p>
           </details>
           <button id="run" class="n4-button run-button" type="button" disabled><span>Run PLS and Ridge comparison</span><small id="run-search-summary">full protocol-matched HPO</small></button>
           <p id="run-note" class="form-status" aria-live="polite">Loading the data and WebAssembly engine.</p>
@@ -189,24 +193,24 @@
         <div class="routes">
           <div class="route-matrix">
             <article class="route-card baseline n4-surface">
-              <div class="route-label"><span>1</span><div><p>Reference route</p><h3>Raw spectrum</h3></div></div>
-              <p>PLS selects its component count by CV. Ridge selects its regularisation strength by CV. No spectral operator is tested.</p>
+              <div class="route-label"><span>1</span><div><p>Input reference</p><h3 id="reference-route-title">Raw spectra</h3></div></div>
+              <p id="reference-route-copy">PLS selects its component count by CV and Ridge selects α on raw X. No additional strict-linear operator is tested.</p>
             </article>
             <article class="route-card hpo n4-surface">
               <div class="route-label"><span>2</span><div><p>Conventional search</p><h3>Preprocessing HPO</h3></div></div>
-              <p>External CV screens raw X plus a preprocessing library with every PLS component count or Ridge regularisation value, then refits the winning pipeline.</p>
+              <p>External CV screens identity plus a strict-linear preprocessing library after the selected input spectra, with every PLS component count or Ridge regularisation value, then refits the winner.</p>
             </article>
             <article class="route-card adaptive n4-surface">
               <div class="route-label"><span>3</span><div><p>Proposed route</p><h3>AOM</h3></div></div>
-              <p>AOM screens the same chain bank and model grid through its native selector, which chooses its exact compute route from the data dimensions. Identity (raw X) is always included, and the selected strict-linear chain is folded into one raw-input predictor.</p>
+              <p>AOM screens the same chain bank and model grid after the selected input spectra. Its native selector chooses the exact compute route from the data dimensions, and identity is always included.</p>
             </article>
           </div>
           <div class="comparison-definition n4-surface">
             <div><strong>Two model families</strong><span>PLS screens 1–H components; Ridge screens a logarithmic α grid</span></div>
-            <div><strong>Three calibration routes</strong><span>Raw reference, external preprocessing HPO and native AOM</span></div>
+            <div><strong>Three calibration routes</strong><span>Selected-input reference, external preprocessing HPO and native AOM</span></div>
           </div>
           <div class="fairness-strip"><strong>Fairness lock</strong><span id="fairness-text">Same calibration rows · same held-out rows · same fold assignment · same pooled out-of-fold RMSE</span></div>
-          <p class="selection-note">Selection uses calibration CV only. Because validation stays untouched, a tuned route can legitimately score below its raw candidate on held-out rows; automatically choosing the validation winner would leak the test set.</p>
+          <p class="selection-note">Selection uses calibration CV only. Because validation stays untouched, a tuned route can legitimately score below its identity candidate on held-out rows; automatically choosing the validation winner would leak the test set.</p>
         </div>
       </div>
     </section>
@@ -221,20 +225,20 @@
         <article class="verdict-card n4-surface">
           <div class="verdict-head"><div><p class="overline">PLS · best held-out route</p><strong id="rmse-delta">Awaiting results</strong></div><span>Held-out RMSE</span></div>
           <div class="verdict-selections">
-            <div class="raw-selection"><span>Raw reference</span><strong id="pls-raw-card">—</strong><small id="pls-raw-card-detail">The untuned raw baseline will appear here.</small></div>
+            <div class="raw-selection"><span>Input reference</span><strong id="pls-raw-card">—</strong><small id="pls-raw-card-detail">The selected-input baseline will appear here.</small></div>
             <div class="hpo-selection"><span>HPO selected</span><strong id="pls-hpo-card">—</strong><small id="pls-hpo-card-detail">The winning HPO pipeline will appear here.</small></div>
             <div class="aom-selection"><span>AOM selected</span><strong id="operator">—</strong><small id="operator-detail">The AOM operator will appear here.</small></div>
           </div>
-          <p id="delta-detail">Run the experiment to compare Raw, HPO and AOM directly.</p>
+          <p id="delta-detail">Run the experiment to compare Input, HPO and AOM directly.</p>
         </article>
         <article class="verdict-card n4-surface">
           <div class="verdict-head"><div><p class="overline">Ridge · best held-out route</p><strong id="ridge-rmse-delta">Awaiting results</strong></div><span>Held-out RMSE</span></div>
           <div class="verdict-selections">
-            <div class="raw-selection"><span>Raw reference</span><strong id="ridge-raw-card">—</strong><small id="ridge-raw-card-detail">The untuned raw baseline will appear here.</small></div>
+            <div class="raw-selection"><span>Input reference</span><strong id="ridge-raw-card">—</strong><small id="ridge-raw-card-detail">The selected-input baseline will appear here.</small></div>
             <div class="hpo-selection"><span>HPO selected</span><strong id="ridge-hpo-card">—</strong><small id="ridge-hpo-card-detail">The winning HPO pipeline will appear here.</small></div>
             <div class="aom-selection"><span>AOM selected</span><strong id="ridge-aom-card">—</strong><small id="ridge-aom-card-detail">The AOM-selected shared chain will appear here.</small></div>
           </div>
-          <p id="ridge-delta-detail">Run the experiment to compare Raw, HPO and AOM directly.</p>
+          <p id="ridge-delta-detail">Run the experiment to compare Input, HPO and AOM directly.</p>
         </article>
       </div>
 
@@ -247,7 +251,7 @@
         </div>
         <div class="hpo-score-table-wrap" role="region" aria-label="Complete HPO cross-validation scores" tabindex="0">
           <table class="hpo-score-table">
-            <caption>Every preprocessing pipeline tested. Each row reports calibration CV only. The Raw spectrum row must match the CV score printed under Raw reference above; it is not the separate held-out validation RMSE.</caption>
+            <caption>Every strict-linear pipeline tested after the selected input spectra. Each row reports calibration CV only. The Identity row must match the CV score printed under Input reference above; it is not the separate held-out validation RMSE.</caption>
             <thead><tr><th scope="col">Pretreatment</th><th scope="col">PLS components</th><th scope="col">PLS CV RMSE</th><th scope="col">Ridge α</th><th scope="col">Ridge CV RMSE</th><th scope="col">Selected</th></tr></thead>
             <tbody id="hpo-all-scores"><tr><td colspan="6">Run the experiment to populate all candidate scores.</td></tr></tbody>
           </table>
@@ -256,37 +260,37 @@
 
       <div class="results-table-wrap n4-surface">
         <table class="results-table method-results">
-          <thead><tr><th scope="col">Family</th><th scope="col">Calibration route</th><th scope="col">Selected model configuration</th><th scope="col">Validation RMSE ↓</th><th scope="col">Validation MAE ↓</th><th scope="col">Validation R² ↑</th><th scope="col" class="compute-time-heading">Local compute time*<small>Browser elapsed</small></th><th scope="col">Search workload<small>Fit calls / search grid</small></th></tr></thead>
+          <thead><tr><th scope="col">Family</th><th scope="col">Calibration route</th><th scope="col">PP pipeline</th><th scope="col">Model</th><th scope="col">RMSE CV ↓</th><th scope="col">RMSE VAL ↓</th><th scope="col">R² VAL ↑</th><th scope="col" class="compute-time-heading">Local compute time*<small>Browser elapsed</small></th><th scope="col">Search workload<small>Model HPO / folds / PP</small></th></tr></thead>
           <tbody>
-            <tr data-family="pls"><th scope="row" rowspan="3">PLS</th><td><span class="method-dot baseline"></span>Raw reference</td><td id="pls-default-selection">—</td><td id="pls-default-rmse">—</td><td id="pls-default-mae">—</td><td id="pls-default-r2">—</td><td id="pls-default-time" class="compute-time">—</td><td id="pls-default-workload" class="search-workload">—</td></tr>
-            <tr data-family="pls"><td><span class="method-dot hpo"></span>Preprocessing HPO</td><td id="pls-hpo-selection">—</td><td id="pls-hpo-rmse">—</td><td id="pls-hpo-mae">—</td><td id="pls-hpo-r2">—</td><td id="pls-hpo-time" class="compute-time">—</td><td id="pls-hpo-workload" class="search-workload">—</td></tr>
-            <tr data-family="pls" class="aom-row"><td><span class="method-dot adaptive"></span>AOM-PLS</td><td id="aom-pls-selection">—</td><td id="aom-pls-rmse">—</td><td id="aom-pls-mae">—</td><td id="aom-pls-r2">—</td><td id="aom-pls-time" class="compute-time">—</td><td id="aom-pls-workload" class="search-workload">—</td></tr>
-            <tr data-family="ridge"><th scope="row" rowspan="3">Ridge</th><td><span class="method-dot baseline"></span>Raw reference</td><td id="ridge-default-selection">—</td><td id="ridge-default-rmse">—</td><td id="ridge-default-mae">—</td><td id="ridge-default-r2">—</td><td id="ridge-default-time" class="compute-time">—</td><td id="ridge-default-workload" class="search-workload">—</td></tr>
-            <tr data-family="ridge"><td><span class="method-dot hpo"></span>Preprocessing HPO</td><td id="ridge-hpo-selection">—</td><td id="ridge-hpo-rmse">—</td><td id="ridge-hpo-mae">—</td><td id="ridge-hpo-r2">—</td><td id="ridge-hpo-time" class="compute-time">—</td><td id="ridge-hpo-workload" class="search-workload">—</td></tr>
-            <tr data-family="ridge" class="aom-row"><td><span class="method-dot adaptive"></span>AOM-Ridge</td><td id="aom-ridge-selection">—</td><td id="aom-ridge-rmse">—</td><td id="aom-ridge-mae">—</td><td id="aom-ridge-r2">—</td><td id="aom-ridge-time" class="compute-time">—</td><td id="aom-ridge-workload" class="search-workload">—</td></tr>
+            <tr data-family="pls"><th scope="row" rowspan="3">PLS</th><td><span class="method-dot baseline"></span>Input reference</td><td id="pls-default-selection">—</td><td id="pls-default-model">—</td><td id="pls-default-cv">—</td><td id="pls-default-rmse">—</td><td id="pls-default-r2">—</td><td id="pls-default-time" class="compute-time">—</td><td id="pls-default-workload" class="search-workload">—</td></tr>
+            <tr data-family="pls"><td><span class="method-dot hpo"></span>Preprocessing HPO</td><td id="pls-hpo-selection">—</td><td id="pls-hpo-model">—</td><td id="pls-hpo-cv">—</td><td id="pls-hpo-rmse">—</td><td id="pls-hpo-r2">—</td><td id="pls-hpo-time" class="compute-time">—</td><td id="pls-hpo-workload" class="search-workload">—</td></tr>
+            <tr data-family="pls" class="aom-row"><td><span class="method-dot adaptive"></span>AOM-PLS</td><td id="aom-pls-selection">—</td><td id="aom-pls-model">—</td><td id="aom-pls-cv">—</td><td id="aom-pls-rmse">—</td><td id="aom-pls-r2">—</td><td id="aom-pls-time" class="compute-time">—</td><td id="aom-pls-workload" class="search-workload">—</td></tr>
+            <tr data-family="ridge"><th scope="row" rowspan="3">Ridge</th><td><span class="method-dot baseline"></span>Input reference</td><td id="ridge-default-selection">—</td><td id="ridge-default-model">—</td><td id="ridge-default-cv">—</td><td id="ridge-default-rmse">—</td><td id="ridge-default-r2">—</td><td id="ridge-default-time" class="compute-time">—</td><td id="ridge-default-workload" class="search-workload">—</td></tr>
+            <tr data-family="ridge"><td><span class="method-dot hpo"></span>Preprocessing HPO</td><td id="ridge-hpo-selection">—</td><td id="ridge-hpo-model">—</td><td id="ridge-hpo-cv">—</td><td id="ridge-hpo-rmse">—</td><td id="ridge-hpo-r2">—</td><td id="ridge-hpo-time" class="compute-time">—</td><td id="ridge-hpo-workload" class="search-workload">—</td></tr>
+            <tr data-family="ridge" class="aom-row"><td><span class="method-dot adaptive"></span>AOM-Ridge</td><td id="aom-ridge-selection">—</td><td id="aom-ridge-model">—</td><td id="aom-ridge-cv">—</td><td id="aom-ridge-rmse">—</td><td id="aom-ridge-r2">—</td><td id="aom-ridge-time" class="compute-time">—</td><td id="aom-ridge-workload" class="search-workload">—</td></tr>
           </tbody>
         </table>
         <div class="results-reading-guide" aria-label="How to read the model settings and scores">
           <div><strong>CV RMSE</strong><span>Mean prediction error across folds of the calibration set. It selects the configuration; lower is better.</span></div>
           <div><strong>Validation RMSE</strong><span>Error on untouched rows, used only after selection. This is the main local comparison.</span></div>
-          <div><strong>SG · window · polynomial · derivative</strong><span>Savitzky–Golay settings: number of spectral points, local polynomial degree, then derivative order; derivative 0 means smoothing only.</span></div>
+          <div><strong>Pipeline abbreviations</strong><span>ID: identity; DT1/DT2: detrending; SG(w,p,d): Savitzky–Golay window, polynomial and derivative; GF: Gaussian filter.</span></div>
           <div><strong>PLS components · Ridge α</strong><span>Number of latent PLS dimensions and Ridge regularisation strength. Both are selected by calibration CV.</span></div>
-          <div><strong>Time · workload</strong><span>Elapsed time is measured locally; workload reports fit calls or search-grid size independently of device speed.</span></div>
+          <div><strong>Time · workload</strong><span>Elapsed time is local. Workload separates model HPO, CV folds and preprocessing combinations (HPO) or operators × order (AOM).</span></div>
         </div>
-        <p class="table-note">* Elapsed wall-clock compute is measured in this browser and depends on your device. Search workload gives the corresponding fit calls or search-grid size. The paper's runtime comparison is AOM against the much larger preprocessing-HPO protocol—not against the raw reference.</p>
+        <p class="table-note">* Elapsed wall-clock compute is measured in this browser and depends on your device. Search workload reports the model grid, fold count and preprocessing search separately. The paper's runtime comparison is AOM against preprocessing HPO—not against the selected-input reference.</p>
       </div>
 
       <div class="diagnostic-grid">
         <article class="chart-panel performance-panel n4-surface">
-          <div class="chart-title"><div><p class="overline">Independent validation</p><h3>RMSE by family and calibration route</h3></div><div class="legend"><span class="legend-key baseline"></span>Raw <span class="legend-key hpo"></span>HPO <span class="legend-key aom"></span>AOM</div></div>
+          <div class="chart-title"><div><p class="overline">Independent validation</p><h3>RMSE by family and calibration route</h3></div><div class="legend"><span class="legend-key baseline"></span>Input <span class="legend-key hpo"></span>HPO <span class="legend-key aom"></span>AOM</div></div>
           <svg id="rmse-chart" class="n4viz" viewBox="0 0 1280 420" role="img" aria-label="Validation RMSE for six PLS and Ridge calibration routes" aria-describedby="result-summary"></svg>
         </article>
         <article class="chart-panel prediction-panel n4-surface">
-          <div class="chart-title"><div><p class="overline">PLS · independent validation</p><h3>Measured vs predicted</h3></div><div class="legend"><span class="legend-key baseline"></span>Raw <span class="legend-key hpo"></span>HPO <span class="legend-key aom"></span>AOM</div></div>
+          <div class="chart-title"><div><p class="overline">PLS · independent validation</p><h3>Measured vs predicted</h3></div><div class="legend"><span class="legend-key baseline"></span>Input <span class="legend-key hpo"></span>HPO <span class="legend-key aom"></span>AOM</div></div>
           <svg id="pls-prediction-chart" class="n4viz" viewBox="0 0 620 420" role="img" aria-label="Measured versus predicted PLS responses" aria-describedby="result-summary"></svg>
         </article>
         <article class="chart-panel prediction-panel n4-surface">
-          <div class="chart-title"><div><p class="overline">Ridge · independent validation</p><h3>Measured vs predicted</h3></div><div class="legend"><span class="legend-key baseline"></span>Raw <span class="legend-key hpo"></span>HPO <span class="legend-key aom"></span>AOM</div></div>
+          <div class="chart-title"><div><p class="overline">Ridge · independent validation</p><h3>Measured vs predicted</h3></div><div class="legend"><span class="legend-key baseline"></span>Input <span class="legend-key hpo"></span>HPO <span class="legend-key aom"></span>AOM</div></div>
           <svg id="ridge-prediction-chart" class="n4viz" viewBox="0 0 620 420" role="img" aria-label="Measured versus predicted Ridge responses" aria-describedby="result-summary"></svg>
         </article>
         <article class="chart-panel selection-panel n4-surface">
@@ -298,17 +302,9 @@
             <div class="selection-route hpo-route"><span>Conventional HPO</span><strong id="pretreatment-hpo-name">Awaiting selection</strong><small id="pretreatment-hpo-setting">Pipeline, components and validation RMSE will appear here.</small></div>
             <div class="selection-route aom-route"><span>AOM one-shot selection</span><strong id="pretreatment-aom-name">Awaiting selection</strong><small id="pretreatment-aom-setting">Operator, components and validation RMSE will appear here.</small></div>
           </div>
-          <div class="selection-legend" aria-hidden="true"><span class="raw-shape-key"></span>Raw spectral shape <span class="selected-shape-key"></span>Selected spectral view</div>
-          <svg id="operator-chart" class="n4viz" viewBox="0 0 1280 360" role="img" aria-label="Standardized raw spectral shape compared with the HPO-selected and AOM-selected spectral views" aria-describedby="operator-explanation"></svg>
+          <div class="selection-legend" aria-hidden="true"><span class="raw-shape-key"></span>Input spectral shape <span class="selected-shape-key"></span>Selected spectral view</div>
+          <svg id="operator-chart" class="n4viz" viewBox="0 0 1280 360" role="img" aria-label="Standardized input spectral shape compared with the HPO-selected and AOM-selected spectral views" aria-describedby="operator-explanation"></svg>
           <p id="operator-explanation" class="chart-footnote">The two comparisons will appear after fitting. Shapes are standardized only for this display; models use the complete transformed values.</p>
-        </article>
-        <article class="conclusion-panel n4-surface" aria-labelledby="local-conclusion-title">
-          <div class="conclusion-lead"><p class="overline">Takeaway from this run</p><h3 id="local-conclusion-title">Run the comparison to obtain a local conclusion</h3><p id="local-conclusion-copy">The conclusion will distinguish the held-out result from the broader evidence reported in the paper.</p></div>
-          <div class="conclusion-facts">
-            <div><span>PLS</span><strong id="conclusion-pls">Awaiting results</strong><small id="conclusion-pls-detail">Raw, HPO and AOM on held-out rows.</small></div>
-            <div><span>Ridge</span><strong id="conclusion-ridge">Awaiting results</strong><small id="conclusion-ridge-detail">Raw, HPO and AOM on held-out rows.</small></div>
-            <div><span>Deployment</span><strong id="conclusion-deploy">AOM accepts raw X</strong><small>The selected operator is folded into one raw-input predictor; HPO must replay its pipeline.</small></div>
-          </div>
         </article>
       </div>
       <div class="paper-context n4-surface">
@@ -334,7 +330,7 @@
         <article class="n4-surface"><span>01</span><h3>Traceable inputs</h3><p>The bundled snapshots point to their exact nirs4all source. Uploaded files are parsed locally and never transmitted.</p></article>
         <article class="n4-surface"><span>02</span><h3>Comparable routes</h3><p>All six routes see the same X, y, folds and validation rows. Displayed metrics come only from the held-out partition.</p></article>
         <article class="n4-surface"><span>03</span><h3>Native browser fit</h3><p>PLS, Ridge and both AOM methods call the n4m native C ABI compiled to WebAssembly.</p></article>
-        <article class="n4-surface"><span>04</span><h3>Deployable outcome</h3><p>AOM returns original-grid coefficients and an intercept, so raw spectra can be predicted without replaying preprocessing.</p></article>
+        <article class="n4-surface"><span>04</span><h3>Deployable outcome</h3><p>AOM folds the selected strict-linear chain into coefficients and an intercept. Raw input is direct; a selected SNV or MSC input basis must be replayed first.</p></article>
       </div>
       <div class="technical-note n4-surface">
         <div><p class="overline">Scope note</p><h3>Illustration, not a benchmark claim</h3></div>
