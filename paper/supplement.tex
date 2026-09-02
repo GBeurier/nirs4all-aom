@@ -37,12 +37,52 @@ Gr{\'e}gory Beurier \quad Robin Reiter \quad Camille No{\^u}s\\[0.35em]
 Lauriane Rouan \quad Denis Cornet
 }
 
-\date{Supplement of May 17, 2026}
+\date{Supplement of September 2, 2026}
 
 \begin{document}
 \maketitle
 
 \tableofcontents
+
+\section{Bibliometric Screening of Recent NIR Regression Studies}
+\label{sec:sup_bibliometric}
+
+An OpenAlex search \citep{priem2022openalex} was performed on 2 September
+2026 for research articles published during the five complete calendar years
+2021--2025.  The title/abstract query included ``near infrared spectroscopy'',
+``near-infrared spectroscopy'', ``near infrared spectrometry'',
+``near-infrared spectrometry'', ``near infrared reflectance spectroscopy'',
+``near-infrared reflectance spectroscopy'', ``NIR spectroscopy'', ``NIR
+spectrometry'', ``near infrared hyperspectral imaging'', ``near-infrared
+hyperspectral imaging'' and ``NIR hyperspectral imaging''.  The export
+contained 14,652 records, while the OpenAlex interface displayed 14,650 at
+the time of retrieval.  The exported corpus was used as the denominator for
+the subsequent audit; 14,635 records remained after deduplication.
+
+Records were screened automatically to retain a high-confidence
+analytical-NIR corpus and then a strict quantitative-regression subset.  The
+latter required explicit regression, prediction, quantitative-analysis,
+calibration, estimation, determination or concentration-related terminology,
+and excluded explicit classification or discrimination signals such as
+PLS-DA, SIMCA, LDA/QDA, authentication or classification.  Estimators were
+identified from titles, abstracts and OpenAlex keywords, concepts, topics and
+subfields using predefined lexical patterns for PLS/PLSR, Ridge, PCR,
+SVR/SVM, random forests, neural or deep-learning models, linear regression,
+Lasso/Elastic Net, Gaussian-process regression, tree or boosting methods and
+kNN.  Multiple estimators could be assigned to one publication.
+
+Of the 2,306 records satisfying the strict quantitative-regression filter, an
+estimator was identified for 1,259 (54.6\%).  The remaining 1,047 (45.4\%)
+were classified as unknown and excluded from estimator-frequency
+calculations, rather than treated as non-PLS.  PLS was identified in 1,072 of
+the 1,259 informative records (85.1\%).  fNIRS records were retained
+separately for audit but excluded from the primary analytical-NIR denominator
+because their signal-processing and latent-variable context differs from
+conventional spectroscopic calibration.  The screening is lexical rather
+than a manual full-text classification, so the estimates characterize this
+specific query and rule set and may include false-positive or false-negative
+assignments.  OpenAlex metadata are updated continuously; exact counts may
+also change on rerunning the query.
 
 \section{Notation, Scope and Complete Derivations}
 
@@ -540,8 +580,8 @@ Both selectors record identical RMSEP at seeds 0, 1 and 2 on every dataset.}
 \input{tables/table_software.tex}
 \end{table}
 
-All numerical claims in the main manuscript and in this supplement are
-computed from benchmark result tables distributed with the public
+All numerical benchmark claims in the main manuscript and in this supplement
+are computed from benchmark result tables distributed with the public
 \code{nirs4all-aom} repository announced in the main manuscript.  The regression
 cohort contains 61 manifest rows, and the main paired regression comparisons
 use $N_{\cap}=32$ rows.  The classification manifest contains 17 rows, with 16
@@ -565,9 +605,9 @@ is summarized in Table~\ref{tab:sup_software}.
 During the preparation of this work, the authors used Anthropic Claude and
 OpenAI Codex to assist with code review, implementation, repository
 organization, benchmark aggregation scripts, LaTeX editing and drafting or
-revision of explanatory text.  Every numerical claim in the main manuscript
-and in this supplement is computed from benchmark result tables; the
-AI-assisted tools did not generate numerical results by themselves.  After
+revision of explanatory text.  Every numerical benchmark claim in the main
+manuscript and in this supplement is computed from benchmark result tables;
+the AI-assisted tools did not generate benchmark results by themselves.  After
 using these tools, the authors reviewed, edited and verified the code,
 numerical results, references and manuscript content as needed, and take full
 responsibility for the content of the publication.

@@ -45,7 +45,7 @@ Lauriane Rouan\textsuperscript{1,2}
 \textsuperscript{2}UMR AGAP Institut, Univ Montpellier, CIRAD, INRAE, Institut Agro, Montpellier, France\\[0.75em]
 \textsuperscript{3}Laboratoire Cogitamus, Havre de recherche, \url{https://www.cogitamus.fr/}\\
 Camille No{\^u}s: \href{mailto:camille.nous@cogitamus.fr}{camille.nous@cogitamus.fr}\\[0.75em]
-May 17, 2026
+September 2, 2026
 }
 
 \begin{document}
@@ -98,6 +98,20 @@ fragile.  A model that works on raw spectra may fail after a different split,
 instrument or sample family, while the same regressor with a derivative,
 smoother or baseline correction can become usable.  In practice, much of the
 model-building effort is therefore spent screening preprocessing choices.
+
+This combination of broad activity and a concentrated modelling practice is
+visible in a recent bibliometric screen.  An OpenAlex title/abstract search
+for 2021--2025 returned 14,652 records (14,635 after deduplication).  Within
+the strict quantitative-regression subset for which an estimator could be
+identified automatically, PLS terminology was detected in 1,072 of 1,259
+records (85.1\%; Supplementary Note~S1).  These
+figures are query-derived corpus estimates rather than manual classifications
+of the literature.  Consistently with the resulting need to choose a
+calibration pipeline, a recent systematic review found preprocessing
+performance to be strongly dataset-dependent, with no single strategy
+universally optimal \citep{wahab2026optimizing}.  Joint selection of spectral
+preprocessing and PLS latent dimensionality is therefore a recurrent
+calibration problem.
 
 The usual response is external search.  A calibration workflow enumerates
 normalizations, smoothers, derivative orders, baseline corrections and model
@@ -175,9 +189,11 @@ than selecting one.  Sequential Preprocessing through Orthogonalization
 (PORTO) \citep{mishra2021porto} and PROSAC \citep{mishra2022prosac} use
 multiblock PLS to fuse several preprocessed views of the same spectra; a
 broader ensemble framing is given in
-\citet{mishra2020ensemble}.  These methods keep preprocessing outside the
-model and stack the alternatives downstream, which is a complementary
-strategy to the one explored here.
+\citet{mishra2020ensemble}.  More recently, a stacking method used Ridge
+regression to combine complementary predictions from differently
+preprocessed NIR datasets \citep{huang2024stacking}.  These methods keep
+preprocessing outside the model and combine the alternatives downstream,
+which is a complementary strategy to the one explored here.
 
 PLS remains the reference linear method for many NIRS calibration problems
 \citep{geladi1986partial,wold2001pls}.  NIPALS and SIMPLS offer two useful
@@ -724,10 +740,11 @@ the software artifacts and validation status for the public release.
 
 \section*{Supplementary Material}
 
-The supplementary material contains complete derivations, the cohort
-manifest, operator-bank diagnostics, non-selected AOM variants, alternative
-AOM-form explorations, per-dataset tables, classification details, seed
-stability, software artifacts and the AI-assistance statement.
+The supplementary material contains the bibliometric screening protocol,
+complete derivations, the cohort manifest, operator-bank diagnostics,
+non-selected AOM variants, alternative AOM-form explorations, per-dataset
+tables, classification details, seed stability, software artifacts and the
+AI-assistance statement.
 
 \section*{Declaration of Generative AI and AI-assisted technologies in the writing process}
 
