@@ -844,40 +844,81 @@ function metrics(actual, predicted) {
 }
 
 async function fitCrossValidatedPls(data, maxComponents, foldCount, onProgress) {
-  const selected = await scoreNativeIdentityPls(data, maxComponents, foldCount, onProgress);
-  const model = selected.model;
+  const routeStarted = performance.now();
+  const scored = await scorePlsCandidates(data, maxComponents, foldCount, onProgress);
+  const candidates = [...scored.candidates];
+  candidates.sort((left, right) => left.rmse - right.rmse || left.components - right.components);
+  const selected = candidates[0];
+  const model = fitModel(
+    "PLS",
+    matrix(data.trainX.data, data.trainRows, data.cols),
+    matrix(data.trainY, data.trainRows, 1),
+    selected.components,
+  );
   const predictions = predictModel(model, matrix(data.testX.data, data.testRows, data.cols)).data;
   onProgress?.(1, selected.components, maxComponents);
   return {
     model,
     predictions,
     components: selected.components,
-    cvRmse: selected.cvRmse,
-    elapsed: selected.elapsed,
+    cvRmse: selected.rmse,
+    elapsed: performance.now() - routeStarted,
     maxAllowed: maxComponents,
-    candidateFits: selected.candidateFits,
+    candidateFits: scored.candidateFits + 1,
   };
 }
 
-async function scoreNativeIdentityPls(data, maxComponents, foldCount, onProgress) {
-  const x = matrix(data.trainX.data, data.trainRows, data.cols);
-  const y = matrix(data.trainY, data.trainRows, 1);
-  const started = performance.now();
+async function scorePlsCandidates(data, maxComponents, foldCount, onProgress) {
+  const folds = contiguousFolds(data.trainRows, foldCount);
+  const allRows = Array.from({ length: data.trainRows }, (_, index) => index);
+  const candidates = [];
+  const totalUnits = maxComponents * folds.length;
+  let completedUnits = 0;
+  let candidateFits = 0;
   onProgress?.(0, 0, maxComponents);
-  const selector = fitAomChain(
-    x,
-    y,
-    nativeChainDescriptor([pipeline("raw", "Raw spectrum", "raw X")]),
-    { head: "pls", nFolds: foldCount, plsComponents: Array.from({ length: maxComponents }, (_, index) => index + 1) },
-  );
-  onProgress?.(1, selector.selectedParameter, maxComponents);
-  return {
-    model: selector,
-    components: Math.round(selector.selectedParameter),
-    cvRmse: selector.score,
-    elapsed: performance.now() - started,
-    candidateFits: maxComponents * foldCount + 1,
-  };
+  for (let components = 1; components <= maxComponents; components += 1) {
+    let squaredErrorSum = 0;
+    let heldOutCount = 0;
+    let validFolds = 0;
+    let validCandidate = true;
+    for (let foldIndex = 0; foldIndex < folds.length; foldIndex += 1) {
+      const heldRows = folds[foldIndex];
+      const held = new Set(heldRows);
+      const fitRows = allRows.filter((row) => !held.has(row));
+      const xFit = selectRows(data.trainX.data, fitRows, data.cols);
+      const yFit = selectRows(data.trainY, fitRows, 1);
+      const xHeld = selectRows(data.trainX.data, heldRows, data.cols);
+      const yHeld = selectRows(data.trainY, heldRows, 1);
+      try {
+        const model = fitModel(
+          "PLS",
+          matrix(xFit, fitRows.length, data.cols),
+          matrix(yFit, fitRows.length, 1),
+          components,
+        );
+        const predictions = predictModel(model, matrix(xHeld, heldRows.length, data.cols)).data;
+        candidateFits += 1;
+        for (let index = 0; index < yHeld.length; index += 1) squaredErrorSum += (yHeld[index] - predictions[index]) ** 2;
+        heldOutCount += yHeld.length;
+        validFolds += 1;
+      } catch (error) {
+        validCandidate = false;
+      }
+      completedUnits += 1;
+      if (!validCandidate) {
+        completedUnits += folds.length - foldIndex - 1;
+        break;
+      }
+      onProgress?.(completedUnits / totalUnits, components, maxComponents);
+    }
+    if (validCandidate && validFolds === folds.length) {
+      candidates.push({ components, rmse: Math.sqrt(squaredErrorSum / heldOutCount) });
+    }
+    onProgress?.(completedUnits / totalUnits, components, maxComponents);
+    await yieldToBrowser();
+  }
+  if (candidates.length === 0) throw new Error("No numerically stable PLS component count was found.");
+  return { candidates, candidateFits };
 }
 
 function transformWithPipeline(buffer, rows, cols, selectedPipeline) {
@@ -893,40 +934,40 @@ function transformWithPipeline(buffer, rows, cols, selectedPipeline) {
   return transformed;
 }
 
-function transformedDataset(data, selectedPipeline) {
+function transformedDataset(data, selectedPipeline, includeValidation = true) {
   if (selectedPipeline.steps.length === 0) return data;
   return {
     ...data,
     trainX: matrix(transformWithPipeline(data.trainX.data, data.trainRows, data.cols, selectedPipeline), data.trainRows, data.cols),
-    testX: matrix(transformWithPipeline(data.testX.data, data.testRows, data.cols, selectedPipeline), data.testRows, data.cols),
+    testX: includeValidation
+      ? matrix(transformWithPipeline(data.testX.data, data.testRows, data.cols, selectedPipeline), data.testRows, data.cols)
+      : data.testX,
   };
 }
 
 async function fitPreprocessingHpoPls(data, maxComponents, foldCount, pipelines, onProgress) {
+  const routeStarted = performance.now();
   const candidates = [];
-  let elapsed = 0;
   let candidateFits = 0;
   for (let pipelineIndex = 0; pipelineIndex < pipelines.length; pipelineIndex += 1) {
     const selectedPipeline = pipelines[pipelineIndex];
-    const transformStarted = performance.now();
     try {
-      const transformed = transformedDataset(data, selectedPipeline);
-      elapsed += performance.now() - transformStarted;
-      const scored = await scoreNativeIdentityPls(transformed, maxComponents, foldCount, (fraction, component, total) => {
+      const transformed = transformedDataset(data, selectedPipeline, false);
+      const scored = await scorePlsCandidates(transformed, maxComponents, foldCount, (fraction, component, total) => {
         const overall = (pipelineIndex + fraction) / pipelines.length;
         onProgress?.(overall, selectedPipeline, component, total);
       });
-      elapsed += scored.elapsed;
       candidateFits += scored.candidateFits;
+      const pipelineCandidates = [...scored.candidates]
+        .sort((left, right) => left.rmse - right.rmse || left.components - right.components);
+      const best = pipelineCandidates[0];
       candidates.push({
         pipeline: selectedPipeline,
         pipelineIndex,
-        components: scored.components,
-        cvRmse: scored.cvRmse,
-        model: scored.model,
+        components: best.components,
+        cvRmse: best.rmse,
       });
     } catch (error) {
-      elapsed += performance.now() - transformStarted;
       onProgress?.((pipelineIndex + 1) / pipelines.length, selectedPipeline, maxComponents, maxComponents);
     }
   }
@@ -940,13 +981,17 @@ async function fitPreprocessingHpoPls(data, maxComponents, foldCount, pipelines,
     || left.pipelineIndex - right.pipelineIndex);
   const selected = candidates[0];
   const finalData = transformedDataset(data, selected.pipeline);
-  const model = selected.model;
+  const model = fitModel(
+    "PLS",
+    matrix(finalData.trainX.data, finalData.trainRows, finalData.cols),
+    matrix(finalData.trainY, finalData.trainRows, 1),
+    selected.components,
+  );
   const predictions = predictModel(model, matrix(finalData.testX.data, finalData.testRows, finalData.cols)).data;
-  return { model, predictions, components: selected.components, cvRmse: selected.cvRmse, operator: selected.pipeline, elapsed, candidateFits, rawCandidate, pipelineResults };
+  return { model, predictions, components: selected.components, cvRmse: selected.cvRmse, operator: selected.pipeline, elapsed: performance.now() - routeStarted, candidateFits: candidateFits + 1, rawCandidate, pipelineResults };
 }
 
 async function scoreRidgeCandidates(data, foldCount, alphas, onProgress) {
-  let elapsed = 0;
   const folds = contiguousFolds(data.trainRows, foldCount);
   const allRows = Array.from({ length: data.trainRows }, (_, index) => index);
   const candidates = [];
@@ -967,17 +1012,14 @@ async function scoreRidgeCandidates(data, foldCount, alphas, onProgress) {
       const yFit = selectRows(data.trainY, fitRows, 1);
       const xHeld = selectRows(data.trainX.data, heldRows, data.cols);
       const yHeld = selectRows(data.trainY, heldRows, 1);
-      const fitStarted = performance.now();
       try {
         const model = fitModel("Ridge", matrix(xFit, fitRows.length, data.cols), matrix(yFit, fitRows.length, 1), 1, [alpha]);
         const predictions = predictModel(model, matrix(xHeld, heldRows.length, data.cols)).data;
         candidateFits += 1;
-        elapsed += performance.now() - fitStarted;
         for (let index = 0; index < yHeld.length; index += 1) squaredErrorSum += (yHeld[index] - predictions[index]) ** 2;
         heldOutCount += yHeld.length;
         validFolds += 1;
       } catch (error) {
-        elapsed += performance.now() - fitStarted;
         validCandidate = false;
       }
       completedUnits += 1;
@@ -994,15 +1036,15 @@ async function scoreRidgeCandidates(data, foldCount, alphas, onProgress) {
     await yieldToBrowser();
   }
   if (candidates.length === 0) throw new Error("No numerically stable Ridge regularisation value was found.");
-  return { candidates, elapsed, candidateFits };
+  return { candidates, candidateFits };
 }
 
 async function fitCrossValidatedRidge(data, foldCount, alphas, onProgress) {
+  const routeStarted = performance.now();
   const scored = await scoreRidgeCandidates(data, foldCount, alphas, onProgress);
   const candidates = [...scored.candidates];
   candidates.sort((left, right) => left.rmse - right.rmse || left.alpha - right.alpha);
   const selected = candidates[0];
-  const finalFitStarted = performance.now();
   const model = fitModel(
     "Ridge",
     matrix(data.trainX.data, data.trainRows, data.cols),
@@ -1012,30 +1054,26 @@ async function fitCrossValidatedRidge(data, foldCount, alphas, onProgress) {
   );
   const predictions = predictModel(model, matrix(data.testX.data, data.testRows, data.cols)).data;
   onProgress?.(1, selected.alpha, alphas.length, alphas.length);
-  return { model, predictions, alpha: selected.alpha, cvRmse: selected.rmse, elapsed: scored.elapsed + performance.now() - finalFitStarted, candidateFits: scored.candidateFits + 1 };
+  return { model, predictions, alpha: selected.alpha, cvRmse: selected.rmse, elapsed: performance.now() - routeStarted, candidateFits: scored.candidateFits + 1 };
 }
 
 async function fitPreprocessingHpoRidge(data, foldCount, alphas, pipelines, onProgress) {
+  const routeStarted = performance.now();
   const candidates = [];
-  let elapsed = 0;
   let candidateFits = 0;
   for (let pipelineIndex = 0; pipelineIndex < pipelines.length; pipelineIndex += 1) {
     const selectedPipeline = pipelines[pipelineIndex];
-    const transformStarted = performance.now();
     try {
-      const transformed = transformedDataset(data, selectedPipeline);
-      elapsed += performance.now() - transformStarted;
+      const transformed = transformedDataset(data, selectedPipeline, false);
       const scored = await scoreRidgeCandidates(transformed, foldCount, alphas, (fraction, alpha, alphaIndex, alphaCount) => {
         const overall = (pipelineIndex + fraction) / pipelines.length;
         onProgress?.(overall, selectedPipeline, alpha, alphaIndex, alphaCount);
       });
-      elapsed += scored.elapsed;
       candidateFits += scored.candidateFits;
       scored.candidates.forEach(({ alpha, rmse }) => {
         candidates.push({ pipeline: selectedPipeline, pipelineIndex, alpha, cvRmse: rmse });
       });
     } catch (error) {
-      elapsed += performance.now() - transformStarted;
       onProgress?.((pipelineIndex + 1) / pipelines.length, selectedPipeline, alphas.at(-1), alphas.length, alphas.length);
     }
   }
@@ -1052,11 +1090,9 @@ async function fitPreprocessingHpoRidge(data, foldCount, alphas, pipelines, onPr
     || left.pipelineIndex - right.pipelineIndex);
   const selected = candidates[0];
   const finalData = transformedDataset(data, selected.pipeline);
-  const finalFitStarted = performance.now();
   const model = fitModel("Ridge", matrix(finalData.trainX.data, finalData.trainRows, finalData.cols), matrix(finalData.trainY, finalData.trainRows, 1), 1, [selected.alpha]);
   const predictions = predictModel(model, matrix(finalData.testX.data, finalData.testRows, finalData.cols)).data;
-  elapsed += performance.now() - finalFitStarted;
-  return { model, predictions, alpha: selected.alpha, cvRmse: selected.cvRmse, operator: selected.pipeline, elapsed, candidateFits: candidateFits + 1, rawCandidate, pipelineResults };
+  return { model, predictions, alpha: selected.alpha, cvRmse: selected.cvRmse, operator: selected.pipeline, elapsed: performance.now() - routeStarted, candidateFits: candidateFits + 1, rawCandidate, pipelineResults };
 }
 
 function formatMetric(value) {
@@ -1322,6 +1358,7 @@ function renderHpoScoreTable(pipelines, plsResults, ridgeResults, hpoPls, hpoRid
     const plsWinner = selectedPipeline.id === hpoPls.operator.id;
     const ridgeWinner = selectedPipeline.id === hpoRidge.operator.id;
     const row = document.createElement("tr");
+    row.dataset.pipeline = selectedPipeline.id;
     if (plsWinner) row.classList.add("is-pls-winner");
     if (ridgeWinner) row.classList.add("is-ridge-winner");
     const name = document.createElement("th");
@@ -1627,7 +1664,7 @@ async function runComparison() {
     const plsVerdict = setComparisonVerdict("rmse-delta", "delta-detail", rawPlsStats, hpoPlsStats, aomPlsStats, "PLS");
     const ridgeVerdict = setComparisonVerdict("ridge-rmse-delta", "ridge-delta-detail", rawRidgeStats, hpoRidgeStats, aomRidgeStats, "Ridge");
     byId("hpo-search-summary").textContent = `${searchProfile.label} · ${searchProfile.pipelines.length} pipelines · one shared fold plan`;
-    byId("hpo-protocol-detail").textContent = `Raw, HPO and AOM share the same ${foldCount} contiguous folds and pooled out-of-fold RMSE. HPO and AOM also receive the exact same ${searchProfile.pipelines.length} preprocessing chains, PLS component grid and Ridge α grid. The ${currentData.testRows} validation rows stay untouched until final scoring.`;
+    byId("hpo-protocol-detail").textContent = `Raw, HPO and AOM share the same ${foldCount} contiguous folds and pooled out-of-fold RMSE. HPO and AOM also receive the exact same ${searchProfile.pipelines.length} preprocessing chains, PLS component grid and Ridge α grid. Parity audit passed: HPO's Raw spectrum candidate exactly matches the standalone Raw reference (${componentLabel(rawPls.components)}, CV RMSE ${formatMetric(rawPls.cvRmse)}). The ${currentData.testRows} validation rows stay untouched until final scoring.`;
     byId("hpo-pls-detail").textContent = `Screened ${searchProfile.pipelines.length} pipelines × components 1–${componentBudget}. Winner: ${hpoPls.operator.name}, ${hpoPls.components} components (CV RMSE ${formatMetric(hpoPls.cvRmse)}; ${hpoPls.candidateFits} fit calls).`;
     byId("hpo-ridge-detail").textContent = `Screened ${searchProfile.pipelines.length} pipelines × α {${ridgeAlphas.map(formatAlpha).join(", ")}}. Winner: ${hpoRidge.operator.name}, α ${formatAlpha(hpoRidge.alpha)} (CV RMSE ${formatMetric(hpoRidge.cvRmse)}; ${hpoRidge.candidateFits} fit calls).`;
     renderHpoScoreTable(searchProfile.pipelines, hpoPls.pipelineResults, hpoRidge.pipelineResults, hpoPls, hpoRidge);
@@ -1683,6 +1720,7 @@ async function runComparison() {
         && byId("operator-chart").children.length > 15
         && byId("aom-pls-selection").textContent.includes("PLS latent component")
         && byId("hpo-all-scores").children.length === searchProfile.pipelines.length
+        && byId("hpo-all-scores").querySelector('tr[data-pipeline="raw"]')?.cells[2].textContent === formatMetric(rawPls.cvRmse)
         && !byId("pls-hpo-card").textContent.includes("—")
         && byId("rmse-delta").textContent === winnerHeadline(plsVerdict)
         && byId("ridge-rmse-delta").textContent === winnerHeadline(ridgeVerdict)

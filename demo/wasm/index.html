@@ -198,7 +198,7 @@
             </article>
             <article class="route-card adaptive n4-surface">
               <div class="route-label"><span>3</span><div><p>Proposed route</p><h3>AOM</h3></div></div>
-              <p>AOM screens the same chain bank and model grid as HPO through its native moment engine. Identity (raw X) is always included, and the selected strict-linear chain is folded into one raw-input predictor.</p>
+              <p>AOM screens the same chain bank and model grid through its native selector, which chooses its exact compute route from the data dimensions. Identity (raw X) is always included, and the selected strict-linear chain is folded into one raw-input predictor.</p>
             </article>
           </div>
           <div class="comparison-definition n4-surface">
@@ -247,7 +247,7 @@
         </div>
         <div class="hpo-score-table-wrap" role="region" aria-label="Complete HPO cross-validation scores" tabindex="0">
           <table class="hpo-score-table">
-            <caption>Every preprocessing pipeline tested. Each row reports its best internal PLS component count and Ridge α, selected on calibration CV only.</caption>
+            <caption>Every preprocessing pipeline tested. Each row reports calibration CV only. The Raw spectrum row must match the CV score printed under Raw reference above; it is not the separate held-out validation RMSE.</caption>
             <thead><tr><th scope="col">Pretreatment</th><th scope="col">PLS components</th><th scope="col">PLS CV RMSE</th><th scope="col">Ridge α</th><th scope="col">Ridge CV RMSE</th><th scope="col">Selected</th></tr></thead>
             <tbody id="hpo-all-scores"><tr><td colspan="6">Run the experiment to populate all candidate scores.</td></tr></tbody>
           </table>

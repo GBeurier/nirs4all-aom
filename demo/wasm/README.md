@@ -15,8 +15,10 @@ chemometrician through the following path:
   chain length of one, two, or three operators;
 - evaluates raw, HPO and AOM candidates with the same deterministic fold
   assignment and pooled out-of-fold RMSE; the raw route is an explicit
-  subset of HPO, and runtime parity gates verify that subset before results are
-  displayed;
+  subset of HPO, and runtime assertions verify that its selected component and
+  CV score match exactly before results are displayed;
+- executes conventional PLS-HPO as explicit materialized pipeline × component
+  × fold fits, independently of the native AOM selector;
 - runs native AOM-PLS over the shared strict-linear chain descriptor (with an
   explicit stable-budget fallback for small or rank-deficient browser data);
 - cross-validates raw Ridge over a logarithmic alpha grid;
@@ -64,7 +66,8 @@ full preprocessing-HPO protocol, not with the inexpensive raw reference.
 ## Reproducible inputs
 
 The committed JavaScript/WASM bundle is built from `nirs4all-methods` commit
-`abd45d95`, which adds the configurable AOM chain-sweep browser surface.
+`54bebd3a`, which adds the configurable AOM chain-sweep browser surface and
+honours forced operator moments on CPU-wide spectra.
 Refresh it from a built sibling checkout with:
 
 ```bash
