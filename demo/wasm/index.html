@@ -77,19 +77,22 @@
         <p>Load your fixed calibration/validation split first. If you are exploring the method, use one of the documented synthetic NIR examples from <code>nirs4all</code>.</p>
       </div>
 
-      <div class="data-layout">
-        <article id="upload-card" class="upload-card n4-surface">
-          <div class="upload-heading">
-            <span><span class="overline">Recommended start</span><strong>Load your X and y files</strong></span>
+      <div class="source-choice-layout" aria-label="Choose one dataset source">
+        <article id="upload-card" class="source-card upload-card n4-surface" data-source="upload">
+          <div class="source-heading">
+            <label class="source-selector" for="source-upload">
+              <input id="source-upload" type="radio" name="dataset-source" value="upload">
+              <span><span class="overline">Your data</span><strong>Load your X and y files</strong></span>
+            </label>
             <span class="n4-badge">Local only</span>
           </div>
           <div class="upload-body">
             <p>Use the standard nirs4all calibration/validation convention. CSV, TSV and TXT are accepted; comma, semicolon, tab and pipe delimiters are detected. X may have a numeric wavelength/wavenumber header; y must contain one numeric response column.</p>
             <div class="upload-grid">
-              <label><span>X calibration <small>required</small></span><input id="x-cal-file" type="file" accept=".csv,.tsv,.txt,text/csv,text/tab-separated-values"></label>
-              <label><span>y calibration <small>required</small></span><input id="y-cal-file" type="file" accept=".csv,.tsv,.txt,text/csv,text/tab-separated-values"></label>
-              <label><span>X validation/test <small>required</small></span><input id="x-val-file" type="file" accept=".csv,.tsv,.txt,text/csv,text/tab-separated-values"></label>
-              <label><span>y validation/test <small>required</small></span><input id="y-val-file" type="file" accept=".csv,.tsv,.txt,text/csv,text/tab-separated-values"></label>
+              <label><span>X calibration <small>required</small></span><span class="file-picker"><span class="file-picker-button">Choose file</span><span id="x-cal-file-name" class="file-picker-name">No file selected</span></span><input id="x-cal-file" class="sr-only file-input" type="file" accept=".csv,.tsv,.txt,text/csv,text/tab-separated-values"></label>
+              <label><span>y calibration <small>required</small></span><span class="file-picker"><span class="file-picker-button">Choose file</span><span id="y-cal-file-name" class="file-picker-name">No file selected</span></span><input id="y-cal-file" class="sr-only file-input" type="file" accept=".csv,.tsv,.txt,text/csv,text/tab-separated-values"></label>
+              <label><span>X validation/test <small>required</small></span><span class="file-picker"><span class="file-picker-button">Choose file</span><span id="x-val-file-name" class="file-picker-name">No file selected</span></span><input id="x-val-file" class="sr-only file-input" type="file" accept=".csv,.tsv,.txt,text/csv,text/tab-separated-values"></label>
+              <label><span>y validation/test <small>required</small></span><span class="file-picker"><span class="file-picker-button">Choose file</span><span id="y-val-file-name" class="file-picker-name">No file selected</span></span><input id="y-val-file" class="sr-only file-input" type="file" accept=".csv,.tsv,.txt,text/csv,text/tab-separated-values"></label>
             </div>
             <div class="upload-options">
               <label>Axis unit<select id="upload-unit"><option value="index">Feature index</option><option value="nm">nm</option><option value="cm-1">cm⁻¹</option></select></label>
@@ -101,7 +104,20 @@
           </div>
         </article>
 
-        <article class="dataset-detail n4-surface">
+        <article id="bundled-datasets" class="source-card bundled-card n4-surface" data-source="bundled">
+          <div class="source-heading">
+            <label class="source-selector" for="source-bundled">
+              <input id="source-bundled" type="radio" name="dataset-source" value="bundled" checked>
+              <span><span class="overline">Ready-to-run examples</span><strong>Or select a test dataset</strong></span>
+            </label>
+            <span class="n4-badge">Synthetic</span>
+          </div>
+          <p>Choose one example to inspect and run. These realistic synthetic spectra illustrate the workflow; they are not the paper benchmark data.</p>
+          <div id="dataset-options" class="dataset-options" role="radiogroup" aria-label="Test datasets"></div>
+        </article>
+      </div>
+
+      <article class="dataset-detail n4-surface">
           <div class="card-head">
             <div><p class="overline">Active dataset</p><h3 id="dataset-name">Loading…</h3></div>
             <span id="dataset-kind" class="n4-badge">Bundled example</span>
@@ -117,15 +133,7 @@
             <span>Xcal.csv</span><span>Ycal.csv</span><span>Xval.csv</span><span>Yval.csv</span>
           </div>
           <p class="provenance"><strong>Provenance.</strong> <span id="dataset-provenance"></span> <a id="dataset-source-link" href="#" target="_blank" rel="noreferrer">Open the exact source snapshot ↗</a></p>
-        </article>
-
-      </div>
-
-      <div id="bundled-datasets" class="fixture-picker">
-        <div><p class="overline">No files at hand?</p><h3>Try the complete workflow with a bundled example</h3></div>
-        <p>These realistic synthetic spectra illustrate the workflow; they are not the paper benchmark data.</p>
-      </div>
-      <div id="dataset-options" class="dataset-options" role="radiogroup" aria-label="Bundled datasets"></div>
+      </article>
 
       <div class="inspection-grid">
         <article class="chart-panel n4-surface">
@@ -185,11 +193,11 @@
             </article>
             <article class="route-card hpo n4-surface">
               <div class="route-label"><span>2</span><div><p>Conventional search</p><h3>Preprocessing HPO</h3></div></div>
-              <p>External CV screens a preprocessing library with every PLS component count or Ridge regularisation value, then refits the winning pipeline.</p>
+              <p>External CV screens raw X plus a preprocessing library with every PLS component count or Ridge regularisation value, then refits the winning pipeline.</p>
             </article>
             <article class="route-card adaptive n4-surface">
               <div class="route-label"><span>3</span><div><p>Proposed route</p><h3>AOM</h3></div></div>
-              <p>AOM-PLS performs its native operator/component selection. AOM-Ridge fits the compact simplex blender. Both deploy directly on raw spectra.</p>
+              <p>AOM-PLS always tests identity (raw X) in its native operator/component selection. AOM-Ridge includes a raw chain in its compact simplex blender. Both deploy directly on raw spectra.</p>
             </article>
           </div>
           <div class="comparison-definition n4-surface">
@@ -197,6 +205,7 @@
             <div><strong>Three calibration routes</strong><span>Raw reference, external preprocessing HPO and native AOM</span></div>
           </div>
           <div class="fairness-strip"><strong>Fairness lock</strong><span id="fairness-text">Same calibration rows · same held-out rows · same fold assignment · same mean fold-RMSE score</span></div>
+          <p class="selection-note">Selection uses calibration CV only. Because validation stays untouched, a tuned route can legitimately score below its raw candidate on held-out rows; automatically choosing the validation winner would leak the test set.</p>
         </div>
       </div>
     </section>

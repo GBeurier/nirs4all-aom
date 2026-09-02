@@ -147,9 +147,17 @@ const HPO_PIPELINES = [
 ];
 
 const QUICK_PIPELINE_IDS = new Set(["raw", "detrend-1", "sg-s5", "sg-d1-5", "diff-1"]);
+const RAW_PIPELINE = HPO_PIPELINES.find((item) => item.id === "raw");
+const IDENTITY_OPERATOR = OPERATORS.find((item) => item.kind === 0);
+
+function withMandatoryRaw(pipelines) {
+  if (!RAW_PIPELINE) throw new Error("The raw HPO baseline is missing from the pipeline catalogue.");
+  return [RAW_PIPELINE, ...pipelines.filter((item) => item.id !== RAW_PIPELINE.id)];
+}
+
 const SEARCH_PROFILES = {
-  quick: { id: "quick", label: "Quick check", pipelines: HPO_PIPELINES.filter((item) => QUICK_PIPELINE_IDS.has(item.id)) },
-  full: { id: "full", label: "Full HPO", pipelines: HPO_PIPELINES },
+  quick: { id: "quick", label: "Quick check", pipelines: withMandatoryRaw(HPO_PIPELINES.filter((item) => QUICK_PIPELINE_IDS.has(item.id))) },
+  full: { id: "full", label: "Full HPO", pipelines: withMandatoryRaw(HPO_PIPELINES) },
 };
 
 const byId = (id) => document.getElementById(id);
@@ -164,6 +172,8 @@ let lastActivityProgress = 0;
 let lastActivityAnnouncement = "";
 let lastOperatorChart = null;
 let operatorResizeTimer = null;
+let datasetSourceMode = "bundled";
+let controlsLocked = false;
 
 const PHASES = ["data", "pls", "aom-pls", "ridge", "aom-ridge", "results"];
 const RIDGE_ALPHAS = [1e-8, 1e-6, 1e-4, 1e-2, 1, 1e2, 1e4];
@@ -295,26 +305,56 @@ function setupCodeWorkbench() {
   });
 }
 
+function updateFilePickerName(input) {
+  const name = byId(`${input.id}-name`);
+  if (name) name.textContent = input.files?.[0]?.name || "No file selected";
+}
+
 function updateUploadReadiness() {
   const inputs = ["x-cal-file", "y-cal-file", "x-val-file", "y-val-file"].map((id) => byId(id));
   const selected = inputs.filter((input) => input.files?.[0]).length;
   const button = byId("load-upload");
-  button.disabled = selected !== inputs.length;
+  inputs.forEach(updateFilePickerName);
+  button.disabled = controlsLocked || datasetSourceMode !== "upload" || selected !== inputs.length;
   const status = byId("upload-status");
   status.className = "form-status";
   status.textContent = selected === inputs.length
     ? "Four files selected. Validate them to inspect the dataset; nothing will be uploaded."
-    : `${selected}/4 files selected. Add calibration X/y and validation X/y.`;
+    : `${selected}/4 files selected. Add calibration X/y and validation X/y.${datasetSourceMode === "upload" ? "" : " Select ‘Load your X and y files’ to begin."}`;
+}
+
+function syncSourceControls() {
+  const uploadSelected = datasetSourceMode === "upload";
+  byId("source-upload").checked = uploadSelected;
+  byId("source-bundled").checked = !uploadSelected;
+  byId("source-upload").disabled = controlsLocked;
+  byId("source-bundled").disabled = controlsLocked;
+  document.querySelectorAll(".source-card").forEach((card) => {
+    card.dataset.selected = String(card.dataset.source === datasetSourceMode);
+  });
+  document.querySelectorAll(".upload-card input:not([name='dataset-source']), .upload-card select")
+    .forEach((control) => { control.disabled = controlsLocked || !uploadSelected; });
+  document.querySelectorAll(".upload-grid .file-picker")
+    .forEach((picker) => picker.setAttribute("aria-disabled", String(controlsLocked || !uploadSelected)));
+  document.querySelectorAll(".dataset-option")
+    .forEach((control) => { control.disabled = controlsLocked || uploadSelected; });
+  updateUploadReadiness();
+}
+
+function setDatasetSourceMode(mode, markStale = false) {
+  if (!["upload", "bundled"].includes(mode)) throw new Error(`Unknown dataset source: ${mode}`);
+  if (datasetSourceMode !== mode && markStale) markResultsStale();
+  datasetSourceMode = mode;
+  syncSourceControls();
 }
 
 function setControlsLocked(locked) {
-  document.querySelectorAll(".dataset-option, #search-depth, #components, #folds, #operator-controls input, .upload-card input, .upload-card select")
+  controlsLocked = locked;
+  document.querySelectorAll("#search-depth, #components, #folds")
     .forEach((control) => { control.disabled = locked; });
-  if (locked) byId("load-upload").disabled = true;
-  else {
-    const uploadInputs = ["x-cal-file", "y-cal-file", "x-val-file", "y-val-file"].map((id) => byId(id));
-    byId("load-upload").disabled = uploadInputs.some((input) => !input.files?.[0]);
-  }
+  document.querySelectorAll("#operator-controls input")
+    .forEach((control) => { control.disabled = locked || Number(control.value) === IDENTITY_OPERATOR.kind; });
+  syncSourceControls();
 }
 
 function selectedSearchProfile() {
@@ -692,6 +732,7 @@ function renderDatasetOptions() {
     button.setAttribute("aria-checked", String(dataset.id === activeDatasetId));
     button.dataset.loading = String(dataset.id === loadingDatasetId);
     button.setAttribute("aria-busy", String(dataset.id === loadingDatasetId));
+    button.disabled = controlsLocked || datasetSourceMode !== "bundled";
     const radio = document.createElement("span");
     radio.className = "radio";
     const copy = document.createElement("span");
@@ -726,7 +767,7 @@ function setDatasetUi(data) {
   } else {
     link.hidden = true;
   }
-  byId("fairness-text").textContent = `${data.trainRows} calibration rows · ${data.testRows} held-out rows · ${data.cols} shared features`;
+  byId("fairness-text").textContent = `${data.trainRows} calibration rows · ${data.testRows} held-out rows · raw baseline always included`;
   drawSpectra(data);
   drawTargetHistogram(data);
   const [signalMin, signalMax] = extent([...data.trainX.data, ...data.testX.data]);
@@ -740,6 +781,7 @@ function setDatasetUi(data) {
 async function loadBundledDataset(id, runAfterLoad = false, announceReady = true) {
   const dataset = manifest.datasets.find((item) => item.id === id);
   if (!dataset) throw new Error(`Unknown bundled dataset: ${id}`);
+  setDatasetSourceMode("bundled");
   activeDatasetId = id;
   loadingDatasetId = id;
   renderDatasetOptions();
@@ -801,9 +843,11 @@ async function loadBundledDataset(id, runAfterLoad = false, announceReady = true
 }
 
 function selectedOperators() {
-  return [...document.querySelectorAll("#operator-controls input:checked")]
+  const selected = [...document.querySelectorAll("#operator-controls input:checked")]
     .map((input) => OPERATORS.find((operator) => operator.kind === Number(input.value)))
     .filter(Boolean);
+  if (!IDENTITY_OPERATOR) throw new Error("The AOM identity baseline is missing from the operator catalogue.");
+  return [IDENTITY_OPERATOR, ...selected.filter((operator) => operator.kind !== IDENTITY_OPERATOR.kind)];
 }
 
 function renderOperatorControls() {
@@ -815,10 +859,11 @@ function renderOperatorControls() {
     input.type = "checkbox";
     input.value = String(operator.kind);
     input.checked = true;
+    input.disabled = operator.kind === IDENTITY_OPERATOR.kind;
     const name = document.createElement("span");
     name.textContent = operator.name;
     const detail = document.createElement("small");
-    detail.textContent = operator.short;
+    detail.textContent = operator.kind === IDENTITY_OPERATOR.kind ? `${operator.short} · required baseline` : operator.short;
     label.append(input, name, detail);
     container.append(label);
     input.addEventListener("change", () => {
@@ -1746,7 +1791,7 @@ async function runComparison() {
       : "";
     byId("operator-explanation").textContent = `Each card compares the same representative raw spectrum (dashed) with the selected spectral view (solid). Each curve is standardized separately for shape comparison only; fitting uses complete transformed values. Exact settings, CV scores and validation scores are stated above.${edgeNote}`;
     renderLocalConclusion(hpoPlsStats, aomPlsStats, hpoRidgeStats, aomRidgeStats, hpoPls, selected);
-    byId("fairness-text").textContent = `${currentData.trainRows} calibration · ${currentData.testRows} held out · same ${foldCount} folds · mean fold RMSE · parity checks passed`;
+    byId("fairness-text").textContent = `${currentData.trainRows} calibration · ${currentData.testRows} held out · raw included · same ${foldCount} folds · mean fold RMSE · parity checks passed`;
 
     drawRmseChart([
       { rmse: rawPlsStats.rmse }, { rmse: hpoPlsStats.rmse }, { rmse: aomPlsStats.rmse },
@@ -1773,6 +1818,7 @@ async function runComparison() {
 
     if (new URLSearchParams(location.search).has("selftest")) {
       document.documentElement.dataset.selftest = parserSelfTest()
+        && selectionContractSelfTest()
         && namedResults.every((item) => Number.isFinite(item.stats.rmse))
         && byId("rmse-chart").children.length > 10
         && byId("operator-chart").children.length > 15
@@ -1801,6 +1847,7 @@ async function runComparison() {
 }
 
 async function loadUploadedFiles() {
+  setDatasetSourceMode("upload");
   const status = byId("upload-status");
   const inputs = ["x-cal-file", "y-cal-file", "x-val-file", "y-val-file"].map((id) => byId(id));
   if (inputs.some((input) => !input.files[0])) {
@@ -1869,6 +1916,19 @@ function parserSelfTest() {
   }
 }
 
+function selectionContractSelfTest() {
+  const profilesIncludeRaw = Object.values(SEARCH_PROFILES).every((profile) =>
+    profile.pipelines[0]?.id === "raw"
+    && profile.pipelines.filter((item) => item.id === "raw").length === 1);
+  const operatorKinds = selectedOperators().map((operator) => operator.kind);
+  const identityControl = document.querySelector(`#operator-controls input[value="${IDENTITY_OPERATOR?.kind}"]`);
+  return profilesIncludeRaw
+    && operatorKinds[0] === 0
+    && operatorKinds.filter((kind) => kind === 0).length === 1
+    && identityControl?.checked
+    && identityControl?.disabled;
+}
+
 async function initialise() {
   const query = new URLSearchParams(location.search);
   if (query.has("selftest") && query.get("selftest") !== "full") byId("search-depth").value = "quick";
@@ -1879,11 +1939,16 @@ async function initialise() {
   setActivity({ state: "loading", progress: 4, phase: "data", title: "Initialising the demonstration", detail: "Loading the bundled dataset catalogue…" });
   byId("run").addEventListener("click", runComparison);
   byId("load-upload").addEventListener("click", loadUploadedFiles);
+  byId("source-upload").addEventListener("change", () => setDatasetSourceMode("upload", true));
+  byId("source-bundled").addEventListener("change", () => setDatasetSourceMode("bundled", true));
   byId("components").addEventListener("change", markResultsStale);
   byId("folds").addEventListener("change", markResultsStale);
   byId("search-depth").addEventListener("change", () => updateSearchDepthUi(true));
-  ["x-cal-file", "y-cal-file", "x-val-file", "y-val-file"].forEach((id) => byId(id).addEventListener("change", updateUploadReadiness));
-  updateUploadReadiness();
+  ["x-cal-file", "y-cal-file", "x-val-file", "y-val-file"].forEach((id) => byId(id).addEventListener("change", () => {
+    setDatasetSourceMode("upload");
+    updateUploadReadiness();
+  }));
+  setDatasetSourceMode("bundled");
 
   const manifestResponse = await fetch("datasets/manifest.json");
   if (!manifestResponse.ok) throw new Error(`Dataset manifest failed to load (${manifestResponse.status}).`);
@@ -1921,7 +1986,7 @@ async function initialise() {
   if (runtimeReady && currentData && query.has("selftest")) await runComparison();
 }
 
-window.__AOM_DEMO__ = { parseXText, parseYText, validatePartitions, parserSelfTest };
+window.__AOM_DEMO__ = { parseXText, parseYText, validatePartitions, parserSelfTest, selectionContractSelfTest, selectedOperators };
 
 initialise().catch((error) => {
   console.error(error);

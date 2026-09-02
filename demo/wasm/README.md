@@ -4,6 +4,7 @@ This self-contained static application turns the AOM paper companion into a
 complete, inspectable calibration experiment. In one browser tab it guides a
 chemometrician through the following path:
 
+- offers an explicit, mutually exclusive choice between local files and bundled examples;
 - starts from local, separate `Xcal/Ycal/Xval/Yval` (or train/test) CSV/TSV files;
 - offers three traceable, visually realistic `nirs4all` synthetic NIR examples when no local data are available;
 - visualizes calibration and held-out spectra plus response distributions;
@@ -48,6 +49,8 @@ sets `data-selftest="pass"` on the root HTML element. A bundled dataset can be
 selected directly with `?dataset=food_composition`, `grain_starch`, or
 `batch_process`.
 Use `?selftest=full` only when timing the complete protocol-matched HPO automatically.
+The self-test also verifies that raw X is present exactly once in every HPO
+profile and that Identity is present and locked in the AOM-PLS bank.
 
 The normal page does not launch a fit automatically: it waits for the user to
 inspect the active split and click **Run PLS and Ridge comparison**. Self-test

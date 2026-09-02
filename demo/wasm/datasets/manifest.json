@@ -9,8 +9,8 @@
   "datasets": [
     {
       "id": "food_composition",
-      "label": "Food composition",
-      "short": "301 wavelengths · protein",
+      "label": "Food protein",
+      "short": "Food spectra · predict protein",
       "unit": "nm",
       "signalType": "absorbance",
       "target": "protein percentage",
@@ -21,7 +21,7 @@
     {
       "id": "grain_starch",
       "label": "Grain starch",
-      "short": "301 wavelengths · starch",
+      "short": "Grain spectra · predict starch",
       "unit": "nm",
       "signalType": "absorbance",
       "target": "starch percentage",
@@ -31,8 +31,8 @@
     },
     {
       "id": "batch_process",
-      "label": "Multi-batch process",
-      "short": "301 wavelengths · water",
+      "label": "Multi-batch water",
+      "short": "Process spectra · four batches",
       "unit": "nm",
       "signalType": "absorbance",
       "target": "water percentage",
