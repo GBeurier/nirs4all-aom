@@ -53,7 +53,7 @@
       <div>
         <p class="kicker">AOM paper companion</p>
         <h1 id="page-title">Compare PLS and Ridge calibration strategies on your spectra</h1>
-        <p class="hero-copy">Bring separate calibration and validation <code>X</code>/<code>y</code> files, inspect them, then compare three routes for both model families: a raw-spectrum reference, conventional preprocessing HPO and AOM. A documented example is available when you do not have files at hand.</p>
+        <p class="hero-copy">Bring separate calibration and validation <code>X</code>/<code>y</code> files, inspect them, then compare Raw PLS / Raw Ridge, conventional preprocessing HPO and AOM. A documented example is available when you do not have files at hand.</p>
         <div class="hero-actions">
           <a class="n4-button" href="#upload-card">Load my data</a>
           <a class="text-action" href="#bundled-datasets">Try an example</a>
@@ -160,11 +160,11 @@
           <div class="card-head"><div><p class="overline">Configuration</p><h3>Experiment controls</h3></div><span class="n4-badge">Editable</span></div>
           <label class="field">Input spectra
             <select id="input-basis"><option value="raw" selected>Raw</option><option value="snv">SNV</option><option value="msc">MSC</option></select>
-            <small>This upstream input is shared by the reference, HPO and AOM. MSC is fitted on calibration X only, then replayed on validation X.</small>
+            <small>This upstream input is shared by the standalone PLS/Ridge models, HPO and AOM. MSC is fitted on calibration X only, then replayed on validation X.</small>
           </label>
           <label class="field">Search effort
             <select id="search-depth"><option value="quick">Quick check</option><option value="full" selected>Full HPO</option></select>
-            <small id="search-depth-note">Broad preprocessing library evaluated on the exact same folds and score as the input reference and AOM.</small>
+            <small id="search-depth-note">Broad preprocessing library evaluated on the exact same folds and score as Raw PLS / Raw Ridge and AOM.</small>
           </label>
           <label class="field">Maximum PLS components
             <select id="components"><option>5</option><option>10</option><option>15</option><option>20</option><option selected>25</option></select>
@@ -193,7 +193,7 @@
         <div class="routes">
           <div class="route-matrix">
             <article class="route-card baseline n4-surface">
-              <div class="route-label"><span>1</span><div><p>Input reference</p><h3 id="reference-route-title">Raw spectra</h3></div></div>
+              <div class="route-label"><span>1</span><div><p id="reference-route-label">Raw PLS / Raw Ridge</p><h3 id="reference-route-title">Raw spectra</h3></div></div>
               <p id="reference-route-copy">PLS selects its component count by CV and Ridge selects α on raw X. No additional strict-linear operator is tested.</p>
             </article>
             <article class="route-card hpo n4-surface">
@@ -207,7 +207,7 @@
           </div>
           <div class="comparison-definition n4-surface">
             <div><strong>Two model families</strong><span>PLS screens 1–H components; Ridge screens a logarithmic α grid</span></div>
-            <div><strong>Three calibration routes</strong><span>Selected-input reference, external preprocessing HPO and native AOM</span></div>
+            <div><strong>Three calibration routes</strong><span id="baseline-route-summary">Raw PLS / Raw Ridge, external preprocessing HPO and native AOM</span></div>
           </div>
           <div class="fairness-strip"><strong>Fairness lock</strong><span id="fairness-text">Same calibration rows · same held-out rows · same fold assignment · same pooled out-of-fold RMSE</span></div>
           <p class="selection-note">Selection uses calibration CV only. Because validation stays untouched, a tuned route can legitimately score below its identity candidate on held-out rows; automatically choosing the validation winner would leak the test set.</p>
@@ -225,48 +225,66 @@
         <article class="verdict-card n4-surface">
           <div class="verdict-head"><div><p class="overline">PLS · best held-out route</p><strong id="rmse-delta">Awaiting results</strong></div><span>Held-out RMSE</span></div>
           <div class="verdict-selections">
-            <div class="raw-selection"><span>Input reference</span><strong id="pls-raw-card">—</strong><small id="pls-raw-card-detail">The selected-input baseline will appear here.</small></div>
+            <div class="raw-selection"><span id="pls-baseline-label">Raw PLS</span><strong id="pls-raw-card">—</strong><small id="pls-raw-card-detail">The Raw PLS result will appear here.</small></div>
             <div class="hpo-selection"><span>HPO selected</span><strong id="pls-hpo-card">—</strong><small id="pls-hpo-card-detail">The winning HPO pipeline will appear here.</small></div>
             <div class="aom-selection"><span>AOM selected</span><strong id="operator">—</strong><small id="operator-detail">The AOM operator will appear here.</small></div>
           </div>
-          <p id="delta-detail">Run the experiment to compare Input, HPO and AOM directly.</p>
+          <p id="delta-detail">Run the experiment to compare Raw PLS, PLS-HPO and AOM-PLS directly.</p>
         </article>
         <article class="verdict-card n4-surface">
           <div class="verdict-head"><div><p class="overline">Ridge · best held-out route</p><strong id="ridge-rmse-delta">Awaiting results</strong></div><span>Held-out RMSE</span></div>
           <div class="verdict-selections">
-            <div class="raw-selection"><span>Input reference</span><strong id="ridge-raw-card">—</strong><small id="ridge-raw-card-detail">The selected-input baseline will appear here.</small></div>
+            <div class="raw-selection"><span id="ridge-baseline-label">Raw Ridge</span><strong id="ridge-raw-card">—</strong><small id="ridge-raw-card-detail">The Raw Ridge result will appear here.</small></div>
             <div class="hpo-selection"><span>HPO selected</span><strong id="ridge-hpo-card">—</strong><small id="ridge-hpo-card-detail">The winning HPO pipeline will appear here.</small></div>
             <div class="aom-selection"><span>AOM selected</span><strong id="ridge-aom-card">—</strong><small id="ridge-aom-card-detail">The AOM-selected shared chain will appear here.</small></div>
           </div>
-          <p id="ridge-delta-detail">Run the experiment to compare Input, HPO and AOM directly.</p>
+          <p id="ridge-delta-detail">Run the experiment to compare Raw Ridge, Ridge-HPO and AOM-Ridge directly.</p>
         </article>
       </div>
-
-      <details class="hpo-result-details n4-surface">
-        <summary><span>HPO search detail</span><small id="hpo-search-summary">Available after the experiment</small></summary>
-        <div class="hpo-detail-grid">
-          <div><strong>Protocol</strong><p id="hpo-protocol-detail">The shared fold plan, scoring rule and parity checks will appear here.</p></div>
-          <div><strong>PLS search</strong><p id="hpo-pls-detail">Component grid and winning preprocessing pipeline.</p></div>
-          <div><strong>Ridge search</strong><p id="hpo-ridge-detail">Alpha grid and winning preprocessing pipeline.</p></div>
-        </div>
-        <div class="hpo-score-table-wrap" role="region" aria-label="Complete HPO cross-validation scores" tabindex="0">
-          <table class="hpo-score-table">
-            <caption>Every strict-linear pipeline tested after the selected input spectra. Each row reports calibration CV only. The Identity row must match the CV score printed under Input reference above; it is not the separate held-out validation RMSE.</caption>
-            <thead><tr><th scope="col">Pretreatment</th><th scope="col">PLS components</th><th scope="col">PLS CV RMSE</th><th scope="col">Ridge α</th><th scope="col">Ridge CV RMSE</th><th scope="col">Selected</th></tr></thead>
-            <tbody id="hpo-all-scores"><tr><td colspan="6">Run the experiment to populate all candidate scores.</td></tr></tbody>
-          </table>
-        </div>
-      </details>
 
       <div class="results-table-wrap n4-surface">
         <table class="results-table method-results">
           <thead><tr><th scope="col">Family</th><th scope="col">Calibration route</th><th scope="col">PP pipeline</th><th scope="col">Model</th><th scope="col">RMSE CV ↓</th><th scope="col">RMSE VAL ↓</th><th scope="col">R² VAL ↑</th><th scope="col" class="compute-time-heading">Local compute time*<small>Browser elapsed</small></th><th scope="col">Search workload<small>Model HPO / folds / PP</small></th></tr></thead>
           <tbody>
-            <tr data-family="pls"><th scope="row" rowspan="3">PLS</th><td><span class="method-dot baseline"></span>Input reference</td><td id="pls-default-selection">—</td><td id="pls-default-model">—</td><td id="pls-default-cv">—</td><td id="pls-default-rmse">—</td><td id="pls-default-r2">—</td><td id="pls-default-time" class="compute-time">—</td><td id="pls-default-workload" class="search-workload">—</td></tr>
+            <tr data-family="pls"><th scope="rowgroup" rowspan="4">PLS</th><td><span class="method-dot baseline"></span><span id="pls-default-route">Raw PLS</span></td><td id="pls-default-selection">—</td><td id="pls-default-model">—</td><td id="pls-default-cv">—</td><td id="pls-default-rmse">—</td><td id="pls-default-r2">—</td><td id="pls-default-time" class="compute-time">—</td><td id="pls-default-workload" class="search-workload">—</td></tr>
             <tr data-family="pls"><td><span class="method-dot hpo"></span>Preprocessing HPO</td><td id="pls-hpo-selection">—</td><td id="pls-hpo-model">—</td><td id="pls-hpo-cv">—</td><td id="pls-hpo-rmse">—</td><td id="pls-hpo-r2">—</td><td id="pls-hpo-time" class="compute-time">—</td><td id="pls-hpo-workload" class="search-workload">—</td></tr>
+            <tr class="hpo-detail-row" data-family="pls"><td colspan="8" class="hpo-detail-cell">
+              <details class="hpo-result-details">
+                <summary><span>PLS HPO search details</span><small id="hpo-pls-search-summary">Open after the experiment to inspect every candidate</small></summary>
+                <div class="hpo-detail-grid model-specific">
+                  <div><strong>Shared protocol</strong><p id="hpo-pls-protocol-detail">The shared fold plan, scoring rule and parity checks will appear here.</p></div>
+                  <div><strong>PLS search</strong><p id="hpo-pls-detail">Component grid and winning preprocessing pipeline.</p></div>
+                </div>
+                <div class="hpo-score-table-wrap" role="region" aria-label="Complete PLS HPO cross-validation scores" tabindex="0">
+                  <table class="hpo-score-table">
+                    <caption id="hpo-pls-score-caption">PLS HPO candidates and calibration CV scores.</caption>
+                    <thead><tr><th scope="col">Pretreatment</th><th scope="col">PLS components</th><th scope="col">PLS CV RMSE</th><th scope="col">Selected</th></tr></thead>
+                    <tbody id="hpo-pls-scores"><tr><td colspan="4">Run the experiment to populate all PLS candidates.</td></tr></tbody>
+                  </table>
+                </div>
+              </details>
+            </td></tr>
             <tr data-family="pls" class="aom-row"><td><span class="method-dot adaptive"></span>AOM-PLS</td><td id="aom-pls-selection">—</td><td id="aom-pls-model">—</td><td id="aom-pls-cv">—</td><td id="aom-pls-rmse">—</td><td id="aom-pls-r2">—</td><td id="aom-pls-time" class="compute-time">—</td><td id="aom-pls-workload" class="search-workload">—</td></tr>
-            <tr data-family="ridge"><th scope="row" rowspan="3">Ridge</th><td><span class="method-dot baseline"></span>Input reference</td><td id="ridge-default-selection">—</td><td id="ridge-default-model">—</td><td id="ridge-default-cv">—</td><td id="ridge-default-rmse">—</td><td id="ridge-default-r2">—</td><td id="ridge-default-time" class="compute-time">—</td><td id="ridge-default-workload" class="search-workload">—</td></tr>
+          </tbody>
+          <tbody>
+            <tr data-family="ridge"><th scope="rowgroup" rowspan="4">Ridge</th><td><span class="method-dot baseline"></span><span id="ridge-default-route">Raw Ridge</span></td><td id="ridge-default-selection">—</td><td id="ridge-default-model">—</td><td id="ridge-default-cv">—</td><td id="ridge-default-rmse">—</td><td id="ridge-default-r2">—</td><td id="ridge-default-time" class="compute-time">—</td><td id="ridge-default-workload" class="search-workload">—</td></tr>
             <tr data-family="ridge"><td><span class="method-dot hpo"></span>Preprocessing HPO</td><td id="ridge-hpo-selection">—</td><td id="ridge-hpo-model">—</td><td id="ridge-hpo-cv">—</td><td id="ridge-hpo-rmse">—</td><td id="ridge-hpo-r2">—</td><td id="ridge-hpo-time" class="compute-time">—</td><td id="ridge-hpo-workload" class="search-workload">—</td></tr>
+            <tr class="hpo-detail-row" data-family="ridge"><td colspan="8" class="hpo-detail-cell">
+              <details class="hpo-result-details">
+                <summary><span>Ridge HPO search details</span><small id="hpo-ridge-search-summary">Open after the experiment to inspect every candidate</small></summary>
+                <div class="hpo-detail-grid model-specific">
+                  <div><strong>Shared protocol</strong><p id="hpo-ridge-protocol-detail">The shared fold plan, scoring rule and parity checks will appear here.</p></div>
+                  <div><strong>Ridge search</strong><p id="hpo-ridge-detail">Alpha grid and winning preprocessing pipeline.</p></div>
+                </div>
+                <div class="hpo-score-table-wrap" role="region" aria-label="Complete Ridge HPO cross-validation scores" tabindex="0">
+                  <table class="hpo-score-table">
+                    <caption id="hpo-ridge-score-caption">Ridge HPO candidates and calibration CV scores.</caption>
+                    <thead><tr><th scope="col">Pretreatment</th><th scope="col">Ridge α</th><th scope="col">Ridge CV RMSE</th><th scope="col">Selected</th></tr></thead>
+                    <tbody id="hpo-ridge-scores"><tr><td colspan="4">Run the experiment to populate all Ridge candidates.</td></tr></tbody>
+                  </table>
+                </div>
+              </details>
+            </td></tr>
             <tr data-family="ridge" class="aom-row"><td><span class="method-dot adaptive"></span>AOM-Ridge</td><td id="aom-ridge-selection">—</td><td id="aom-ridge-model">—</td><td id="aom-ridge-cv">—</td><td id="aom-ridge-rmse">—</td><td id="aom-ridge-r2">—</td><td id="aom-ridge-time" class="compute-time">—</td><td id="aom-ridge-workload" class="search-workload">—</td></tr>
           </tbody>
         </table>
@@ -277,20 +295,20 @@
           <div><strong>PLS components · Ridge α</strong><span>Number of latent PLS dimensions and Ridge regularisation strength. Both are selected by calibration CV.</span></div>
           <div><strong>Time · workload</strong><span>Elapsed time is local. Workload separates model HPO, CV folds and preprocessing combinations (HPO) or operators × order (AOM).</span></div>
         </div>
-        <p class="table-note">* Elapsed wall-clock compute is measured in this browser and depends on your device. Search workload reports the model grid, fold count and preprocessing search separately. The paper's runtime comparison is AOM against preprocessing HPO—not against the selected-input reference.</p>
+        <p class="table-note">* Elapsed wall-clock compute is measured in this browser and depends on your device. Search workload reports the model grid, fold count and preprocessing search separately. The paper's runtime comparison is AOM against preprocessing HPO—not against the standalone PLS/Ridge route.</p>
       </div>
 
       <div class="diagnostic-grid">
         <article class="chart-panel performance-panel n4-surface">
-          <div class="chart-title"><div><p class="overline">Independent validation</p><h3>RMSE by family and calibration route</h3></div><div class="legend"><span class="legend-key baseline"></span>Input <span class="legend-key hpo"></span>HPO <span class="legend-key aom"></span>AOM</div></div>
+          <div class="chart-title"><div><p class="overline">Independent validation</p><h3>RMSE by family and calibration route</h3></div><div class="legend"><span class="legend-key baseline"></span><span id="rmse-baseline-legend">Raw PLS / Ridge</span> <span class="legend-key hpo"></span>HPO <span class="legend-key aom"></span>AOM</div></div>
           <svg id="rmse-chart" class="n4viz" viewBox="0 0 1280 420" role="img" aria-label="Validation RMSE for six PLS and Ridge calibration routes" aria-describedby="result-summary"></svg>
         </article>
         <article class="chart-panel prediction-panel n4-surface">
-          <div class="chart-title"><div><p class="overline">PLS · independent validation</p><h3>Measured vs predicted</h3></div><div class="legend"><span class="legend-key baseline"></span>Input <span class="legend-key hpo"></span>HPO <span class="legend-key aom"></span>AOM</div></div>
+          <div class="chart-title"><div><p class="overline">PLS · independent validation</p><h3>Measured vs predicted</h3></div><div class="legend"><span class="legend-key baseline"></span><span id="pls-baseline-legend">Raw PLS</span> <span class="legend-key hpo"></span>HPO <span class="legend-key aom"></span>AOM</div></div>
           <svg id="pls-prediction-chart" class="n4viz" viewBox="0 0 620 420" role="img" aria-label="Measured versus predicted PLS responses" aria-describedby="result-summary"></svg>
         </article>
         <article class="chart-panel prediction-panel n4-surface">
-          <div class="chart-title"><div><p class="overline">Ridge · independent validation</p><h3>Measured vs predicted</h3></div><div class="legend"><span class="legend-key baseline"></span>Input <span class="legend-key hpo"></span>HPO <span class="legend-key aom"></span>AOM</div></div>
+          <div class="chart-title"><div><p class="overline">Ridge · independent validation</p><h3>Measured vs predicted</h3></div><div class="legend"><span class="legend-key baseline"></span><span id="ridge-baseline-legend">Raw Ridge</span> <span class="legend-key hpo"></span>HPO <span class="legend-key aom"></span>AOM</div></div>
           <svg id="ridge-prediction-chart" class="n4viz" viewBox="0 0 620 420" role="img" aria-label="Measured versus predicted Ridge responses" aria-describedby="result-summary"></svg>
         </article>
         <article class="chart-panel selection-panel n4-surface">

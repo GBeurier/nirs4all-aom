@@ -10,12 +10,12 @@ chemometrician through the following path:
 - visualizes calibration and held-out spectra plus response distributions;
 - keeps the local-file importer visible and reports file-selection/validation errors in place;
 - offers Raw, SNV, or calibration-fitted MSC as the shared upstream input for
-  the reference, HPO, and AOM routes;
-- cross-validates input-reference PLS from 1 to an effective maximum of 25 components;
+  the standalone PLS/Ridge, HPO, and AOM routes;
+- cross-validates standalone Raw/SNV/MSC PLS from 1 to an effective maximum of 25 components;
 - offers quick and full model grids over one editable preprocessing bank;
 - builds the same ordered chains for HPO and AOM, with a selectable maximum
   chain length of one, two, or three operators;
-- evaluates input-reference, HPO and AOM candidates with the same deterministic fold
+- evaluates standalone PLS/Ridge, HPO and AOM candidates with the same deterministic fold
   assignment and pooled out-of-fold RMSE; the identity route is an explicit
   subset of HPO, and runtime assertions verify that its selected component and
   CV score match exactly before results are displayed;
@@ -23,7 +23,7 @@ chemometrician through the following path:
   × fold fits, independently of the native AOM selector;
 - runs native AOM-PLS over the shared strict-linear chain descriptor (with an
   explicit stable-budget fallback for small or rank-deficient browser data);
-- cross-validates input-reference Ridge over a logarithmic alpha grid;
+- cross-validates standalone Raw/SNV/MSC Ridge over a logarithmic alpha grid;
 - fits native AOM-PLS and AOM-Ridge over the same configurable strict-linear
   preprocessing chains and model grids used by the external HPO routes;
 - reports all six calibration stages through a persistent progress indicator;
@@ -64,7 +64,7 @@ mode runs all six routes automatically.
 
 The browser times describe only this compact local run and are intentionally
 separated from the paper's runtime claim. In the paper, AOM is compared with the
-full preprocessing-HPO protocol, not with the inexpensive input reference.
+full preprocessing-HPO protocol, not with the inexpensive standalone PLS/Ridge route.
 
 ## Reproducible inputs
 
