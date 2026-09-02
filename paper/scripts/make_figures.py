@@ -198,12 +198,14 @@ def fig_concept() -> None:
             clip_on=False,
         )
         ax.add_patch(bg)
-        # Accent ribbon under the title.
+        # Accent ribbon separates the header from the workflow rows.  Keep the
+        # title and subtitle on distinct baselines: the previous bottom-aligned
+        # pair could collide after PDF font substitution.
         ax.add_patch(
             Rectangle(
-                (col["x"] + 0.016, 0.866),
+                (col["x"] + 0.016, 0.814),
                 col["w"] - 0.032,
-                0.012,
+                0.010,
                 facecolor=col["bar"],
                 edgecolor="none",
                 zorder=-3,
@@ -211,26 +213,26 @@ def fig_concept() -> None:
         )
         ax.text(
             col["x"] + col["w"] / 2,
-            0.905,
+            0.910,
             col["title"],
             ha="center",
-            va="bottom",
+            va="center",
             weight="bold",
             color=INK,
-            fontsize=9.4,
+            fontsize=9.1,
         )
         ax.text(
             col["x"] + col["w"] / 2,
-            0.884,
+            0.855,
             col["subtitle"],
             ha="center",
-            va="bottom",
+            va="center",
             color=MUTED,
             fontsize=7.6,
             style="italic",
         )
 
-    rows_y = [0.755, 0.625, 0.495, 0.365, 0.235]
+    rows_y = [0.735, 0.610, 0.485, 0.360, 0.235]
     left_text = [
         "many preprocessing\npipelines",
         "CV selects a\ncomplete pipeline",

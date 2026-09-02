@@ -7,7 +7,7 @@ Companion code for the paper *"Operator-adaptive PLS and Ridge calibration for N
 This repository ships three sklearn-compatible model families plus benchmark runners:
 
 - **`aom_nirs.pls`** — AOM-PLS, POP-PLS, AOM-PLS-DA, POP-PLS-DA. Operator-adaptive PLS that integrates strict-linear preprocessing operators (identity, Savitzky-Golay, finite difference, detrend, Norris-Williams, Whittaker, FCK) into the calibration via covariance / NIPALS / SIMPLS identities. Replaces external preprocessing grid-search.
-- **`aom_nirs.ridge`** — AOM-Ridge family (`AOMRidgeRegressor`, `AOMRidgeBlender`, `AOMRidgeAutoSelector`, `AOMRidgeClassifier`, plus `AOMRidgePLS`, `AOMMultiKernelRidge`, `AOMMultiBranchMKL`, `AOMLocalRidge`). Dual / kernel Ridge with operator-mixture preprocessing. The paper's best empirical result (median RMSEP ratio 0.918 vs Ridge-default on 32 NIRS datasets, Wilcoxon Holm-corrected $p = 2.6\times 10^{-4}$).
+- **`aom_nirs.ridge`** — AOM-Ridge family (`AOMRidgeRegressor`, `AOMRidgeBlender`, `AOMRidgeAutoSelector`, `AOMRidgeClassifier`, plus `AOMRidgePLS`, `AOMMultiKernelRidge`, `AOMMultiBranchMKL`, `AOMLocalRidge`). Dual / kernel Ridge with operator-mixture preprocessing. The paper's best empirical result (median RMSEP ratio 0.918 vs Ridge-default on 32 NIRS datasets, two-sided Wilcoxon Holm-corrected $p = 5.2\times 10^{-4}$).
 - **`aom_nirs.fast`** — FastAOM chain-screening framework. Adjoint-only covariance screening with diversity-aware top-k, low-rank kernel evaluator, and four sklearn-style models (`SingleChainPLSRidge`, `HardAOMChainPLSRidge`, `SoftAOMChainPLSRidge`, `SparseChainPLSRidge`).
 
 ## Installation
@@ -61,6 +61,13 @@ A full reproduction of one smoke dataset for AOM-PLS, AOM-Ridge, and FastAOM is 
 For a user-facing split-aware tour of the full AOM family, run `examples/04_aom_panoply.py`.
 See `docs/aom_panoply.md` for the standalone AOM splitter guide.
 
+## Live WebAssembly demo
+
+The [AOM-PLS browser demonstration](https://gbeurier.github.io/nirs4all-aom/)
+runs the portable `n4m` engine entirely in WebAssembly, screens its strict-linear
+operator bank and predicts held-out raw spectra from original-grid coefficients.
+Its self-contained source and staged bundle are in [`demo/wasm`](demo/wasm/).
+
 ## Relationship to other repos
 
 - **`nirs4all`** ([GitHub](https://github.com/GBeurier/nirs4all)) — NIRS instrumentation, acquisition, and provenance context for local benchmark inputs. The AOM methods, benchmark runners, result tables, and manuscript artifacts are distributed from this `nirs4all-aom` repository.
@@ -85,6 +92,6 @@ and [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).
   title  = {nirs4all-aom: Adaptive Operator-Mixture PLS and Ridge for NIR spectroscopy},
   year   = {2026},
   url    = {https://github.com/GBeurier/nirs4all-aom},
-  version = {0.10.1}
+  version = {0.10.4}
 }
 ```

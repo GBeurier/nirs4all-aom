@@ -203,16 +203,17 @@ def render_latex(summary: pd.DataFrame, n_audit_overlap: int) -> str:
         "AOMRidge-AutoSelect-headline-spxy3": "AOMRidge-AutoSelect",
     }
     lines = [
-        r"\begin{tabularx}{\linewidth}{Xrrrr}",
+        r"\begin{tabularx}{\linewidth}{Xcccc}",
         r"\toprule",
-        r"Variant & Audit datasets & Seeds 0/1/2 complete & Max RMSEP span across seeds & Datasets with non-zero span \\",
+        r"Variant & Audit $N$ & Complete $N$ & Max span & Non-zero $N$ \\",
         r"\midrule",
     ]
     for _, r in summary.iterrows():
         label = pretty.get(r["variant"], r["variant"])
+        label_tex = label.replace("_", r"\_").replace("-", r"-\allowbreak{}")
         span = f"{r['max_rmsep_span']:.2e}" if r["max_rmsep_span"] > 0 else "0"
         lines.append(
-            f"{label.replace('_', r'\_').replace('-', r'-\allowbreak{}')} & "
+            f"{label_tex} & "
             f"{int(r['n_audit_datasets'])} & "
             f"{int(r['n_full_seeds'])} & "
             f"{span} & "

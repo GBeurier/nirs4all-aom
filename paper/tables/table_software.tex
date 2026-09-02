@@ -2,8 +2,9 @@
 \toprule
 Component & Tests / evidence & Status \\
 \midrule
-\texttt{nirs4all-aom} Python package & AOM-PLS, POP-PLS, AOM-Ridge and FastAOM implementations, with unit tests and sklearn-compatible APIs. & public software \\
-\texttt{nirs4all-aom} benchmark artifacts & Benchmark runners, result CSVs, aggregation scripts, figure builders and manuscript tables used here. & release with paper \\
+\texttt{nirs4all-aom} Python package & AOM-PLS, POP-PLS, AOM-Ridge and FastAOM implementations, with unit tests and sklearn-compatible APIs. & reference implementation \\
+\texttt{nirs4all-methods} / \texttt{n4m} (C\texttt{++}) & Portable C\texttt{++} core with Python, R and JavaScript/WebAssembly entry points; matches the Python reference to numerical precision. & distributed implementation \\
+\texttt{nirs4all-aom} benchmark artifacts & Benchmark runners, result CSVs, aggregation scripts, figure builders and manuscript tables used here. & versioned repository \\
 \texttt{nirs4all} instrumentation context & NIRS instrumentation, acquisition and provenance context for local benchmark inputs. & instrumentation software \\
 Supplementary validation dossier & Cohort manifest, missing-dataset audit, paired statistics and software-readiness notes distributed with \texttt{nirs4all-aom}. & public evidence \\
 \bottomrule
