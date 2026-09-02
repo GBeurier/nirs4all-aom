@@ -2329,12 +2329,15 @@ def write_v3_stats(rows: list[dict], dfs: dict[str, pd.DataFrame]) -> None:
         lines.append(f"  - {method}: {rank:.2f}")
     (REVIEW / "v3_stats.md").write_text("\n".join(lines) + "\n")
 
-    current = (REVIEW / "final_stats.md").read_text()
+    final_stats_path = REVIEW / "final_stats.md"
+    if not final_stats_path.exists():
+        return
+    current = final_stats_path.read_text()
     marker = "\n## v3 FastAOM and cartesian-HPO supplement\n"
     if marker in current:
         current = current.split(marker)[0].rstrip() + "\n"
     addition = marker + "\n".join(lines[2:]) + "\n"
-    (REVIEW / "final_stats.md").write_text(current.rstrip() + "\n" + addition)
+    final_stats_path.write_text(current.rstrip() + "\n" + addition)
 
 
 def main() -> int:
