@@ -10,18 +10,18 @@ chemometrician through the following path:
 - visualizes calibration and held-out spectra plus response distributions;
 - keeps the local-file importer visible and reports file-selection/validation errors in place;
 - cross-validates raw PLS from 1 to an effective maximum of 25 components;
-- offers a quick search and a full 83-pipeline preprocessing HPO for PLS and
-  Ridge;
+- offers quick and full model grids over one editable preprocessing bank;
+- builds the same ordered chains for HPO and AOM, with a selectable maximum
+  chain length of one, two, or three operators;
 - evaluates raw, HPO and AOM candidates with the same deterministic fold
-  assignment and arithmetic mean of fold RMSEs; the raw route is an explicit
-  subset of HPO, and runtime parity gates verify both that subset and native
-  AOM identity before results are displayed;
-- runs native AOM-PLS over its editable strict-linear bank, then confirms the
-  selected component count through exact native prefix checks (with an explicit
-  common stable-budget fallback applied to raw, HPO and AOM for small or
-  rank-deficient browser datasets);
+  assignment and pooled out-of-fold RMSE; the raw route is an explicit
+  subset of HPO, and runtime parity gates verify that subset before results are
+  displayed;
+- runs native AOM-PLS over the shared strict-linear chain descriptor (with an
+  explicit stable-budget fallback for small or rank-deficient browser data);
 - cross-validates raw Ridge over a logarithmic alpha grid;
-- fits the native compact AOM-Ridge simplex blender;
+- fits native AOM-PLS and AOM-Ridge over the same configurable strict-linear
+  preprocessing chains and model grids used by the external HPO routes;
 - reports all six calibration stages through a persistent progress indicator;
 - compares all six routes on the same untouched validation rows;
 - displays every HPO preprocessing pipeline with its best PLS/Ridge CV setting
@@ -49,8 +49,9 @@ sets `data-selftest="pass"` on the root HTML element. A bundled dataset can be
 selected directly with `?dataset=food_composition`, `grain_starch`, or
 `batch_process`.
 Use `?selftest=full` only when timing the complete protocol-matched HPO automatically.
-The self-test also verifies that raw X is present exactly once in every HPO
-profile and that Identity is present and locked in the AOM-PLS bank.
+The self-test also verifies that raw X is present exactly once, that Identity
+is locked, and that the native chain descriptor matches the displayed shared
+bank.
 
 The normal page does not launch a fit automatically: it waits for the user to
 inspect the active split and click **Run PLS and Ridge comparison**. Self-test
@@ -62,8 +63,9 @@ full preprocessing-HPO protocol, not with the inexpensive raw reference.
 
 ## Reproducible inputs
 
-The committed JavaScript/WASM bundle is the public `@nirs4all/methods`
-**1.0.13** release. Refresh it from the pinned npm version with:
+The committed JavaScript/WASM bundle is built from `nirs4all-methods` commit
+`abd45d95`, which adds the configurable AOM chain-sweep browser surface.
+Refresh it from a built sibling checkout with:
 
 ```bash
 ./stage_bundle.sh
