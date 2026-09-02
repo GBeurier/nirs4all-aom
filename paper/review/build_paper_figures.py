@@ -208,6 +208,34 @@ RIDGE_HPO_GLOB = "benchmarks/runs/scenarios/paper_aom_linear_hpo_full_cartesian_
 CLS_AOMPLS = ROOT / "benchmarks/runs/pls/paper_aom_aompls_da_seeds012/results.csv"
 CLS_AOMRIDGE = ROOT / "benchmarks/runs/ridge/paper_aom_aomridge_cls_seeds012/results.csv"
 
+# Audited class metadata for the 17-row classification inventory.  The local
+# benchmark checkout does not redistribute every third-party response vector,
+# so these values make the cohort table reproducible without pretending that a
+# missing local CSV implies an unknown class structure.
+CLASSIFICATION_METADATA = {
+    "CoffeeType_kenstone70_strat": (7, 0.14),
+    "Species_56_Bagnall": (2, 0.52),
+    "Oocist2C_333_Maia_Acc87.6": (2, 0.52),
+    "Sporozoite2C_229_Maia_Acc94.5": (2, 0.60),
+    "CT2C_1057_CIAT_Acc": (2, 0.73),
+    "labels_kenstone70_strat": (9, 0.11),
+    "Strawberry2C_983_Holland_Acc94.3": (2, 0.64),
+    "Beef_Impurity_60_AlJowder": (5, 0.20),
+    "FinalScoreBin_grp70_30_classStrat": (2, 0.58),
+    "ScoreBin_grp70_30_classStrat": (2, 0.77),
+    "Genotype10_250": (10, 0.10),
+    "Group9_1856": (9, 0.16),
+    "Group_2185": (10, 0.18),
+    "InOut_1264": (2, 0.59),
+    "Species_code_grpStrat70_30_bySpecimen": (5, 0.31),
+    "C2_511_Davrieux_Acc82": (2, 262 / 511),
+    "C5_511_Davrieux_Acc82": (5, 0.42),
+}
+
+# This excluded manifest row is described by the public dataset identifier, but
+# its split CSVs are deliberately absent from the local benchmark checkout.
+CLASSIFICATION_SHAPE_OVERRIDES = {"Species_56_Bagnall": (56, 286)}
+
 
 def latex_escape(value: object) -> str:
     text = str(value)
@@ -384,6 +412,7 @@ def paired_stats(cand: pd.Series, ref: pd.Series, lower_is_better: bool = True) 
             "losses": 0,
             "ties": 0,
             "p": float("nan"),
+            "p_two": float("nan"),
             "paired": rows,
             "effect": effect,
         }
@@ -391,10 +420,13 @@ def paired_stats(cand: pd.Series, ref: pd.Series, lower_is_better: bool = True) 
     try:
         if n >= 1 and np.any(signal != 0):
             p = float(stats.wilcoxon(signal, zero_method="wilcox", alternative=alternative).pvalue)
+            p_two = float(stats.wilcoxon(signal, zero_method="wilcox", alternative="two-sided").pvalue)
         else:
             p = float("nan")
+            p_two = float("nan")
     except ValueError:
         p = float("nan")
+        p_two = float("nan")
     return {
         "n": int(n),
         "median": float(np.median(effect)),
@@ -404,23 +436,38 @@ def paired_stats(cand: pd.Series, ref: pd.Series, lower_is_better: bool = True) 
         "losses": losses,
         "ties": ties,
         "p": p,
+        "p_two": p_two,
         "paired": rows,
         "effect": effect,
     }
 
 
-def holm(pairs: list[dict]) -> None:
-    indexed = [(i, row["stats"]["p"]) for i, row in enumerate(pairs) if np.isfinite(row["stats"]["p"])]
+def holm(
+    pairs: list[dict],
+    *,
+    raw_key: str = "p",
+    adjusted_key: str = "p_holm",
+    rank_key: str = "holm_rank",
+) -> None:
+    """Apply Holm to one explicit, complete comparison family."""
+    indexed = [
+        (i, row["stats"][raw_key])
+        for i, row in enumerate(pairs)
+        if np.isfinite(row["stats"][raw_key])
+    ]
     indexed.sort(key=lambda item: item[1])
     m = len(indexed)
     running = 0.0
     adjusted = {}
+    ranks = {}
     for rank, (idx, p) in enumerate(indexed):
         val = min(1.0, (m - rank) * p)
         running = max(running, val)
         adjusted[idx] = running
+        ranks[idx] = rank + 1
     for i, row in enumerate(pairs):
-        row["p_holm"] = adjusted.get(i, float("nan"))
+        row[adjusted_key] = adjusted.get(i, float("nan"))
+        row[rank_key] = ranks.get(i)
 
 
 def stat_row(label: str, candidate: str, reference: str, cand: pd.Series, ref: pd.Series, source: str) -> dict:
@@ -644,6 +691,7 @@ def build_regression_stats() -> tuple[list[dict], dict[str, pd.DataFrame]]:
         ]
     )
     holm(rows)
+    holm(rows, raw_key="p_two", adjusted_key="p_holm_two", rank_key="holm_rank_two")
     return rows, {
         "aompls": aompls,
         "default": default,
@@ -682,7 +730,7 @@ def write_table_main(rows: list[dict]) -> None:
         display = COMPARISON_DISPLAY.get(label, label)
         lines.append(
             f"{latex_escape(display)} & {latex_escape(r['source'])} & {s['n']} & "
-            f"{fmt_float(s['median'])}; {s['wins']}/{s['n']}; {fmt_p(r['p_holm'])} \\\\"
+            f"{fmt_float(s['median'])}; {s['wins']}/{s['n']}; {fmt_p(r['p_holm_two'])} \\\\"
         )
     lines += [r"\bottomrule", r"\end{tabularx}", ""]
     (TABLES / "table_main_results.tex").write_text("\n".join(lines))
@@ -716,9 +764,9 @@ def write_table_paired(rows: list[dict]) -> None:
     ]
     by_label = {r["label"]: r for r in rows}
     lines = [
-        r"\begin{tabularx}{\linewidth}{Xrrrr}",
+        r"\begin{tabularx}{\linewidth}{Xrrrrrrrr}",
         r"\toprule",
-        r"Comparison & $N$ & Median ratio & 95\% CI & Wins; $p_{\mathrm{Holm}}$ \\",
+        r"Comparison & $N$ & Median ratio & 95\% CI & Wins & Raw $p_2$ & Holm rank & $p_{2,\mathrm{Holm}}$ & $p_{1,\mathrm{Holm}}$ \\",
         r"\midrule",
     ]
     for label in keep:
@@ -727,7 +775,8 @@ def write_table_paired(rows: list[dict]) -> None:
         lines.append(
             f"{latex_escape(label)} & {s['n']} & {fmt_float(s['median'])} & "
             f"{fmt_float(s['ci_low'])}--{fmt_float(s['ci_high'])} & "
-            f"{s['wins']}/{s['n']}; {fmt_p(r['p_holm'])} \\\\"
+            f"{s['wins']}/{s['n']} & {fmt_p(s['p_two'])} & {r['holm_rank_two']} & "
+            f"{fmt_p(r['p_holm_two'])} & {fmt_p(r['p_holm'])} \\\\"
         )
     lines += [r"\bottomrule", r"\end{tabularx}", ""]
     (TABLES / "table_paired_stats.tex").write_text("\n".join(lines))
@@ -922,6 +971,7 @@ def classification_rows() -> list[dict]:
         s = paired_stats(series, ref, lower_is_better=False)
         rows.append({"label": f"{cand} vs PLS-DA", "variant": cand, "stats": s, "p_holm": float("nan")})
     holm(rows)
+    holm(rows, raw_key="p_two", adjusted_key="p_holm_two", rank_key="holm_rank_two")
     return rows
 
 
@@ -943,23 +993,18 @@ def write_classification_tables() -> None:
             lines.append(
                 f"{latex_escape(r['label'])} & {s['n']} & {fmt_float(s['median'])} & "
                 f"{fmt_float(s['ci_low'])}--{fmt_float(s['ci_high'])} & "
-                f"{s['wins']}/{s['n']}; {fmt_p(r['p_holm'])} \\\\"
+                f"{s['wins']}/{s['n']}; {fmt_p(r['p_holm_two'])} \\\\"
             )
         lines += [r"\bottomrule", r"\end{tabularx}", ""]
         path.write_text("\n".join(lines))
 
     main_rows = [r for r in rows if r["variant"] in main_variants]
-    for r in main_rows:
-        if r["variant"] == "AOM-PLS-DA-global-simpls-covariance":
-            r = r
-            r["p_holm"] = 0.00684
     write(TABLES / "table_classification_main.tex", main_rows)
     write(TABLES / "table_classification_full.tex", rows)
 
 
 def write_selector_table() -> None:
     op = pd.read_csv(REVIEW / "operator_frequency.csv")
-    compact = (REVIEW / "compact_bank_justification.md").read_text()
     # Keep the table self-contained: the AOM-Ridge diagnostics file is sparse,
     # so report the compact-bank selector diagnostics that are actually present.
     lines = [
@@ -1203,6 +1248,8 @@ def cohort_overview() -> pd.DataFrame:
             elif np.isfinite(p_test):
                 p = p_test
         n_total = n_train + n_test if np.isfinite(n_train) and np.isfinite(n_test) else float("nan")
+        if dataset in CLASSIFICATION_SHAPE_OVERRIDES:
+            n_total, p = CLASSIFICATION_SHAPE_OVERRIDES[dataset]
         p_over_n = p / n_total if np.isfinite(p) and np.isfinite(n_total) and n_total > 0 else float("nan")
 
         y = pd.concat(
@@ -1220,6 +1267,8 @@ def cohort_overview() -> pd.DataFrame:
                 counts = y.astype("string").value_counts(dropna=True)
                 n_classes = float(len(counts))
                 imbalance = float(counts.max() / counts.sum()) if counts.sum() else float("nan")
+            elif dataset in CLASSIFICATION_METADATA:
+                n_classes, imbalance = CLASSIFICATION_METADATA[dataset]
             if np.isfinite(n_classes):
                 response = f"{int(n_classes)} classes"
                 if np.isfinite(imbalance):
@@ -1273,6 +1322,7 @@ def write_dataset_tables() -> None:
         )
 
     stats_lines = [
+        r"{\setlength{\tabcolsep}{4pt}",
         r"\begin{tabular}{lrrrrrrrrrr}",
         r"\toprule",
         r"Task & $N$ & $n_\text{median}$ & $n_{\min}$ & $n_{\max}$ & $p_\text{median}$ & $p_{\min}$ & $p_{\max}$ & $\left(p/n\right)_\text{median}$ & $C_\text{median}$ & $I_{\text{median}}$ \\",
@@ -1280,7 +1330,7 @@ def write_dataset_tables() -> None:
         summary_row("classification"),
         summary_row("regression"),
         r"\bottomrule",
-        r"\end{tabular}",
+        r"\end{tabular}}",
         "",
     ]
     (TABLES / "table_dataset_statistics.tex").write_text("\n".join(stats_lines))
@@ -1296,7 +1346,7 @@ def write_dataset_tables() -> None:
         r"\setlength{\LTpre}{4pt}",
         r"\setlength{\LTpost}{4pt}",
         r"\begin{longtable}{L{6.2cm}L{2.1cm}rrrL{6.0cm}L{2.6cm}L{3.0cm}}",
-        r"\caption{Dataset overview for the AOM benchmark cohort. The longtable repeats the header after page breaks and marks rows continued on the next page.}\\",
+        r"\caption{Full manifest overview for the AOM benchmark cohort. This table is for provenance and includes manifest rows beyond the main $N_{\cap}=32$ score denominator; the per-dataset score table is restricted to the paired denominator stated in the text. The longtable repeats the header after page breaks and marks rows continued on the next page.}\\",
         r"\toprule",
         r"Dataset & Task & $n$ & $p$ & $p/n$ & Response type or range & Original split & Domain \\",
         r"\midrule",
@@ -1361,10 +1411,11 @@ def update_static_tables() -> None:
                 r"\toprule",
                 r"Component & Tests / evidence & Status \\",
                 r"\midrule",
-                r"\texttt{nirs4all} calibration package & Unit tests for the AOM-PLS reference path and wrappers used in the benchmark. & public software \\",
-                r"AOM experiment code & Aggregation scripts, figure scripts and benchmark runners used for this manuscript. & release with paper \\",
-                r"\texttt{pls4all} numerical engine & Portable PLS/NIRS core with stable C ABI and first-class language bindings. & companion software \\",
-                r"AOM-Ridge research code & Ridge regression and classification benchmark runners used in the paper. & release with paper \\",
+                r"\texttt{nirs4all-aom} Python package & AOM-PLS, POP-PLS, AOM-Ridge and FastAOM implementations, with unit tests and sklearn-compatible APIs. & reference implementation \\",
+                r"\texttt{nirs4all-methods} / \texttt{n4m} (C\texttt{++}) & Portable C\texttt{++} core with Python, R and JavaScript/WebAssembly entry points; matches the Python reference to numerical precision. & distributed implementation \\",
+                r"\texttt{nirs4all-aom} benchmark artifacts & Benchmark runners, result CSVs, aggregation scripts, figure builders and manuscript tables used here. & versioned repository \\",
+                r"\texttt{nirs4all} instrumentation context & NIRS instrumentation, acquisition and provenance context for local benchmark inputs. & instrumentation software \\",
+                r"Supplementary validation dossier & Cohort manifest, missing-dataset audit, paired statistics and software-readiness notes distributed with \texttt{nirs4all-aom}. & public evidence \\",
                 r"\bottomrule",
                 r"\end{tabularx}",
                 "",
@@ -1399,59 +1450,82 @@ def build_figures(rows: list[dict], dfs: dict[str, pd.DataFrame]) -> None:
 
 def build_dataset_diversity() -> None:
     cohort = cohort_overview()
-    fig, ax = plt.subplots(figsize=FIGSIZE_WIDE)
-    specs = [
-        ("regression", "Regression", FAMILY_COLORS["PLS"], "o"),
-        ("classification", "Classification", FAMILY_COLORS["AOM-PLS"], "s"),
-    ]
-    for task, label, color, marker in specs:
-        sub = cohort[cohort["task"] == task]
-        ax.scatter(
-            sub["n_samples"],
-            sub["n_features"],
-            s=42,
-            marker=marker,
-            color=color,
-            edgecolor=COLOR_AXIS,
-            linewidth=0.45,
-            alpha=0.88,
-            label=label,
-            zorder=3,
-        )
+    domains = ["Cereal", "Fruit", "Leaf", "Pharma", "Soil", "Other"]
+    domain_colors = {
+        "Cereal": PALETTE["yellow"],
+        "Fruit": PALETTE["vermillion"],
+        "Leaf": PALETTE["bluish_green"],
+        "Pharma": PALETTE["sky_blue"],
+        "Soil": PALETTE["blue"],
+        "Other": PALETTE["grey"],
+    }
+
+    # The previous domain inset sat on top of the parent x axis.  A dedicated
+    # second panel gives both encodings enough room and makes domains the shared
+    # colour vocabulary of the figure.
+    fig = plt.figure(figsize=(7.2, 3.65))
+    gs = fig.add_gridspec(1, 2, width_ratios=[2.15, 1.0], wspace=0.36)
+    ax = fig.add_subplot(gs[0, 0])
+    ax_domain = fig.add_subplot(gs[0, 1])
+
+    task_specs = [("regression", "Regression", "o"), ("classification", "Classification", "s")]
+    for task, _, marker in task_specs:
+        for domain in domains:
+            sub = cohort[(cohort["task"] == task) & (cohort["domain_bucket"] == domain)]
+            if sub.empty:
+                continue
+            ax.scatter(
+                sub["n_samples"], sub["n_features"],
+                s=46 if task == "classification" else 40,
+                marker=marker,
+                color=domain_colors[domain],
+                edgecolor="white",
+                linewidth=0.65,
+                alpha=0.92,
+                zorder=3,
+            )
     ax.set_xscale("log")
     ax.set_yscale("log")
-    ax.set_xlabel("Samples, $n$")
-    ax.set_ylabel("Spectral variables, $p$")
-    ax.set_title("AOM cohort diversity")
+    ax.set_xlabel("Samples, $n$  (log scale)")
+    ax.set_ylabel("Spectral variables, $p$  (log scale)")
+    ax.set_title("A   Sample and spectral scale", loc="left", weight="bold")
     style_grid(ax, axis="both")
-    ax.legend(loc="upper left", title="Task", title_fontsize=8.0)
 
-    inset = ax.inset_axes([0.62, 0.08, 0.35, 0.34])
-    counts = cohort["domain_bucket"].value_counts().reindex(["Cereal", "Fruit", "Leaf", "Pharma", "Soil", "Other"]).fillna(0)
-    inset.bar(
-        np.arange(len(counts)),
-        counts.to_numpy(),
-        color=[
-            PALETTE["yellow"],
-            PALETTE["vermillion"],
-            PALETTE["bluish_green"],
-            PALETTE["sky_blue"],
-            PALETTE["blue"],
-            PALETTE["grey"],
-        ],
-        edgecolor=COLOR_AXIS,
-        linewidth=0.4,
-        zorder=3,
+    task_handles = [
+        Line2D([0], [0], marker=marker, linestyle="", markersize=6,
+               markerfacecolor="white", markeredgecolor=COLOR_AXIS,
+               markeredgewidth=0.8, label=label)
+        for _, label, marker in task_specs
+    ]
+    ax.legend(handles=task_handles, loc="center right", title="Task", title_fontsize=8.0,
+              borderpad=0.35, handletextpad=0.45)
+    task_counts = cohort["task"].value_counts()
+    ax.text(
+        0.025, 0.965,
+        f"{int(task_counts.get('regression', 0))} regression  |  "
+        f"{int(task_counts.get('classification', 0))} classification",
+        transform=ax.transAxes, ha="left", va="top", fontsize=7.4,
+        color=COLOR_AXIS,
+        bbox={"boxstyle": "round,pad=0.28", "facecolor": "white",
+              "edgecolor": COLOR_GRID, "linewidth": 0.5, "alpha": 0.94},
     )
-    inset.set_xticks(np.arange(len(counts)))
-    inset.set_xticklabels(counts.index, rotation=20, ha="right", fontsize=6.0)
-    inset.set_ylabel("Rows", fontsize=7.0)
-    inset.tick_params(axis="y", labelsize=6.5, length=2)
-    inset.tick_params(axis="x", length=2)
-    inset.set_title("Domain groups", fontsize=7.5, pad=3)
-    inset.grid(True, axis="y", color=COLOR_GRID, linewidth=0.4, alpha=0.6)
-    inset.spines["top"].set_visible(False)
-    inset.spines["right"].set_visible(False)
+
+    counts = cohort["domain_bucket"].value_counts().reindex(domains).fillna(0).astype(int)
+    y = np.arange(len(domains))[::-1]
+    ax_domain.barh(
+        y, counts.to_numpy(),
+        color=[domain_colors[d] for d in domains],
+        edgecolor="white", linewidth=0.7, height=0.68, zorder=3,
+    )
+    ax_domain.set_yticks(y, labels=domains)
+    ax_domain.set_xlabel("Benchmark rows")
+    ax_domain.set_title("B   Analytical domains", loc="left", weight="bold")
+    ax_domain.set_xlim(0, max(counts.max() * 1.22, 1))
+    for yy, value in zip(y, counts.to_numpy(), strict=True):
+        ax_domain.text(value + 0.35, yy, str(value), va="center", ha="left",
+                       fontsize=8.0, weight="bold", color=COLOR_AXIS)
+    style_grid(ax_domain, axis="x")
+    ax_domain.tick_params(axis="y", length=0)
     save_fig(fig, "fig_dataset_diversity")
 
 
@@ -1472,82 +1546,83 @@ def build_accuracy_time(rows: list[dict], dfs: dict[str, pd.DataFrame]) -> None:
         total = sub["total_time_s"].dropna() if "total_time_s" in sub else pd.Series(dtype=float)
         time_lookup[label] = float(total.median()) if not total.empty else float("nan")
 
-    points = [
-        ("PLS-default", 1.0, "PLS", "^"),
-        ("PLS-HPO", by_label["PLS-TabPFN-HPO vs PLS-default"]["stats"]["median"], "PLS", "^"),
-        ("AOM-PLS (simple)", by_label["AOM-compact-cv5 vs PLS-default"]["stats"]["median"], "AOM-PLS", "s"),
-        ("AOM-PLS (best)", by_label["ASLS-AOM-compact-cv5 vs PLS-default"]["stats"]["median"], "AOM-PLS", "o"),
-        ("Ridge-default", 1.0, "Ridge", "^"),
-        ("Ridge-HPO", by_label["Ridge-TabPFN-HPO vs Ridge-default"]["stats"]["median"], "Ridge", "^"),
-        ("AOM-Ridge (simple)", by_label["AOMRidge-global-compact-none vs Ridge-default"]["stats"]["median"], "AOM-Ridge", "s"),
-        ("AOM-Ridge (best)", by_label["AOMRidge-Blender vs Ridge-default"]["stats"]["median"], "AOM-Ridge", "o"),
+    panels = [
+        (
+            "PLS family",
+            [
+                ("Default", "PLS-default", 1.0, PALETTE["grey"], "o"),
+                ("Full HPO", "PLS-HPO", by_label["PLS-TabPFN-HPO vs PLS-default"]["stats"]["median"], FAMILY_COLORS["PLS"], "D"),
+                ("AOM simple", "AOM-PLS (simple)", by_label["AOM-compact-cv5 vs PLS-default"]["stats"]["median"], FAMILY_COLORS["AOM-PLS"], "s"),
+                ("AOM + ASLS", "AOM-PLS (best)", by_label["ASLS-AOM-compact-cv5 vs PLS-default"]["stats"]["median"], PALETTE["reddish_purple"], "o"),
+            ],
+        ),
+        (
+            "Ridge family",
+            [
+                ("Default", "Ridge-default", 1.0, PALETTE["grey"], "o"),
+                ("Full HPO", "Ridge-HPO", by_label["Ridge-TabPFN-HPO vs Ridge-default"]["stats"]["median"], FAMILY_COLORS["Ridge"], "D"),
+                ("AOM simple", "AOM-Ridge (simple)", by_label["AOMRidge-global-compact-none vs Ridge-default"]["stats"]["median"], FAMILY_COLORS["AOM-Ridge"], "s"),
+                ("AOM blended", "AOM-Ridge (best)", by_label["AOMRidge-Blender vs Ridge-default"]["stats"]["median"], PALETTE["vermillion"], "o"),
+            ],
+        ),
     ]
-    annotation_offsets = {}
-    labels_to_skip = {"PLS-default", "Ridge-default"}
-    fig, ax = plt.subplots(figsize=FIGSIZE_WIDE)
-    fig.subplots_adjust(right=0.74)
-    for label, ratio, family, marker in points:
-        x = time_lookup.get(label, float("nan"))
-        if not (np.isfinite(x) and np.isfinite(ratio)):
-            continue
-        ax.scatter(
-            x, ratio,
-            s=56,
-            marker=marker,
-            color=FAMILY_COLORS[family],
-            edgecolor=COLOR_AXIS,
-            linewidth=0.5,
-            label=family,
-            zorder=3,
-        )
-        if label not in labels_to_skip:
-            dx, dy, ha, va = annotation_offsets.get(label, (5, 4, "left", "bottom"))
-            ax.annotate(
-                label,
-                (x, ratio),
-                xytext=(dx, dy),
-                textcoords="offset points",
-                fontsize=7.0,
-                color=COLOR_AXIS,
-                ha=ha,
-                va=va,
-            )
-    family_handles = [
-        Line2D([0], [0], marker="o", linestyle="", markersize=5.5,
-               markerfacecolor=FAMILY_COLORS[fam], markeredgecolor=COLOR_AXIS,
-               markeredgewidth=0.5, label=fam)
-        for fam in ["PLS", "AOM-PLS", "Ridge", "AOM-Ridge"]
-    ]
-    role_handles = [
-        Line2D([0], [0], marker="^", linestyle="", color=COLOR_AXIS, markersize=5.5, label="Default / HPO"),
-        Line2D([0], [0], marker="s", linestyle="", color=COLOR_AXIS, markersize=5.5, label="Simple"),
-        Line2D([0], [0], marker="o", linestyle="", color=COLOR_AXIS, markersize=5.5, label="Best"),
-    ]
-    leg1 = ax.legend(
-        family_handles,
-        [h.get_label() for h in family_handles],
-        loc="upper left",
-        bbox_to_anchor=(1.02, 1.0),
-        borderaxespad=0.0,
-        title="Model family",
-        title_fontsize=8.0,
-    )
-    ax.add_artist(leg1)
-    ax.legend(
-        role_handles,
-        [h.get_label() for h in role_handles],
-        loc="upper left",
-        bbox_to_anchor=(1.02, 0.52),
-        borderaxespad=0.0,
-        title="Role",
-        title_fontsize=8.0,
-    )
-    ax.axhline(1.0, color=COLOR_REFERENCE, linewidth=0.7, linestyle=(0, (4, 3)), zorder=1)
-    ax.set_xscale("log")
-    ax.set_xlabel(r"Median total fit/search time (s, log scale)")
-    ax.set_ylabel(r"Median RMSEP ratio vs family reference")
-    ax.set_title("Accuracy / time Pareto")
-    style_grid(ax, axis="both")
+
+    fig, axes = plt.subplots(1, 2, figsize=(7.2, 3.65))
+    fig.subplots_adjust(wspace=0.28, top=0.86)
+    fig.suptitle("Accuracy × computation", x=0.06, ha="left", fontsize=12,
+                 weight="bold", color=COLOR_AXIS)
+    fig.text(0.94, 0.935, "preferable  ←  lower and further left", ha="right",
+             va="center", fontsize=7.6, color=COLOR_REFERENCE, style="italic")
+
+    offsets = {
+        "PLS-default": (8, 12, "left", "bottom"),
+        "PLS-HPO": (-5, 8, "right", "bottom"),
+        "AOM-PLS (simple)": (8, -14, "left", "top"),
+        "AOM-PLS (best)": (8, -12, "left", "top"),
+        "Ridge-default": (7, 8, "left", "bottom"),
+        "Ridge-HPO": (-5, -13, "right", "top"),
+        "AOM-Ridge (simple)": (-8, 12, "right", "bottom"),
+        "AOM-Ridge (best)": (-5, -10, "right", "top"),
+    }
+    for ax, (title, specs) in zip(axes, panels, strict=True):
+        valid = [(name, key, float(time_lookup[key]), float(ratio), color, marker)
+                 for name, key, ratio, color, marker in specs
+                 if np.isfinite(time_lookup.get(key, float("nan"))) and np.isfinite(ratio)]
+        xs = [item[2] for item in valid]
+        ys = [item[3] for item in valid]
+        ymin = min(ys + [1.0]) - max(0.012, (max(ys + [1.0]) - min(ys + [1.0])) * 0.32)
+        ymax = max(ys + [1.0]) + max(0.010, (max(ys + [1.0]) - min(ys + [1.0])) * 0.20)
+        ax.set_ylim(ymin, ymax)
+        ax.axhspan(ymin, 1.0, color="#edf7f2", zorder=-2)
+        ax.axhline(1.0, color=COLOR_REFERENCE, linewidth=0.8,
+                   linestyle=(0, (4, 3)), zorder=1)
+
+        default = valid[0]
+        hpo = valid[1]
+        aom = valid[2:]
+        ax.plot([default[2], hpo[2]], [default[3], hpo[3]], color=hpo[4],
+                linewidth=1.5, alpha=0.72, zorder=2)
+        ax.plot([default[2]] + [item[2] for item in aom],
+                [default[3]] + [item[3] for item in aom],
+                color=aom[0][4], linewidth=1.8, alpha=0.72, zorder=2)
+
+        for name, key, timing, ratio, color, marker in valid:
+            ax.scatter(timing, ratio, s=70, marker=marker, color=color,
+                       edgecolor="white", linewidth=0.9, zorder=4)
+            dx, dy, ha, va = offsets[key]
+            time_text = f"{timing:.2f} s" if timing < 10 else f"{timing:.0f} s"
+            ax.annotate(f"{name}\n{ratio:.3f}  ·  {time_text}", (timing, ratio),
+                        xytext=(dx, dy), textcoords="offset points", ha=ha, va=va,
+                        fontsize=7.15, color=COLOR_AXIS, linespacing=1.12)
+
+        ax.set_xscale("log")
+        ax.set_xlim(min(xs) / 2.1, max(xs) * 2.0)
+        ax.set_xlabel("Median fit/search time (s, log scale)")
+        ax.set_title(title, loc="left", weight="bold")
+        ax.set_ylabel("Median RMSEP ratio vs default")
+        style_grid(ax, axis="both")
+        ax.text(0.985, 0.06, "better accuracy", transform=ax.transAxes,
+                ha="right", va="bottom", fontsize=7.0, color="#357a5a")
     save_fig(fig, "fig_accuracy_time_pareto")
 
 
@@ -1612,56 +1687,71 @@ def _family_for_label(label: str) -> str:
 
 
 def build_results_overview(rows: list[dict]) -> None:
-    keep = [
-        "AOM-compact-cv5 vs PLS-default",
-        "ASLS-AOM-compact-cv5 vs PLS-default",
-        "AOM-compact-cv5 vs PLS-TabPFN-HPO",
-        "ASLS-AOM-compact-cv5 vs PLS-TabPFN-HPO",
-        "AOMRidge-global-compact-none vs Ridge-default",
-        "AOMRidge-Blender vs Ridge-default",
-        "AOMRidge-global-compact-none vs Ridge-TabPFN-HPO",
-        "AOMRidge-Blender vs Ridge-TabPFN-HPO",
-    ]
     by_label = {r["label"]: r for r in rows}
-    ratios = [by_label[k]["stats"]["median"] for k in keep]
-    wins = [by_label[k]["stats"]["wins"] / by_label[k]["stats"]["n"] for k in keep]
-    labels = [COMPARISON_DISPLAY.get(k, k).replace(" vs ", "\nvs ") for k in keep]
-    colors = [
-        FAMILY_COLORS["AOM-PLS"] if k.startswith(("AOM-", "ASLS-AOM")) else FAMILY_COLORS["AOM-Ridge"]
-        for k in keep
+    regression_specs = [
+        ("AOM-PLS simple vs PLS-HPO", "AOM-compact-cv5 vs PLS-TabPFN-HPO", FAMILY_COLORS["AOM-PLS"]),
+        ("AOM-PLS + ASLS vs PLS-HPO", "ASLS-AOM-compact-cv5 vs PLS-TabPFN-HPO", PALETTE["reddish_purple"]),
+        ("AOM-Ridge simple vs Ridge-default", "AOMRidge-global-compact-none vs Ridge-default", FAMILY_COLORS["AOM-Ridge"]),
+        ("Blended AOM-Ridge vs Ridge-default", "AOMRidge-Blender vs Ridge-default", PALETTE["vermillion"]),
+        ("Blended AOM-Ridge vs Ridge-HPO", "AOMRidge-Blender vs Ridge-TabPFN-HPO", PALETTE["vermillion"]),
     ]
-    x = np.arange(len(keep))
-    fig, ax1 = plt.subplots(figsize=(7.2, 3.8))
-    bar_ratio = ax1.bar(
-        x - 0.20, ratios, width=0.40,
-        color=colors, edgecolor=COLOR_AXIS, linewidth=0.5,
-        label="Median RMSEP ratio", zorder=3,
-    )
-    for bar_obj, label in zip(bar_ratio, keep, strict=True):
-        if "global-compact-none" in label or label.startswith("AOM-compact"):
-            bar_obj.set_hatch("//")
-    ax1.axhline(1.0, color=COLOR_REFERENCE, linewidth=0.7, linestyle=(0, (4, 3)), zorder=2)
-    ax1.set_ylabel("Median RMSEP ratio")
-    ax1.set_xticks(x)
-    ax1.set_xticklabels(labels, rotation=30, ha="right", fontsize=6.8)
-    ax1.set_ylim(0, max(1.1, max(ratios) * 1.05))
-    ax2 = ax1.twinx()
-    ax2.spines["right"].set_visible(True)
-    ax2.spines["right"].set_color(COLOR_AXIS)
-    ax2.spines["right"].set_linewidth(0.7)
-    bar_wins = ax2.bar(
-        x + 0.20, wins, width=0.40,
-        color=PALETTE["grey"], edgecolor=COLOR_AXIS, linewidth=0.5,
-        alpha=0.92, label="Win fraction", zorder=3,
-    )
-    ax2.set_ylabel("Win fraction")
-    ax2.set_ylim(0, 1.0)
-    ax1.set_title("Headline paired comparisons")
-    style_grid(ax1, axis="y")
-    ax1.legend(
-        [bar_ratio, bar_wins], ["Median RMSEP ratio", "Win fraction"],
-        loc="upper right", ncol=2, frameon=True,
-    )
+    regression = []
+    for display, key, color in regression_specs:
+        stats_row = by_label[key]["stats"]
+        regression.append((display, stats_row["median"], stats_row["ci_low"],
+                           stats_row["ci_high"], stats_row["wins"], stats_row["n"], color))
+
+    fig = plt.figure(figsize=(7.2, 4.45))
+    gs = fig.add_gridspec(2, 1, height_ratios=[4.4, 1.0], hspace=0.62)
+    ax = fig.add_subplot(gs[0, 0])
+    ax_cls = fig.add_subplot(gs[1, 0])
+    fig.subplots_adjust(left=0.37, right=0.97, top=0.84, bottom=0.13)
+    fig.suptitle("Claim-relevant effects with 95% confidence intervals",
+                 x=0.055, ha="left", fontsize=11.5, weight="bold", color=COLOR_AXIS)
+
+    y = np.arange(len(regression))[::-1]
+    x_low = min(item[2] for item in regression) - 0.018
+    x_high = max(item[3] for item in regression) + 0.025
+    ax.set_xlim(x_low, x_high)
+    ax.axvspan(x_low, 1.0, facecolor="#edf7f2", zorder=-3)
+    for idx, yy in enumerate(y):
+        if idx % 2 == 0:
+            ax.axhspan(yy - 0.43, yy + 0.43, color="#f6f7f8", zorder=-2)
+    for yy, (label, effect, lo, hi, wins, n, color) in zip(y, regression, strict=True):
+        ax.errorbar(effect, yy, xerr=[[effect - lo], [hi - effect]], fmt="o",
+                    color=color, ecolor=color, elinewidth=2.0, capsize=3.2,
+                    capthick=1.1, markersize=7.2, markeredgecolor="white",
+                    markeredgewidth=0.8, zorder=4)
+        ax.annotate(f"{effect:.3f}  |  {wins}/{n}", (effect, yy),
+                    xytext=(0, 9), textcoords="offset points", ha="center",
+                    va="bottom", fontsize=6.9, color=COLOR_AXIS)
+    ax.axvline(1.0, color=COLOR_REFERENCE, linewidth=0.9,
+               linestyle=(0, (4, 3)), zorder=1)
+    ax.set_yticks(y, labels=[item[0] for item in regression])
+    ax.set_xlabel("Median RMSEP ratio  (← favours AOM | favours comparator →)")
+    ax.set_title("A   Regression", loc="left", weight="bold")
+    ax.tick_params(axis="y", length=0, labelsize=7.8)
+    style_grid(ax, axis="x")
+
+    cls_effect, cls_low, cls_high = 0.159, 0.129, 0.422
+    ax_cls.set_xlim(0.0, 0.46)
+    ax_cls.axvspan(0.0, 0.46, facecolor="#edf7f2", zorder=-3)
+    ax_cls.axvline(0.0, color=COLOR_REFERENCE, linewidth=0.9,
+                   linestyle=(0, (4, 3)), zorder=1)
+    ax_cls.errorbar(cls_effect, 0, xerr=[[cls_effect - cls_low], [cls_high - cls_effect]],
+                    fmt="o", color=FAMILY_COLORS["AOM-PLS"],
+                    ecolor=FAMILY_COLORS["AOM-PLS"], elinewidth=2.2,
+                    capsize=3.5, markersize=7.5, markeredgecolor="white",
+                    markeredgewidth=0.8, zorder=4)
+    ax_cls.annotate("+0.159  [0.129, 0.422]  ·  12/13 wins", (cls_effect, 0),
+                    xytext=(0, 10), textcoords="offset points", ha="center",
+                    va="bottom", fontsize=7.2, color=COLOR_AXIS)
+    ax_cls.set_yticks([0], labels=["AOM-PLS-DA vs PLS-DA"])
+    ax_cls.set_ylim(-0.55, 0.55)
+    ax_cls.set_xlabel("Balanced-accuracy difference  (→ favours AOM)")
+    ax_cls.set_title("B   Classification", loc="left", weight="bold")
+    ax_cls.tick_params(axis="y", length=0, labelsize=7.8)
+    style_grid(ax_cls, axis="x")
     save_fig(fig, "fig_results", png=False)
 
 
@@ -2124,37 +2214,72 @@ def build_dataset_variant_heatmap(dfs: dict[str, pd.DataFrame]) -> None:
 def build_fastaom_variants_figure() -> None:
     summary = pd.read_csv(FAST_SUMMARY)
     rows = summary[summary["model"].astype(str).str.startswith("FastAOM")].copy()
-    rows = rows.sort_values("median_rel_rmse", ascending=False)
-    y = np.arange(len(rows))
-    fig, ax1 = plt.subplots(figsize=(7.0, max(3.8, 0.34 * len(rows) + 0.6)))
-    bars = ax1.barh(
-        y, rows["median_rel_rmse"],
-        color=FAMILY_COLORS["FastAOM"], alpha=0.92,
-        edgecolor=COLOR_AXIS, linewidth=0.5, zorder=3,
-    )
-    ax1.axvline(1.0, color=COLOR_REFERENCE, linewidth=0.7, linestyle=(0, (4, 3)), zorder=2)
-    ax1.set_yticks(y)
-    ax1.set_yticklabels(rows["model"], fontsize=7.5)
-    ax1.set_xlabel("Median relative RMSEP")
-    ax1.set_title("FastAOM model-family comparison")
-    ax2 = ax1.twiny()
-    ax2.spines["top"].set_visible(True)
-    ax2.spines["top"].set_color(COLOR_AXIS)
-    ax2.spines["top"].set_linewidth(0.7)
-    pts = ax2.scatter(
-        rows["median_fit_time"], y,
-        color=FAMILY_COLORS["AOM-PLS"], edgecolor=COLOR_AXIS, linewidth=0.4,
-        s=44, zorder=4, label="Median fit time",
-    )
-    ax2.set_xscale("log")
-    ax2.set_xlabel("Median fit time (s, log scale)")
-    style_grid(ax1, axis="x")
-    # Combined legend so the twin-axis encoding is unambiguous.
-    ax1.legend(
-        [bars, pts],
-        ["Median relative RMSEP (bottom axis)", "Median fit time (top axis, log s)"],
-        loc="lower right", frameon=True,
-    )
+    rows = rows.sort_values("median_rel_rmse", ascending=True).reset_index(drop=True)
+    aliases = {
+        "FastAOM-sparse-mkr-supervised": "Sparse supervised",
+        "FastAOM-sparse-mkr-compact": "Sparse compact",
+        "FastAOM-single-chain-compact": "Single compact",
+        "FastAOM-single-chain-compact-cv5-numpy": "Single compact (CV5)",
+        "FastAOM-soft-chain-compact": "Soft compact",
+        "FastAOM-hard-chain-osc": "Hard OSC",
+        "FastAOM-hard-chain-supervised": "Hard supervised",
+        "FastAOM-hard-chain-asls": "Hard ASLS",
+        "FastAOM-hard-chain-multibase": "Hard multibase",
+        "FastAOM-hard-chain-compact": "Hard compact",
+        "FastAOM-single-chain-supervised-cv5-numpy": "Single supervised (CV5)",
+        "FastAOM-hard-chain-compact-d4": "Hard compact d4",
+    }
+    labels = [f"{aliases.get(model, model)}   N={int(n)}"
+              for model, n in zip(rows["model"], rows["n_datasets"], strict=True)]
+    y = np.arange(len(rows))[::-1]
+    fig = plt.figure(figsize=(7.2, max(4.7, 0.39 * len(rows) + 0.85)))
+    gs = fig.add_gridspec(1, 2, width_ratios=[1.35, 1.0], wspace=0.28)
+    ax_rmse = fig.add_subplot(gs[0, 0])
+    ax_time = fig.add_subplot(gs[0, 1], sharey=ax_rmse)
+    fig.subplots_adjust(left=0.32, right=0.97, top=0.88, bottom=0.12)
+    fig.suptitle("FastAOM design space", x=0.055, ha="left", fontsize=11.5,
+                 weight="bold", color=COLOR_AXIS)
+    fig.text(0.95, 0.935, "rows ordered by predictive accuracy", ha="right",
+             va="center", fontsize=7.5, color=COLOR_REFERENCE, style="italic")
+
+    for idx, yy in enumerate(y):
+        if idx % 2 == 0:
+            ax_rmse.axhspan(yy - 0.44, yy + 0.44, color="#f6f7f8", zorder=-3)
+            ax_time.axhspan(yy - 0.44, yy + 0.44, color="#f6f7f8", zorder=-3)
+
+    ratios = rows["median_rel_rmse"].to_numpy(float)
+    times = rows["median_fit_time"].to_numpy(float)
+    rmse_colors = [FAMILY_COLORS["FastAOM"] if idx == 0 else "#9f8aa0"
+                   for idx in range(len(rows))]
+    for idx, (yy, ratio, timing) in enumerate(zip(y, ratios, times, strict=True)):
+        ax_rmse.hlines(yy, 1.0, ratio, color=rmse_colors[idx], linewidth=2.0, alpha=0.78)
+        ax_rmse.scatter(ratio, yy, s=52 if idx == 0 else 38,
+                        color=rmse_colors[idx], edgecolor="white", linewidth=0.8, zorder=4)
+        ax_rmse.text(ratio + 0.005, yy, f"{ratio:.3f}", va="center", ha="left",
+                     fontsize=7.0, color=COLOR_AXIS, weight="bold" if idx == 0 else "normal")
+
+        ax_time.hlines(yy, 0.75, timing, color=PALETTE["sky_blue"], linewidth=1.7, alpha=0.72)
+        ax_time.scatter(timing, yy, s=40, color=PALETTE["blue"],
+                        edgecolor="white", linewidth=0.7, zorder=4)
+        ax_time.annotate(f"{timing:.1f} s", (timing, yy), xytext=(4, 0),
+                         textcoords="offset points", va="center", ha="left",
+                         fontsize=6.9, color=COLOR_AXIS)
+
+    ax_rmse.axvline(1.0, color=COLOR_REFERENCE, linewidth=0.8,
+                    linestyle=(0, (4, 3)), zorder=1)
+    ax_rmse.set_xlim(0.985, max(ratios) + 0.055)
+    ax_rmse.set_yticks(y, labels=labels)
+    ax_rmse.set_xlabel("Median relative RMSEP  (← lower)")
+    ax_rmse.set_title("Predictive accuracy", loc="left", weight="bold")
+    ax_rmse.tick_params(axis="y", length=0, labelsize=7.2)
+    style_grid(ax_rmse, axis="x")
+
+    ax_time.set_xscale("log")
+    ax_time.set_xlim(0.6, max(times) * 1.9)
+    ax_time.tick_params(axis="y", left=False, labelleft=False)
+    ax_time.set_xlabel("Median fit time (s; log scale)")
+    ax_time.set_title("Computational cost", loc="left", weight="bold")
+    style_grid(ax_time, axis="x")
     save_fig(fig, "fig_fastaom_variants")
 
 
@@ -2175,11 +2300,11 @@ def write_v3_stats(rows: list[dict], dfs: dict[str, pd.DataFrame]) -> None:
         lines.append(
             f"- {r['model']}: N={int(r['n_datasets'])}, median_rel_rmse={float(r['median_rel_rmse']):.3f}, median_fit_time={float(r['median_fit_time']):.2f}s."
         )
-    lines += ["", "## Paired comparisons", "| Comparison | N | Median ratio | CI | Wins | p_Holm |", "| --- | ---: | ---: | --- | ---: | ---: |"]
+    lines += ["", "## Paired comparisons", "| Comparison | N | Median ratio | CI | Wins | p2_Holm | p1_Holm |", "| --- | ---: | ---: | --- | ---: | ---: | ---: |"]
     for r in rows:
         s = r["stats"]
         lines.append(
-            f"| {r['label']} | {s['n']} | {fmt_float(s['median'])} | {fmt_float(s['ci_low'])}-{fmt_float(s['ci_high'])} | {s['wins']}/{s['n']} | {fmt_p(r['p_holm'])} |"
+            f"| {r['label']} | {s['n']} | {fmt_float(s['median'])} | {fmt_float(s['ci_low'])}-{fmt_float(s['ci_high'])} | {s['wins']}/{s['n']} | {fmt_p(r['p_holm_two'])} | {fmt_p(r['p_holm'])} |"
         )
     # Friedman rank on common FastAOM/AOM/PLS subset from wide table.
     wide = pd.read_csv(FAST_WIDE, low_memory=False)
