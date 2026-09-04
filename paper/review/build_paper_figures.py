@@ -474,8 +474,27 @@ def holm(
         row[rank_key] = ranks.get(i)
 
 
-def stat_row(label: str, candidate: str, reference: str, cand: pd.Series, ref: pd.Series, source: str) -> dict:
+def stat_row(
+    label: str,
+    candidate: str,
+    reference: str,
+    cand: pd.Series,
+    ref: pd.Series,
+    source: str,
+    *,
+    bootstrap_seed: int | None = None,
+    bootstrap_n: int = 5000,
+) -> dict:
     s = paired_stats(cand, ref, lower_is_better=True)
+    if bootstrap_seed is not None and s["effect"].size:
+        rng = np.random.default_rng(bootstrap_seed)
+        values = s["effect"]
+        idx = rng.integers(0, values.size, size=(bootstrap_n, values.size))
+        boot = np.median(values[idx], axis=1)
+        s["ci_low"], s["ci_high"] = (
+            float(np.percentile(boot, 2.5)),
+            float(np.percentile(boot, 97.5)),
+        )
     return {
         "label": label,
         "candidate": candidate,
@@ -651,6 +670,8 @@ def build_regression_stats() -> tuple[list[dict], dict[str, pd.DataFrame]]:
                 per_dataset(ridge_head_all, "AOMRidge-global-compact-none"),
                 fixed_ridge,
                 "AOM-Ridge headline / fixed-recipe control",
+                bootstrap_seed=20260904,
+                bootstrap_n=20_000,
             ),
             stat_row(
                 "FastAOM-sparse-mkr-supervised vs PLS-standard",
