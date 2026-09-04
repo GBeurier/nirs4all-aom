@@ -33,6 +33,9 @@ ROOT = Path(__file__).resolve().parents[2]
 REVIEW = ROOT / "paper" / "review"
 TABLES = ROOT / "paper" / "tables"
 FIGURES = ROOT / "paper" / "figures"
+FIXED_RECIPE_RESULTS = (
+    ROOT / "paper" / "repro" / "reviewer_insurance" / "fixed_recipe_results.csv"
+)
 
 
 # ---------------------------------------------------------------------------
@@ -96,6 +99,7 @@ COMPARISON_DISPLAY = {
     "AOMRidge-Blender vs Ridge-default": "AOM-Ridge (best) vs Ridge-default",
     "AOMRidge-global-compact-none vs Ridge-TabPFN-HPO": "AOM-Ridge (simple) vs Ridge-HPO",
     "AOMRidge-Blender vs Ridge-TabPFN-HPO": "AOM-Ridge (best) vs Ridge-HPO",
+    "AOMRidge-global-compact-none vs Ridge-fixed-recipe": "AOM-Ridge (simple) vs fixed SNV+SG recipe",
 }
 
 # Sizing guidance (inches). Single column for manuscript, full width for spread.
@@ -489,6 +493,14 @@ def build_regression_stats() -> tuple[list[dict], dict[str, pd.DataFrame]]:
     ridge_hpo = load_hpo(RIDGE_HPO_GLOB)
     ridge_partial = load_aomridge(AOMRIDGE_PARTIAL, "AOM-Ridge top5 seeds012")
     ridge_head = load_aomridge(AOMRIDGE_HEADLINE, "AOM-Ridge headline seed0")
+    ridge_head_all = ridge_head.copy()
+    fixed_recipe = pd.read_csv(FIXED_RECIPE_RESULTS, low_memory=False)
+    fixed_recipe = fixed_recipe[fixed_recipe["status"].astype(str).str.lower().eq("ok")]
+    fixed_ridge = pd.Series(
+        pd.to_numeric(fixed_recipe["rmsep_ridge_fixed"], errors="coerce").to_numpy(),
+        index=dataset_id(fixed_recipe["dataset"]),
+        name="ridge-fixed-snv-sg",
+    ).dropna()
     wide = pd.read_csv(FAST_WIDE, low_memory=False)
     strict_datasets = paper_data.strict_intersection()
     keep = set(strict_datasets)
@@ -633,6 +645,14 @@ def build_regression_stats() -> tuple[list[dict], dict[str, pd.DataFrame]]:
                 "AOM-Ridge top5 seeds012 / cartesian HPO seeds012",
             ),
             stat_row(
+                "AOMRidge-global-compact-none vs Ridge-fixed-recipe",
+                "AOMRidge-global-compact-none",
+                "ridge-fixed-snv-sg",
+                per_dataset(ridge_head_all, "AOMRidge-global-compact-none"),
+                fixed_ridge,
+                "AOM-Ridge headline / fixed-recipe control",
+            ),
+            stat_row(
                 "FastAOM-sparse-mkr-supervised vs PLS-standard",
                 "FastAOM-sparse-mkr-supervised",
                 "PLS-standard-numpy",
@@ -716,6 +736,7 @@ def write_table_main(rows: list[dict]) -> None:
         "AOMRidge-Blender vs Ridge-default",
         "AOMRidge-global-compact-none vs Ridge-TabPFN-HPO",
         "AOMRidge-Blender vs Ridge-TabPFN-HPO",
+        "AOMRidge-global-compact-none vs Ridge-fixed-recipe",
     ]
     by_label = {r["label"]: r for r in rows}
     lines = [
@@ -754,6 +775,7 @@ def write_table_paired(rows: list[dict]) -> None:
         "AOMRidge-AutoSelect vs Ridge-TabPFN-HPO",
         "AOMRidge-global-compact-none vs Ridge-TabPFN-HPO",
         "AOMRidge-Local-knn50 vs Ridge-TabPFN-HPO",
+        "AOMRidge-global-compact-none vs Ridge-fixed-recipe",
         "FastAOM-sparse-mkr-supervised vs PLS-standard",
         "FastAOM-sparse-mkr-compact vs PLS-standard",
         "FastAOM-single-chain-compact vs PLS-standard",

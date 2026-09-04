@@ -6,10 +6,32 @@ Recipe (fixed a priori, NOT searched): SNV -> Savitzky-Golay 1st derivative (win
 Reads the LOCAL (gitignored) NIR data via nirs4all-lab cohort paths. Compares the fixed recipe to
 plain PLS and to AOM-PLS (compact-cv5) on the paired denominator. Writes table_fixed_recipe.tex.
 """
-import os, warnings, numpy as np, pandas as pd
+
+# ruff: noqa: E402, E701, E702, E731 -- retained legacy script layout.
+
+import os
+
+_thread_limit = str(max(1, (os.cpu_count() or 1) - 2))
+for _name in (
+    "OMP_NUM_THREADS",
+    "OPENBLAS_NUM_THREADS",
+    "MKL_NUM_THREADS",
+    "BLIS_NUM_THREADS",
+    "VECLIB_MAXIMUM_THREADS",
+    "NUMEXPR_NUM_THREADS",
+):
+    os.environ[_name] = _thread_limit
+os.environ["CUDA_VISIBLE_DEVICES"] = ""
+
+import warnings
 from pathlib import Path
+
+import numpy as np
+import pandas as pd
+
 warnings.filterwarnings("ignore")
 from scipy.signal import savgol_filter
+from scipy import stats
 from sklearn.cross_decomposition import PLSRegression
 from sklearn.linear_model import Ridge
 from sklearn.model_selection import KFold
@@ -87,8 +109,17 @@ def main():
     ok = ok.set_index("dataset")
     def ratios(num, den, label):
         common = [d for d in ok.index if d in num.index and d in den.index]
-        r = (num.loc[common] / den.loc[common]).dropna()
-        return label, len(r), float(r.median()), int((r < 1).sum())
+        paired = pd.concat(
+            [num.loc[common].rename("candidate"), den.loc[common].rename("reference")],
+            axis=1,
+        ).dropna()
+        r = (paired["candidate"] / paired["reference"]).to_numpy(float)
+        delta = (paired["candidate"] - paired["reference"]).to_numpy(float)
+        rng = np.random.default_rng(20260904)
+        draw = rng.choice(r, size=(20_000, len(r)), replace=True)
+        ci = np.percentile(np.median(draw, axis=1), [2.5, 97.5])
+        p = float(stats.wilcoxon(delta, alternative="two-sided", zero_method="wilcox").pvalue)
+        return label, len(r), float(np.median(r)), float(ci[0]), float(ci[1]), int((r < 1).sum()), p
     rows = []
     # PLS-fixed vs plain PLS
     pf = ok["rmsep_pls_fixed"]
@@ -104,17 +135,21 @@ def main():
     rf = ok["rmsep_ridge_fixed"]
     rows.append(ratios(rf, ridge_raw, "Ridge-fixed-recipe vs Ridge-raw"))
     rows.append(ratios(aom_ridge, rf, "AOM-Ridge (global) vs Ridge-fixed-recipe"))
-    for lab, n, m, w in rows:
-        print(f"  {lab}: N={n}  median ratio={m:.3f}  wins={w}/{n}")
+    for lab, n, m, lo, hi, w, p in rows:
+        print(
+            f"  {lab}: N={n}  median ratio={m:.3f}  "
+            f"95% CI={lo:.3f}--{hi:.3f}  wins={w}/{n}  raw p2={p:.4g}"
+        )
 
     # LaTeX fragment
     esc = lambda s: s.replace("-", r"-\allowbreak{}")
-    lines = [r"\begin{tabularx}{\linewidth}{Xrrr}", r"\toprule",
-             r"Comparison & $N$ & Median RMSEP ratio & Wins \\", r"\midrule"]
-    for lab, n, m, w in rows:
-        lines.append(rf"{esc(lab)} & {n} & {m:.3f} & {w}/{n} \\")
+    lines = [r"\begin{tabularx}{\linewidth}{Xrrrrr}", r"\toprule",
+             r"Comparison & $N$ & Median RMSEP ratio & 95\% CI & Wins & Raw $p_2$ \\", r"\midrule"]
+    for lab, n, m, lo, hi, w, p in rows:
+        p_text = f"{p:.1e}" if p < 0.001 else f"{p:.3f}"
+        lines.append(rf"{esc(lab)} & {n} & {m:.3f} & {lo:.3f}--{hi:.3f} & {w}/{n} & {p_text} \\")
     lines += [r"\bottomrule", r"\end{tabularx}"]
-    open(OUTTEX, "w").write("\n".join(lines) + "\n")
+    Path(OUTTEX).write_text("\n".join(lines) + "\n", encoding="utf-8")
     print("Wrote", OUTTEX)
 
 if __name__ == "__main__":

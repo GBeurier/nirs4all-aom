@@ -397,6 +397,8 @@ def audit_comparators() -> pd.DataFrame:
     generic_results = ROOT / "_archive" / "future_work" / "multiview" / "results" / "full57.csv"
     stack5 = ROOT / "_archive" / "future_work" / "Multi-kernel" / "benchmarks" / "run_multikernel_smoke.py"
     stack5_results = ROOT / "_archive" / "future_work" / "Multi-kernel" / "benchmark_runs" / "diverse8_stack5" / "results.csv"
+    matched_stack = HERE / "matched_ridge_stacking_control.py"
+    matched_stack_results = HERE / "matched_ridge_stacking" / "per_run_results.csv"
 
     generic_n = 0
     if generic_results.exists():
@@ -406,6 +408,10 @@ def audit_comparators() -> pd.DataFrame:
     if stack5_results.exists():
         d = pd.read_csv(stack5_results, low_memory=False)
         stack5_n = int(d[d["variant"].eq("Stack") & ok_mask(d)]["dataset"].nunique())
+    matched_stack_n = 0
+    if matched_stack_results.exists():
+        d = pd.read_csv(matched_stack_results, low_memory=False)
+        matched_stack_n = int(d["task"].nunique())
 
     rows = [
         {
@@ -435,6 +441,15 @@ def audit_comparators() -> pd.DataFrame:
             "reuse_decision": "no_results_reuse",
             "reason": "Five heterogeneous raw/multi-kernel/mixed-model learners with Ridge meta-model; only one successful archived result, so it is not SPORT or SPRR.",
         },
+        {
+            "target_comparator": "Matched compact-bank Ridge stacking (SPRR-inspired control)",
+            "faithful_existing_implementation": False,
+            "code_path": str(matched_stack.relative_to(ROOT)),
+            "results_path": str(matched_stack_results.relative_to(ROOT)),
+            "successful_dataset_count": matched_stack_n,
+            "reuse_decision": "new_matched_control",
+            "reason": "Out-of-fold Ridge base predictions and a Ridge meta-model use the same nine operators, five folds, seeds and alpha grid as the matched AOM-Ridge control; the external test split remains untouched. This isolates a practical compact-bank ensemble but is not presented as a faithful reproduction of published SPRR or PROSAC.",
+        },
     ]
     out = pd.DataFrame(rows)
     out.to_csv(HERE / "comparator_reuse_audit.csv", index=False)
@@ -463,7 +478,8 @@ def make_report(
     lines = [
         "# Reviewer controls: AOM Talanta targeted revision",
         "",
-        "All findings are pure aggregations of frozen outputs; no model was fitted and no manuscript file was edited.",
+        "Sections 1--4 aggregate frozen outputs and do not fit models. Separate matched-fitting controls are documented in `matched_plsda/PROTOCOL_REPORT.md`, `full_matched_hpo/REPORT.md` and `matched_ridge_stacking/PROTOCOL_REPORT.md`.",
+        "The full matched HPO control covers the strict 32-task panel, three seeds and both five- and three-fold compact-bank searches; it found complete folded/materialized selection and prediction parity in all 384 model-runs.",
         "",
         "## 1. HPO attempted/missing rule",
         "",
@@ -548,9 +564,17 @@ def make_report(
         lines.append(
             f"- **{r['target_comparator']}**: faithful={r['faithful_existing_implementation']}; reusable={r['reuse_decision']}; N={r['successful_dataset_count']}. {r['reason']}"
         )
+    stack_summary_path = HERE / "matched_ridge_stacking" / "summary.csv"
+    if stack_summary_path.exists():
+        stack_summary = pd.read_csv(stack_summary_path)
+        for _, r in stack_summary.iterrows():
+            lines.append(
+                f"- **{r['comparison']}**: N={int(r['n'])}; median ratio={f(r['median_ratio'])} "
+                f"(95% bootstrap CI {f(r['ci95_low'])}--{f(r['ci95_high'])}); "
+                f"wins={int(r['wins'])}/{int(r['n'])}; raw two-sided Wilcoxon p={p_fmt(r['wilcoxon_raw_two_sided_p'])}."
+            )
     lines += [
-        "- The archived generic OOF/Ridge stacking class may be reused only as engineering scaffolding. A faithful Huang-SPRR comparator still requires Ridge base learners trained separately on a declared preprocessing bank, leakage-safe OOF predictions, a Ridge meta-model, tuning rules, and new common-split benchmark results. SPORT likewise requires a new literature-faithful implementation and validation.",
-        "- Minimal manuscript change now: keep the related-work distinction and state that no direct SPORT/SPRR comparison is available. Do not relabel or reuse the archived heterogeneous stacking results as either comparator.",
+        "- The new matched compact-bank control answers the practical ensemble objection on common splits. It does not reproduce the full published SPRR or PROSAC algorithms, and no numerical superiority claim over those methods is made. SPORT and a literature-faithful SPRR/PROSAC comparison remain future scope rather than a submission-critical omission.",
         "",
         "## Files",
         "",
@@ -560,6 +584,8 @@ def make_report(
         "- `baseline_quality_sensitivity.csv`: baseline-defined R2 control.",
         "- `ta_groupsampleid_hpo_audit.csv` and `ta_leave_one_out_sensitivity.csv`: outlier evidence.",
         "- `comparator_reuse_audit.csv`: code/result inventory and reuse decision.",
+        "- `matched_ridge_stacking/`: matched compact-bank Ridge stacking protocol, per-run outputs and summary.",
+        "- `rpd_quality_sensitivity/`: standard baseline-defined RPD sensitivity and task audit.",
         "- `input_sha256.csv`: exact hashes of every primary artifact consumed by the audit.",
     ]
     (HERE / "REPORT.md").write_text("\n".join(lines) + "\n", encoding="utf-8")

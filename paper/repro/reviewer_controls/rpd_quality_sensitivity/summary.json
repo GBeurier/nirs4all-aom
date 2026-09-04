@@ -1,0 +1,74 @@
+{
+  "definition": "sample SD(y_test) / RMSEP",
+  "primary_filter": "Ridge-default RPD >= 2",
+  "post_hoc": true,
+  "baseline_and_aom_sets_identical": true,
+  "baseline_keep": [
+    "Beer_OriginalExtract_60_KS",
+    "Beer_OriginalExtract_60_YbaseSplit",
+    "Biscuit_Fat_40_RandomSplit",
+    "Biscuit_Sucrose_40_RandomSplit",
+    "Corn_Oil_80_ZhengChenPelegYbaseSplit",
+    "Corn_Starch_80_ZhengChenPelegYbaseSplit",
+    "DIESEL_bp50_246_b-a",
+    "DIESEL_bp50_246_hla-b",
+    "DIESEL_bp50_246_hlb-a",
+    "LMA_spxyG70_30_byCultivar_ASD",
+    "N_wOutlier",
+    "N_woOutlier",
+    "Rice_Amylose_313_YbasedSplit"
+  ],
+  "aom_keep": [
+    "Beer_OriginalExtract_60_KS",
+    "Beer_OriginalExtract_60_YbaseSplit",
+    "Biscuit_Fat_40_RandomSplit",
+    "Biscuit_Sucrose_40_RandomSplit",
+    "Corn_Oil_80_ZhengChenPelegYbaseSplit",
+    "Corn_Starch_80_ZhengChenPelegYbaseSplit",
+    "DIESEL_bp50_246_b-a",
+    "DIESEL_bp50_246_hla-b",
+    "DIESEL_bp50_246_hlb-a",
+    "LMA_spxyG70_30_byCultivar_ASD",
+    "N_wOutlier",
+    "N_woOutlier",
+    "Rice_Amylose_313_YbasedSplit"
+  ],
+  "summaries": [
+    {
+      "comparison": "AOM-Ridge simple vs Ridge-default",
+      "subset": "strict_N32_all",
+      "n": 32,
+      "median_ratio": 0.9735006203002378,
+      "ci95_low": 0.8685967074633368,
+      "ci95_high": 0.9929903993499162,
+      "wins": 25,
+      "ties": 0,
+      "losses": 7,
+      "wilcoxon_raw_two_sided_p": 0.0006058444269001484
+    },
+    {
+      "comparison": "AOM-Ridge simple vs Ridge-default",
+      "subset": "baseline_RPD_ge_2",
+      "n": 13,
+      "median_ratio": 0.6064913828719388,
+      "ci95_low": 0.49640347182776867,
+      "ci95_high": 0.9334357325729836,
+      "wins": 12,
+      "ties": 0,
+      "losses": 1,
+      "wilcoxon_raw_two_sided_p": 0.00341796875
+    },
+    {
+      "comparison": "AOM-Ridge simple vs Ridge-default",
+      "subset": "AOM_RPD_ge_2_audit_only",
+      "n": 13,
+      "median_ratio": 0.6064913828719388,
+      "ci95_low": 0.49640347182776867,
+      "ci95_high": 0.9334357325729836,
+      "wins": 12,
+      "ties": 0,
+      "losses": 1,
+      "wilcoxon_raw_two_sided_p": 0.00341796875
+    }
+  ]
+}

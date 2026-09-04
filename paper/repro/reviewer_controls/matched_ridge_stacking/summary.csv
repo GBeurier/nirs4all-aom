@@ -1,0 +1,3 @@
+comparison,candidate,reference,n,median_ratio,ci95_low,ci95_high,wins,ties,losses,wilcoxon_raw_two_sided_p
+SPRR-inspired Ridge stacking vs matched AOM-Ridge,stacking_test_rmse,folded_test_rmse,32,0.9908416410383658,0.9806608353040681,1.010737462377616,18,0,14,0.5607573566958308
+SPRR-inspired Ridge stacking vs matched raw Ridge,stacking_test_rmse,raw_ridge_test_rmse,32,0.9684968950608445,0.9314665485556349,0.9912983120501468,25,0,7,0.0022269743494689465
