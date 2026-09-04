@@ -1,0 +1,3 @@
+model,runs,same_selection,median_cv3_over_cv5_rmse,cv3_wins,ties,cv3_losses,median_cv3_over_cv5_folded_time
+PLS,96,30,1.0,30,30,36,0.4992419251570494
+Ridge,96,25,1.0,30,25,41,0.471811442937925

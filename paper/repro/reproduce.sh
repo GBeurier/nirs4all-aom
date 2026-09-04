@@ -42,6 +42,8 @@ case "$mode" in
     bash "$script_dir/reviewer_controls/run.sh"
     "$python_bin" "$script_dir/reviewer_controls/matched_plsda_control.py" --max-workers 5
     "$python_bin" "$script_dir/reviewer_controls/folded_materialized_control.py" --cpu-limit 5
+    "$python_bin" "$script_dir/reviewer_controls/full_matched_hpo_control.py" --max-workers 5
+    "$python_bin" "$script_dir/reviewer_controls/analyze_full_matched_hpo.py"
     ;;
   full)
     exec "$script_dir/run_full_benchmarks.sh"

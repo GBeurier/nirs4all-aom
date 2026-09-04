@@ -2,6 +2,12 @@
 
 All findings are pure aggregations of frozen outputs; no model was fitted and no manuscript file was edited.
 
+The separate matched-fitting controls are documented in
+`matched_plsda/PROTOCOL_REPORT.md` and `full_matched_hpo/REPORT.md`. The latter
+covers the strict 32-task panel, three seeds and both five- and three-fold
+compact-bank searches; it found complete folded/materialized selection and
+prediction parity in all 384 model--runs.
+
 ## 1. HPO attempted/missing rule
 
 - PLS: runner universe=60; attempted=38 tasks x 3 seeds; success=36; errors=2; maximum eligible order=38; attempted set is contiguous prefix=True.

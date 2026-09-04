@@ -351,11 +351,21 @@ def _ridge_run(
 
 
 def _max_abs(left: np.ndarray, right: np.ndarray) -> float:
-    return float(np.max(np.abs(np.asarray(left) - np.asarray(right))))
+    left_array = np.asarray(left)
+    right_array = np.asarray(right)
+    left_finite = np.isfinite(left_array)
+    right_finite = np.isfinite(right_array)
+    if not np.array_equal(left_finite, right_finite):
+        return float("inf")
+    if not np.any(left_finite):
+        return 0.0
+    return float(np.max(np.abs(left_array[left_finite] - right_array[right_finite])))
 
 
 def _max_rel(left: np.ndarray, right: np.ndarray) -> float:
-    scale = max(1.0, float(np.max(np.abs(np.asarray(right)))))
+    right_array = np.asarray(right)
+    finite = np.isfinite(right_array)
+    scale = max(1.0, float(np.max(np.abs(right_array[finite])))) if np.any(finite) else 1.0
     return _max_abs(left, right) / scale
 
 
