@@ -19,12 +19,12 @@ are decoded as sg_<window>_<polyorder>_<deriv>.
 INPUTS (absolute paths, read-only):
   benchmarks/runs/scenarios/paper_aom_linear_hpo_full_cartesian_pls-tabpfn-hpo-25trials_seed{0,1,2}/results.csv
   benchmarks/runs/scenarios/paper_aom_linear_hpo_full_cartesian_ridge-tabpfn-hpo-60trials_seed{0,1,2}/results.csv
-    (under /home/delete/nirs4all/nirs4all-aom/)
+    (under the repository root)
 
 OUTPUTS:
   stdout: the selection-frequency tables and the de-facto recipe finding
   LaTeX table fragment (bare, booktabs, no float/caption):
-    /home/delete/nirs4all/nirs4all-papers/aom_talanta_26/manuscript/tables/table_hpo_recipe.tex
+    table_hpo_recipe.tex in AOM_MANUSCRIPT_TABLES
 
 SANITY CHECK reproduced from paper/review/final_stats.md neighbourhood
 (_survey/existing_scores_hunt.md A4 section, lines 304-305):
@@ -40,11 +40,11 @@ from pathlib import Path
 
 import pandas as pd
 
-AOM_ROOT = Path("/home/delete/nirs4all/nirs4all-aom")
-SCEN = AOM_ROOT / "benchmarks/runs/scenarios"
-TABLE_OUT = Path(
-    "/home/delete/nirs4all/nirs4all-papers/aom_talanta_26/manuscript/tables/table_hpo_recipe.tex"
-)
+from paths import REPO_ROOT, SCENARIOS, table_path
+
+AOM_ROOT = REPO_ROOT
+SCEN = SCENARIOS
+TABLE_OUT = table_path("table_hpo_recipe.tex")
 
 SCENARIOS = {
     "PLS-HPO": "paper_aom_linear_hpo_full_cartesian_pls-tabpfn-hpo-25trials",

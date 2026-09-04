@@ -46,12 +46,14 @@ import os
 import numpy as np
 import pandas as pd
 
+from paths import REPO_ROOT, RUNS as RUNS_PATH, SCENARIOS, table_path
+
 # ---------------------------------------------------------------------------
 # Absolute input paths
 # ---------------------------------------------------------------------------
-AOM_ROOT = "/home/delete/nirs4all/nirs4all-aom"
-RUNS = f"{AOM_ROOT}/benchmarks/runs"
-SCEN = f"{RUNS}/scenarios"
+AOM_ROOT = str(REPO_ROOT)
+RUNS = str(RUNS_PATH)
+SCEN = str(SCENARIOS)
 
 PATH_AOMPLS = f"{SCEN}/paper_aom_aompls_seeds012/results.csv"
 PATH_AOMRIDGE = f"{RUNS}/ridge/paper_aom_aomridge_seeds012/results.csv"
@@ -66,10 +68,7 @@ PATH_RIDGE_HPO = [
     for s in (0, 1, 2)
 ]
 
-OUT_TABLE = (
-    "/home/delete/nirs4all/nirs4all-papers/aom_talanta_26/manuscript/tables/"
-    "table_seed_determinism.tex"
-)
+OUT_TABLE = str(table_path("table_seed_determinism.tex"))
 
 # Cells are deemed "varying" if the across-seed std exceeds this floating-point floor.
 ZERO_TOL = 1e-12

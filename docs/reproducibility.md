@@ -9,6 +9,18 @@ the full benchmark cohort (Section 5).
 
 All paths are relative to `aom_nirs/`.
 
+## One-command entry points
+
+The maintained wrapper is `paper/repro/reproduce.sh`:
+
+```bash
+paper/repro/reproduce.sh check    # read-only integrity check
+paper/repro/reproduce.sh tables   # frozen-result aggregations
+paper/repro/reproduce.sh web      # local WebAssembly companion
+```
+
+See `paper/repro/README.md` for all modes and path overrides. These default modes do not fit models.
+
 ## Section 0. Install
 
 ```bash
@@ -31,7 +43,7 @@ pip install -e .[dev]      # pytest, pytest-cov, ruff, mypy
 Expected output prefix:
 
 ```
-Successfully installed nirs4all-aom-0.10.1 ...
+Successfully installed nirs4all-aom-0.10.4 ...
 ```
 
 ## Section 1. Validate the install
@@ -163,22 +175,18 @@ the NIR datasets *and* extended compute (single-machine multi-hour).
 
 ### Data requirements
 
-The raw spectral files are not redistributed by `aom_nirs`. They live
-in `nirs4all/sample_data/` and in the external public sources cited in
-`paper/main.tex` and `paper/review/cohort_manifest.csv`. Two routes:
+The raw spectral files are not redistributed by `aom_nirs`. Prepare a
+local data root containing `regression/` and `classification/` trees
+with the database/dataset layout named by the frozen cohort CSV files.
+Public retrieval and licence metadata are maintained in the
+`nirs4all-datasets` catalogue; restricted source families must be
+requested from the corresponding author under their original terms.
 
-1. Clone the companion library:
-   ```bash
-   git clone https://github.com/GBeurier/nirs4all.git
-   ```
-   The runners auto-discover `nirs4all/sample_data/` when both repos
-   share the same parent directory (`aom_nirs/` and `nirs4all/`
-   siblings).
-
-2. Fetch the public sources listed in
-   `paper/review/cohort_manifest.csv` (column `source_family`) one at a
-   time. Local-only datasets (BERRY, ALPINE, ...) are CIRAD-internal
-   and must be requested from the corresponding author.
+The full wrapper receives that root as `NIRS4ALL_DATA_DIR`, rewrites a
+copy of each frozen cohort with absolute paths inside the new output
+workspace, and checks every required file before any fit starts. The
+`nirs4all` and `nirs4all-lab` checkouts remain separate code
+dependencies supplied through `NIRS4ALL_DIR` and `NIRS4ALL_LAB_DIR`.
 
 ### Compute requirements
 
@@ -194,30 +202,30 @@ in `nirs4all/sample_data/` and in the external public sources cited in
 
 ### Commands
 
+Use the guarded full-run wrapper. It refuses to start unless a new,
+absolute output directory and the companion repositories are provided:
+
 ```bash
-# AOM-PLS / POP-PLS / ASLS-AOM-PLS regression cohort, seeds 0..2:
-python benchmarks/pls/run_aompls_benchmark.py --seeds 0 1 2
-
-# AOM-Ridge headline + auto_select + Blender:
-python benchmarks/ridge/run_aomridge_benchmark.py --seeds 0
-
-# AOM-PLS-DA classification cohort:
-python benchmarks/ridge/run_aomridge_classification.py --seeds 0 1 2
-
-# FastAOM variants:
-python benchmarks/fast/run_fast_aom_benchmark.py --seeds 0
-
-# Linear default + HPO cartesian baselines:
-# (re-run the runners that wrote the workspaces in benchmarks/runs/scenarios/)
+AOM_FULL_RUN=1 \
+AOM_REPRO_OUTPUT=/absolute/path/to/new-aom-reproduction \
+NIRS4ALL_DIR=/absolute/path/to/nirs4all \
+NIRS4ALL_LAB_DIR=/absolute/path/to/nirs4all-lab \
+NIRS4ALL_DATA_DIR=/absolute/path/to/nirs4all-data \
+paper/repro/reproduce.sh full
 ```
 
-After every run, re-aggregate (Section 4) and rebuild the PDF
-(Section 3).
+Add `AOM_DRY_RUN=1` to inspect the complete command sequence without
+creating the output directory or fitting models.
 
-## Section 6. paper-review blockers still open
+This launches the documented AOM-PLS, AOM-Ridge, classification,
+FastAOM, and matched linear-HPO runners. It does not overwrite the
+frozen paper workspaces. Inspect the new workspace before choosing to
+re-aggregate or revise manuscript denominators.
 
-Two gaps must be closed before the manuscript can claim seed-stable
-statistics across every variant:
+## Section 6. Known coverage limitations
+
+The submitted analysis reports two coverage limitations explicitly;
+they are not silently imputed or treated as completed runs:
 
 1. **AOM-Ridge seeds 1 and 2.** The headline variants
    `AOMRidge-Blender-headline-spxy3`,
@@ -240,8 +248,7 @@ statistics across every variant:
    for the affected datasets, and lower `n_components` cap for
    small-`n` rows.
 
-When both blockers are cleared, `paper/review/aggregate_stats.py
---partial` should report zero missing required workspaces and the
-"Seed stability" table should list `seeds = 3` for every AOM-Ridge
-headline variant. Only then is the paper's statistical methodology
-applied identically across the eight headline rows.
+Future extensions may fill these cells in a new output workspace. If
+they do, all denominators and inferential summaries must be regenerated
+and reported as a new analysis rather than substituted silently into
+the frozen submission results.

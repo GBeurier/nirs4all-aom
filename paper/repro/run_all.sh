@@ -6,11 +6,15 @@
 #
 # Override the interpreter with PYTHON=... (needs pandas + numpy + scipy):
 #   PYTHON=/path/to/python ./run_all.sh
-set -e
+set -euo pipefail
 cd "$(dirname "$0")"
-PYTHON="${PYTHON:-/home/delete/nirs4all/nirs4all-lab/.venv/bin/python}"
+PYTHON="${PYTHON:-python3}"
+
+"$PYTHON" check_artifacts.py
 
 for s in \
+  absolute_fom.py \
+  classification_calibration.py \
   source_family_sensitivity.py \
   hpo_recipe_frequency.py \
   transfer_latency.py \

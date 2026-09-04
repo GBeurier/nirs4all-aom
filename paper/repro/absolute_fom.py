@@ -18,12 +18,13 @@ from collections import defaultdict
 from dataclasses import dataclass
 from pathlib import Path
 
+from paths import COHORT_MANIFEST, REPO_ROOT, RUNS, SCENARIOS, table_path
 
-AOM_ROOT = Path("/home/delete/nirs4all/nirs4all-aom")
-RUNS = AOM_ROOT / "benchmarks" / "runs"
-SCEN = RUNS / "scenarios"
 
-COHORT = AOM_ROOT / "paper" / "review" / "cohort_manifest.csv"
+AOM_ROOT = REPO_ROOT
+SCEN = SCENARIOS
+
+COHORT = COHORT_MANIFEST
 PATH_AOMPLS = SCEN / "paper_aom_aompls_seeds012" / "results.csv"
 PATH_AOMRIDGE_HEADLINE = RUNS / "ridge" / "all54_headline" / "results.csv"
 PATH_DEFAULT = SCEN / "paper_aom_linear_hpo_full_cartesian_default_cv5_all" / "results.csv"
@@ -36,10 +37,7 @@ PATH_RIDGE_HPO = tuple(
     for s in (0, 1, 2)
 )
 
-OUT_TABLE = Path(
-    "/home/delete/nirs4all/nirs4all-papers/aom_talanta_26/manuscript/tables/"
-    "table_absolute_fom.tex"
-)
+OUT_TABLE = table_path("table_absolute_fom.tex")
 
 EXPECTED_RIDGE_SIMPLE_VS_DEFAULT = 0.974
 EXPECTED_PLS_SIMPLE_VS_DEFAULT = 0.991

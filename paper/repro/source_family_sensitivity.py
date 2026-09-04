@@ -29,22 +29,15 @@ Method (mirrors paper/review/aggregate_stats.py exactly)
    not datasets) gives a 95% CI on the family-level median ratio.
 5. Report dataset-level vs family-level side by side.
 
-Inputs (all read by absolute path)
------------------------------------
-- /home/delete/nirs4all/nirs4all-aom/benchmarks/runs/scenarios/paper_aom_aompls_seeds012/results.csv
-- /home/delete/nirs4all/nirs4all-aom/benchmarks/runs/pls/paper_aom_aompls_da_seeds012/results.csv
-- /home/delete/nirs4all/nirs4all-aom/benchmarks/runs/ridge/paper_aom_aomridge_seeds012/results.csv
-- /home/delete/nirs4all/nirs4all-aom/benchmarks/runs/ridge/paper_aom_aomridge_cls_seeds012/results.csv
-- /home/delete/nirs4all/nirs4all-aom/benchmarks/runs/ridge/all54_headline/results.csv
-- /home/delete/nirs4all/nirs4all-aom/benchmarks/runs/scenarios/paper_aom_linear_hpo_full_cartesian_default_cv5_all/results.csv
-- /home/delete/nirs4all/nirs4all-aom/benchmarks/runs/scenarios/paper_aom_linear_hpo_full_cartesian_pls-tabpfn-hpo-25trials_seed{0,1,2}/results.csv
-- /home/delete/nirs4all/nirs4all-aom/benchmarks/runs/scenarios/paper_aom_linear_hpo_full_cartesian_ridge-tabpfn-hpo-60trials_seed{0,1,2}/results.csv
-- /home/delete/nirs4all/nirs4all-aom/paper/review/cohort_manifest.csv  (dataset -> source_family map)
+Inputs
+------
+- Whitelisted result CSVs under ``benchmarks/runs/``.
+- ``paper/review/cohort_manifest.csv`` for the dataset-to-source-family map.
 
 Outputs
 -------
 - stdout: dataset-level vs family-level table for every comparison.
-- /home/delete/nirs4all/nirs4all-papers/aom_talanta_26/manuscript/tables/table_source_family.tex
+- ``table_source_family.tex`` in the configured manuscript table directory.
   (bare booktabs tabularx fragment, no float / caption).
 """
 
@@ -57,14 +50,12 @@ import numpy as np
 import pandas as pd
 from scipy import stats
 
+from paths import COHORT_MANIFEST, RUNS, table_path
+
 # ---------------------------------------------------------------------------
-# Absolute paths
+# Resolved paths
 # ---------------------------------------------------------------------------
-RUNS = Path("/home/delete/nirs4all/nirs4all-aom/benchmarks/runs")
-COHORT_MANIFEST = Path("/home/delete/nirs4all/nirs4all-aom/paper/review/cohort_manifest.csv")
-TABLE_OUT = Path(
-    "/home/delete/nirs4all/nirs4all-papers/aom_talanta_26/manuscript/tables/table_source_family.tex"
-)
+TABLE_OUT = table_path("table_source_family.tex")
 
 BOOTSTRAP_N = 10_000
 BOOTSTRAP_SEED = 42

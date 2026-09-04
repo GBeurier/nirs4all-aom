@@ -1,0 +1,43 @@
+{
+  "snapshot": {
+    "repository": "https://github.com/GBeurier/nirs4all-datasets",
+    "commit": "60a0b6073bd3842bdd0b2e3439ffcbda0ad4615d",
+    "generator": "demo/wasm/generate_demo_datasets.py",
+    "license": "Dataset-specific open licences; see each entry"
+  },
+  "datasets": [
+    {
+      "id": "squash_glucose",
+      "label": "Squash glucose",
+      "short": "Squash leaves · glucose",
+      "unit": "nm",
+      "signalType": "reflectance",
+      "target": "glucose concentration",
+      "description": "Field-grown Cucurbita pepo leaf spectra under source–sink and water-stress treatments, with glucose as the response.",
+      "provenance": "EcoSIS dataset 10.21232/RLmYbmE3 (CC BY); deterministic subset of 90 calibration and 30 untouched validation spectra.",
+      "sourcePath": "datasets/ecosis_cucurbita_pepo_two_stresses_leaf_canopy_reflectance_nirs/card.json"
+    },
+    {
+      "id": "crop_nitrogen",
+      "label": "Crop nitrogen",
+      "short": "Eight crop species · leaf N",
+      "unit": "nm",
+      "signalType": "reflectance",
+      "target": "nitrogen (% dry mass)",
+      "description": "Leaf spectra and biochemical traits from eight crop species, with dry-mass nitrogen percentage as the response.",
+      "provenance": "EcoSIS dataset 10.21232/C2GM2Z (ODC-By); deterministic subset of 90 calibration and 30 untouched validation spectra.",
+      "sourcePath": "datasets/ecosis_leaf_spectra_structural_and_biochemical_leaf_traits_of_reflectance_nirs/card.json"
+    },
+    {
+      "id": "leaf_water",
+      "label": "Leaf water stress",
+      "short": "Leaf dry-down · water potential",
+      "unit": "nm",
+      "signalType": "reflectance",
+      "target": "leaf water potential (MPa)",
+      "description": "Tabletop leaf dry-down spectra from multiple species, with measured leaf water potential as the response.",
+      "provenance": "EcoSIS dataset 10.21232/egGyynzX (PDDL); deterministic subset of 90 calibration and 30 untouched validation spectra.",
+      "sourcePath": "datasets/ecosis_tabletop_leaf_drydowns_to_relate_leaf_spectra_and_leaf_reflectance_nirs/card.json"
+    }
+  ]
+}

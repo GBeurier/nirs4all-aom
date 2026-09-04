@@ -1,48 +1,86 @@
-# `paper/repro/` — aggregation pipeline for the AOM / Talanta paper
+# `paper/repro/` — AOM paper reproduction entry points
 
-These scripts regenerate the **aggregation tables** of the Talanta manuscript from result CSVs that
-are already committed under `benchmarks/runs/` (and the frozen master). **No model is fitted here** —
-everything is pure aggregation/statistics over existing scores, so it runs in seconds.
+The default workflow validates and re-aggregates the **frozen** benchmark artefacts shipped with the
+repository. It does not fit a model and normally completes in seconds.
 
-Each script (a) reproduces a known value from `../review/final_stats.md` as a **sanity check** that
-its data load + joins are correct, then (b) writes a bare LaTeX `tabularx` fragment that the
-manuscript `\input`s. All tables are **scope-clean**: only PLS / Ridge / FastAOM variants — no CNN,
-TabPFN, CatBoost, MoE or multi-kernel comparators.
-
-Run everything:
+From the repository root:
 
 ```bash
-PYTHON=/path/to/venv/python ./run_all.sh      # needs pandas + numpy + scipy
+paper/repro/reproduce.sh check
 ```
 
-## Script → inputs → output table → manuscript location
+## Modes
 
-| Script | Reads | Writes (fragment) | Used in |
-|--------|-------|-------------------|---------|
-| `source_family_sensitivity.py` | seeds012 + `ridge/all54_headline` + `linear_hpo .../default_cv5` CSVs; `../review/cohort_manifest.csv` | `table_source_family.tex` | supplement "Source-family clustered sensitivity"; main discussion |
-| `hpo_recipe_frequency.py` | `.../paper_aom_linear_hpo_full_cartesian_{pls,ridge}-tabpfn-hpo-*_seed{0,1,2}/results.csv` (`best_config_json`) | `table_hpo_recipe.tex` | main §Reference methods; supplement §Missing-dataset audit |
-| `transfer_latency.py` | the master CSV + `ridge/all54_headline` (Rd25 site splits, `fit_time_s`/`predict_time_s`) | `table_transfer.tex`, `table_latency.tex` | main §Transfer to held-out sites and deployment cost |
-| `hpo_union_coverage.py` | the three tuned-linear protocols + `cohort_manifest.csv` | `table_hpo_coverage.tex` | main §Splits/selection/statistics; supplement §Missing-dataset audit |
-| `seed_stability.py` | seeds012 (PLS/Ridge/DA/cls) + tuned-HPO seed{0,1,2} CSVs | `table_seed_determinism.tex` | main §Splits/selection; supplement §Seed and split sensitivity |
+| Command | Purpose | Fits models? |
+| --- | --- | --- |
+| `reproduce.sh check` | Validate the frozen 61-row regression cohort, 17-row classification cohort, whitelisted result files, and WebAssembly companion bundle | No |
+| `reproduce.sh tables` | Regenerate the manuscript aggregation tables from frozen CSV files | No |
+| `reproduce.sh figures` | Run the existing paper figure/statistics builder | No |
+| `reproduce.sh paper` | Build the paper through the manuscript build script selected by `AOM_MANUSCRIPT_BUILD` | No |
+| `reproduce.sh web` | Start the local WebAssembly demo and print its self-test URL | No |
+| `reproduce.sh full` | Launch fresh benchmark fits into a new, explicit output directory | Yes; opt-in only |
 
-## Data sources (on disk)
+`reproduce.sh tables` needs Python with `numpy`, `pandas`, and `scipy`. Outputs normally go to the
+manuscript `tables/` directory. To test without modifying the manuscript, use a temporary directory:
 
-- **Canonical paper runs:** `../../benchmarks/runs/` — `scenarios/paper_aom_aompls_seeds012`,
-  `ridge/all54_headline`, `ridge/paper_aom_aomridge_seeds012`, `ridge/paper_aom_aomridge_cls_seeds012`,
-  `pls/paper_aom_aompls_da_seeds012`, `scenarios/paper_aom_linear_hpo_full_cartesian_*`.
-- **Frozen master:** `../../_archive/nirs4all-lab_benchmark_master/benchmark_master_results.csv`
-  (83 columns with precomputed `relative_rmsep_vs_*`, `fit_time_s`, `predict_time_s`, `seed`,
-  `preprocessing_pipeline`, `source_family`, `domain_group`).
-  `\rc{}` **provenance to confirm:** this on-disk build has ~35,930 rows; `nirs4all-lab/.../MASTER_CSV_HASH.txt`
-  freezes an earlier 24,879-row snapshot — pin the canonical file/hash before the camera-ready.
-- **Cohort map:** `../review/cohort_manifest.csv` (`dataset → source_family / domain_group / split_type`).
+```bash
+AOM_MANUSCRIPT_TABLES="$(mktemp -d)" paper/repro/reproduce.sh tables
+```
 
-## Output path
+Useful overrides are `PYTHON`, `AOM_BENCHMARK_MASTER`, `AOM_MANUSCRIPT_TABLES`,
+`AOM_MANUSCRIPT_BUILD`, `AOM_WEB_PORT`, `NIRS4ALL_DIR`, `NIRS4ALL_LAB_DIR`, and
+`NIRS4ALL_DATA_DIR`.
 
-Each script writes its fragment to the manuscript `tables/` directory. That path is set at the top of
-every script (`OUT_*` / `MANU_TABLES`); change it if the manuscript tree moves. The manuscript build
-(`build.sh` in the manuscript dir) `\input`s these fragments inside its own table floats.
+## Fresh benchmark fits
 
-> The headline regression/runtime/classification tables (`table_main_results`, `table_time_budget`,
-> `table_classification_main`, …) come from `../review/build_paper_figures.py`; this `repro/` directory
-> adds the five *robustness/coverage/deployment* aggregations (B2/A4/B1/A2/A1) introduced for Talanta.
+Fresh fits are deliberately guarded because they require external datasets and many CPU-hours. They
+never overwrite the frozen paper workspaces. Set the companion repositories and a new absolute output
+directory explicitly:
+
+```bash
+AOM_FULL_RUN=1 \
+AOM_REPRO_OUTPUT=/absolute/path/to/new-aom-reproduction \
+NIRS4ALL_DIR=/absolute/path/to/nirs4all \
+NIRS4ALL_LAB_DIR=/absolute/path/to/nirs4all-lab \
+NIRS4ALL_DATA_DIR=/absolute/path/to/nirs4all-data \
+paper/repro/reproduce.sh full
+```
+
+Add `AOM_DRY_RUN=1` to print and validate the complete command sequence without creating the output
+directory or fitting any model.
+
+`NIRS4ALL_DATA_DIR` must contain the `regression/` and `classification/` trees. The wrapper resolves
+the frozen cohort paths into copied manifests inside the new output workspace and verifies every
+required file before fitting. The frozen paper results remain the reference for the submitted manuscript.
+A fresh run can differ in selected preprocessing chains because folds and AOM trajectories are
+stochastic; comparability comes from using the documented cohorts, operator banks, folds, budgets,
+and starting inputs.
+
+## Aggregation scripts
+
+| Script | Main output |
+| --- | --- |
+| `absolute_fom.py` | `table_absolute_fom.tex` |
+| `classification_calibration.py` | `table_classification_calib.tex` |
+| `source_family_sensitivity.py` | `table_source_family.tex` |
+| `hpo_recipe_frequency.py` | `table_hpo_recipe.tex` |
+| `transfer_latency.py` | `table_transfer.tex`, `table_latency.tex` |
+| `hpo_union_coverage.py` | `table_hpo_coverage.tex` |
+| `seed_stability.py` | `table_seed_determinism.tex` |
+
+Inputs are the whitelisted workspaces under `benchmarks/runs/`, the frozen benchmark master selected
+by `AOM_BENCHMARK_MASTER`, and `paper/review/cohort_manifest.csv`. Each script performs a numerical
+sanity check before writing its LaTeX fragment.
+
+## WebAssembly companion
+
+The online page is an interactive companion, not the source of the archived Python timings. Test the
+same local bundle with:
+
+```bash
+paper/repro/reproduce.sh web
+```
+
+Then open the printed `/demo/wasm/?selftest=1` URL. The browser's compact workload commonly shows
+about a 5–6× time reduction for AOM relative to its matched HPO run; this is illustrative and
+workload-dependent, not a hardware-independent algorithmic speedup.

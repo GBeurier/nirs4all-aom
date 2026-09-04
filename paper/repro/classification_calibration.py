@@ -7,11 +7,11 @@ Pure aggregation over the committed classification result CSVs (no model fitting
 Reports per-variant median balanced accuracy, log-loss and ECE across (dataset, seed).
 Scope: drops the multi-kernel `mkl` Ridge-classifier variant. Writes a LaTeX fragment.
 """
-from pathlib import Path
 import pandas as pd
 
-RUNS = Path("/home/delete/nirs4all/nirs4all-aom/benchmarks/runs")
-OUT = Path("/home/delete/nirs4all/nirs4all-papers/aom_talanta_26/manuscript/tables/table_classification_calib.tex")
+from paths import RUNS, table_path
+
+OUT = table_path("table_classification_calib.tex")
 DA = RUNS / "pls/paper_aom_aompls_da_seeds012/results.csv"
 CLS = RUNS / "ridge/paper_aom_aomridge_cls_seeds012/results.csv"
 

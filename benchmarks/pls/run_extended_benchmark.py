@@ -19,19 +19,16 @@ pass `--limit 0`.
 from __future__ import annotations
 
 import argparse
-import os
 import sys
 from pathlib import Path
 
 import pandas as pd
 
-ROOT = Path(__file__).resolve().parent.parent
+ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 
-from benchmarks.build_cohorts import build_classification_cohort, build_regression_cohort  # noqa: E402
-from benchmarks.run_aompls_benchmark import (  # noqa: E402
-    REGRESSION_VARIANTS,
-    CLASSIFICATION_VARIANTS,
+from benchmarks.pls.build_cohorts import build_classification_cohort, build_regression_cohort  # noqa: E402
+from benchmarks.pls.run_aompls_benchmark import (  # noqa: E402
     _existing_keys,
     run_dataset,
 )
@@ -255,6 +252,11 @@ def _select_cohort(cohort_path: str, limit: int = 20, max_n: int = 1500) -> pd.D
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--workspace", default="bench/AOM_v0/benchmark_runs/extended")
+    parser.add_argument(
+        "--cohort",
+        default="bench/AOM_v0/benchmarks/cohort_regression.csv",
+        help="Regression cohort CSV; pass the frozen paper cohort for matched reruns",
+    )
     parser.add_argument("--limit", type=int, default=20, help="Max datasets per task (0 = all)")
     parser.add_argument("--max-n-train", type=int, default=1500, help="Skip datasets larger than this")
     parser.add_argument("--seed", type=int, default=0)
@@ -264,7 +266,7 @@ def main(argv=None) -> int:
     parser.add_argument("--include-classification", action="store_true")
     parser.add_argument("--variants", default="", help="Comma-separated variant labels; empty = all extended")
     args = parser.parse_args(argv)
-    cohort_reg_path = "bench/AOM_v0/benchmarks/cohort_regression.csv"
+    cohort_reg_path = args.cohort
     cohort_clf_path = "bench/AOM_v0/benchmarks/cohort_classification.csv"
     if not Path(cohort_reg_path).exists():
         build_regression_cohort(out_path=cohort_reg_path)

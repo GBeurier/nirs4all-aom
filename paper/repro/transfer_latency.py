@@ -36,16 +36,15 @@ Ridge-raw). We therefore first collapse to ONE value per (dataset, seed) by mean
 the median across seeds. Tleaf_grp70_30 and FinalScore_grp70_30_scoreQ are NOT used
 (empty/sparse rmsep).
 
-Inputs (absolute paths)
------------------------
-  /home/delete/nirs4all/nirs4all-aom/_archive/nirs4all-lab_benchmark_master/benchmark_master_results.csv
-  /home/delete/nirs4all/nirs4all-aom/paper/review/cohort_manifest.csv
-  /home/delete/nirs4all/nirs4all-aom/benchmarks/runs/ridge/all54_headline/results.csv   (sanity cross-check only)
+Inputs (resolved relative to the repository unless overridden)
+--------------------------------------------------------------
+  AOM_BENCHMARK_MASTER or the archived default
+  paper/review/cohort_manifest.csv
+  benchmarks/runs/ridge/all54_headline/results.csv (sanity cross-check only)
 
-Outputs (absolute paths)
-------------------------
-  /home/delete/nirs4all/nirs4all-papers/aom_talanta_26/manuscript/tables/table_transfer.tex
-  /home/delete/nirs4all/nirs4all-papers/aom_talanta_26/manuscript/tables/table_latency.tex
+Outputs
+-------
+  table_transfer.tex and table_latency.tex in AOM_MANUSCRIPT_TABLES
   (plus printed numbers to stdout)
 """
 
@@ -53,12 +52,14 @@ from __future__ import annotations
 
 import pandas as pd
 
-MASTER = "/home/delete/nirs4all/nirs4all-aom/_archive/nirs4all-lab_benchmark_master/benchmark_master_results.csv"
-COHORT = "/home/delete/nirs4all/nirs4all-aom/paper/review/cohort_manifest.csv"
-HEADLINE = "/home/delete/nirs4all/nirs4all-aom/benchmarks/runs/ridge/all54_headline/results.csv"
+from paths import BENCHMARK_MASTER, COHORT_MANIFEST, RUNS, table_path
 
-TABLE_TRANSFER = "/home/delete/nirs4all/nirs4all-papers/aom_talanta_26/manuscript/tables/table_transfer.tex"
-TABLE_LATENCY = "/home/delete/nirs4all/nirs4all-papers/aom_talanta_26/manuscript/tables/table_latency.tex"
+MASTER = str(BENCHMARK_MASTER)
+COHORT = str(COHORT_MANIFEST)
+HEADLINE = str(RUNS / "ridge/all54_headline/results.csv")
+
+TABLE_TRANSFER = str(table_path("table_transfer.tex"))
+TABLE_LATENCY = str(table_path("table_latency.tex"))
 
 BLOCKED = ["Rd25_CBtestSite", "Rd25_GTtestSite", "Rd25_XSBNtestSite"]
 RANDOM = "Rd25_spxy70"

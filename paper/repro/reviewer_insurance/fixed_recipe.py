@@ -7,6 +7,7 @@ Reads the LOCAL (gitignored) NIR data via nirs4all-lab cohort paths. Compares th
 plain PLS and to AOM-PLS (compact-cv5) on the paired denominator. Writes table_fixed_recipe.tex.
 """
 import os, warnings, numpy as np, pandas as pd
+from pathlib import Path
 warnings.filterwarnings("ignore")
 from scipy.signal import savgol_filter
 from sklearn.cross_decomposition import PLSRegression
@@ -14,11 +15,15 @@ from sklearn.linear_model import Ridge
 from sklearn.model_selection import KFold
 from sklearn.metrics import mean_squared_error
 
-LAB = "/home/delete/nirs4all/nirs4all-lab"
-COHORT = f"{LAB}/cohort_selection/cohort_regression.csv"
-RUNS = "/home/delete/nirs4all/nirs4all-aom/benchmarks/runs"
-OUTCSV = "/home/delete/nirs4all/nirs4all-aom/paper/repro/reviewer_insurance/fixed_recipe_results.csv"
-OUTTEX = "/home/delete/nirs4all/nirs4all-papers/aom_talanta_26/manuscript/tables/table_fixed_recipe.tex"
+REPO_ROOT = Path(__file__).resolve().parents[3]
+LAB = os.environ.get("NIRS4ALL_LAB_DIR", str(REPO_ROOT.parent / "nirs4all-lab"))
+COHORT = os.environ.get("AOM_FIXED_RECIPE_COHORT", f"{LAB}/cohort_selection/cohort_regression.csv")
+RUNS = str(REPO_ROOT / "benchmarks/runs")
+OUTCSV = os.environ.get("AOM_FIXED_RECIPE_RESULTS", str(Path(__file__).with_name("fixed_recipe_results.csv")))
+OUTTEX = str(
+    Path(os.environ.get("AOM_MANUSCRIPT_TABLES", REPO_ROOT / "paper/tables")).expanduser().resolve()
+    / "table_fixed_recipe.tex"
+)
 RIDGE_RUN = f"{RUNS}/ridge/all54_headline/results.csv"
 RMSE = lambda a, b: float(mean_squared_error(a, b) ** 0.5)
 

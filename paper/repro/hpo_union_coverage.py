@@ -21,20 +21,20 @@ already exist on disk, keyed on basename(dataset):
 
 Universe: the 61 regression datasets in cohort_manifest.csv (task == regression).
 
-INPUTS (absolute paths, all already on disk):
+INPUTS (resolved relative to the repository unless overridden):
   - cohort manifest (universe of 61 regression datasets):
-      /home/delete/nirs4all/nirs4all-aom/paper/review/cohort_manifest.csv
+      paper/review/cohort_manifest.csv
   - default-cv5 results (pls-default-cv5 + ridge-default-cv5):
       .../benchmarks/runs/scenarios/paper_aom_linear_hpo_full_cartesian_default_cv5_all/results.csv
   - tabpfn-HPO results (per seed 0/1/2):
       .../paper_aom_linear_hpo_full_cartesian_pls-tabpfn-hpo-25trials_seed{0,1,2}/results.csv
       .../paper_aom_linear_hpo_full_cartesian_ridge-tabpfn-hpo-60trials_seed{0,1,2}/results.csv
   - master CSV (paper-tuned rows, source_run == 'tabpfn_paper_master'):
-      /home/delete/nirs4all/nirs4all-aom/_archive/nirs4all-lab_benchmark_master/benchmark_master_results.csv
+      AOM_BENCHMARK_MASTER or the archived default
 
 OUTPUTS:
   - LaTeX fragment (bare booktabs, no float / caption):
-      /home/delete/nirs4all/nirs4all-papers/aom_talanta_26/manuscript/tables/table_hpo_coverage.tex
+      table_hpo_coverage.tex in AOM_MANUSCRIPT_TABLES
   - prints all computed numbers to stdout.
 """
 
@@ -45,16 +45,18 @@ from pathlib import Path
 
 import pandas as pd
 
-# --- absolute input paths -----------------------------------------------------
-COHORT = "/home/delete/nirs4all/nirs4all-aom/paper/review/cohort_manifest.csv"
-RUNS = "/home/delete/nirs4all/nirs4all-aom/benchmarks/runs/scenarios"
+from paths import BENCHMARK_MASTER, COHORT_MANIFEST, SCENARIOS, table_path
+
+# --- resolved input paths -----------------------------------------------------
+COHORT = str(COHORT_MANIFEST)
+RUNS = str(SCENARIOS)
 DEFAULT_CV5 = f"{RUNS}/paper_aom_linear_hpo_full_cartesian_default_cv5_all/results.csv"
 PLS_HPO_GLOB = f"{RUNS}/paper_aom_linear_hpo_full_cartesian_pls-tabpfn-hpo-25trials_seed*/results.csv"
 RIDGE_HPO_GLOB = f"{RUNS}/paper_aom_linear_hpo_full_cartesian_ridge-tabpfn-hpo-60trials_seed*/results.csv"
-MASTER = "/home/delete/nirs4all/nirs4all-aom/_archive/nirs4all-lab_benchmark_master/benchmark_master_results.csv"
+MASTER = str(BENCHMARK_MASTER)
 
-# --- absolute output path -----------------------------------------------------
-OUT_TABLE = "/home/delete/nirs4all/nirs4all-papers/aom_talanta_26/manuscript/tables/table_hpo_coverage.tex"
+# --- resolved output path -----------------------------------------------------
+OUT_TABLE = str(table_path("table_hpo_coverage.tex"))
 
 
 def basename(name: str) -> str:
