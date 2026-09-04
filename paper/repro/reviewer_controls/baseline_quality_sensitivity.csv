@@ -1,0 +1,9 @@
+comparison,subset,n,median_ratio,ci95_low,ci95_high,wins,losses,ties,wilcoxon_raw_two_sided_p,baseline_rule,scope
+AOM-PLS simple vs PLS-default,largest_pair:all,52,0.9958511061162153,0.9759024085217392,1.0037418679576704,32,20,0,0.13059793822046767,all,largest_pair
+AOM-PLS simple vs PLS-default,largest_pair:baseline_R2_gt_0,40,0.9943387412555319,0.9736798212655481,1.0037418679576704,25,15,0,0.2162961354260915,baseline_R2_gt_0,largest_pair
+AOM-PLS simple vs PLS-default,headline_strict_N32:all,32,0.9907697548176845,0.9697083180756172,0.9999650626252552,22,10,0,0.0837108832783997,all,headline_strict_N32
+AOM-PLS simple vs PLS-default,headline_strict_N32:baseline_R2_gt_0,27,0.9910151719085306,0.9697083180756172,1.0094224923279016,18,9,0,0.219833105802536,baseline_R2_gt_0,headline_strict_N32
+AOM-Ridge simple vs Ridge-default,largest_pair:all,52,0.9735006203002378,0.9506274987075125,0.9909761845534499,41,11,0,1.044511210749909e-05,all,largest_pair
+AOM-Ridge simple vs Ridge-default,largest_pair:baseline_R2_gt_0,40,0.9735006203002378,0.9353774293029856,0.9909761845534499,33,7,0,1.040497409121599e-05,baseline_R2_gt_0,largest_pair
+AOM-Ridge simple vs Ridge-default,headline_strict_N32:all,32,0.9735006203002378,0.8685967074633368,0.9929903993499164,25,7,0,0.00030640000477433205,all,headline_strict_N32
+AOM-Ridge simple vs Ridge-default,headline_strict_N32:baseline_R2_gt_0,28,0.9735006203002378,0.7990521021202146,0.991792768195346,23,5,0,0.0003814026713371277,baseline_R2_gt_0,headline_strict_N32

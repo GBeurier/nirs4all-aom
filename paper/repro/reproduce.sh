@@ -29,11 +29,25 @@ case "$mode" in
   web)
     exec "$script_dir/serve_wasm.sh"
     ;;
+  reviewer-controls)
+    export CUDA_VISIBLE_DEVICES=""
+    export PYTHONPATH="$repo_root${PYTHONPATH:+:$PYTHONPATH}"
+    export OMP_NUM_THREADS=1
+    export OPENBLAS_NUM_THREADS=1
+    export MKL_NUM_THREADS=1
+    export BLIS_NUM_THREADS=1
+    export NUMEXPR_NUM_THREADS=1
+    "$python_bin" "$script_dir/reviewer_controls/spectral_operator_figure.py"
+    "$python_bin" "$script_dir/absolute_fom.py"
+    bash "$script_dir/reviewer_controls/run.sh"
+    "$python_bin" "$script_dir/reviewer_controls/matched_plsda_control.py" --max-workers 5
+    "$python_bin" "$script_dir/reviewer_controls/folded_materialized_control.py" --cpu-limit 5
+    ;;
   full)
     exec "$script_dir/run_full_benchmarks.sh"
     ;;
   *)
-    echo "usage: $0 {check|tables|figures|paper|web|full}" >&2
+    echo "usage: $0 {check|tables|figures|paper|web|reviewer-controls|full}" >&2
     exit 2
     ;;
 esac

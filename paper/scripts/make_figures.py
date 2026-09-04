@@ -242,7 +242,7 @@ def fig_concept() -> None:
     ]
     middle_text = [
         "high calibration\ncost",
-        "winner's curse\n& instability",
+        "selection variance\n& instability",
         "deployment\ncomplexity",
         "poor traceability",
         "limited routine\nusability",
@@ -287,6 +287,7 @@ def fig_concept() -> None:
 
     fig.subplots_adjust(left=0.005, right=0.995, top=0.99, bottom=0.005)
     fig.savefig(FIG_DIR / "fig_concept.pdf")
+    fig.savefig(FIG_DIR / "fig_concept.png", dpi=300)
     plt.close(fig)
 
 

@@ -1,0 +1,28 @@
+{
+  "dataset": "InOut_1264",
+  "source_family": "ARABIDOPSIS_CEFE",
+  "n_train": 884,
+  "n_test": 379,
+  "n_total": 1263,
+  "name_implies_n": 1264,
+  "observed_total_differs_from_name_by": -1,
+  "unique_train_spectra": 884,
+  "unique_test_spectra": 339,
+  "train_duplicate_excess": 0,
+  "test_duplicate_excess": 40,
+  "test_duplicate_groups": 32,
+  "largest_test_duplicate_group": 3,
+  "duplicate_groups_with_conflicting_labels": 0,
+  "exact_train_test_spectral_overlap": 0,
+  "train_class_counts": {
+    "0": 270,
+    "1": 614
+  },
+  "test_class_counts": {
+    "0": 248,
+    "1": 131
+  },
+  "group_metadata_files_present": [],
+  "cohort_split_type": "unspecified",
+  "provenance_conclusion": "No sample/group identifiers accompany X/Y; group leakage cannot be audited. Exact duplicates occur only within the test split, not across train/test."
+}

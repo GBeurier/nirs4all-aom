@@ -1,0 +1,11 @@
+hpo_family,group,n_tasks,n_source_families,n_domains,median_n_train,median_n_test,median_n_features,median_p_over_n_train
+PLS,attempted,38,16,11,321.5,148.5,861.5,3.409984520123839
+PLS,runner_eligible_not_attempted,22,9,8,216.0,147.0,1020.5,4.1900118203309695
+PLS,all_not_attempted,23,10,9,216.0,147.0,1038.0,4.805555555555555
+PLS,success_all_3_seeds,36,16,11,308.0,143.5,700.0,3.2920731707317072
+PLS,no_success,25,11,10,216.0,147.0,1038.0,4.753275109170306
+Ridge,attempted,37,15,10,319.0,146.0,700.0,3.45
+Ridge,runner_eligible_not_attempted,23,9,8,216.0,147.0,1038.0,3.574468085106383
+Ridge,all_not_attempted,24,10,9,216.0,147.0,1038.0,4.1900118203309695
+Ridge,success_all_3_seeds,35,15,10,297.0,141.0,700.0,3.45
+Ridge,no_success,26,11,10,221.5,147.0,1269.0,4.163871597138344

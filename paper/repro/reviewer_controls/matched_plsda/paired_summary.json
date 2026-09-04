@@ -1,0 +1,60 @@
+{
+  "all_currently_runnable": {
+    "analysis_unit": "task mean across seeds",
+    "n_tasks": 14,
+    "n_source_families": 10,
+    "median_delta_balanced_accuracy": 0.0,
+    "bootstrap_95_ci": [
+      -0.006759129213483132,
+      0.0064814814814814214
+    ],
+    "bootstrap_replicates": 10000,
+    "wins": 5,
+    "ties": 3,
+    "losses": 6,
+    "wilcoxon_two_sided_p": 0.7646484375,
+    "wilcoxon_zero_method": "wilcox",
+    "median_identity_balanced_accuracy": 0.7273990943696826,
+    "median_aom_balanced_accuracy": 0.7332819188799582,
+    "median_identity_log_loss": 1.0455309921661908,
+    "median_aom_log_loss": 0.985662912242472
+  },
+  "archived_headline_intersection": {
+    "analysis_unit": "task mean across seeds",
+    "n_tasks": 13,
+    "n_source_families": 9,
+    "median_delta_balanced_accuracy": 0.0,
+    "bootstrap_95_ci": [
+      -0.006759129213483132,
+      0.0064814814814814214
+    ],
+    "bootstrap_replicates": 10000,
+    "wins": 5,
+    "ties": 2,
+    "losses": 6,
+    "wilcoxon_two_sided_p": 0.7646484375,
+    "wilcoxon_zero_method": "wilcox",
+    "median_identity_balanced_accuracy": 0.6103537442949207,
+    "median_aom_balanced_accuracy": 0.6245885291179409,
+    "median_identity_log_loss": 1.1264287428890436,
+    "median_aom_log_loss": 1.141497563715921
+  },
+  "source_family_sensitivity_all": {
+    "analysis_unit": "source-family median of task means",
+    "n_source_families": 10,
+    "median_delta_balanced_accuracy": 0.0,
+    "wins": 3,
+    "ties": 3,
+    "losses": 4,
+    "one_sided_sign_p": 0.7734375
+  },
+  "source_family_sensitivity_archived_headline": {
+    "analysis_unit": "source-family median of task means",
+    "n_source_families": 9,
+    "median_delta_balanced_accuracy": 0.0,
+    "wins": 3,
+    "ties": 2,
+    "losses": 4,
+    "one_sided_sign_p": 0.7734375
+  }
+}

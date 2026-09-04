@@ -13,6 +13,7 @@ from __future__ import annotations
 import csv
 import io
 import math
+import os
 import statistics
 from collections import defaultdict
 from dataclasses import dataclass
@@ -25,6 +26,10 @@ AOM_ROOT = REPO_ROOT
 SCEN = SCENARIOS
 
 COHORT = COHORT_MANIFEST
+REGRESSION_COHORT = REPO_ROOT / "benchmarks" / "pls" / "cohort_regression.csv"
+DATA_ROOT = Path(
+    os.environ.get("NIRS4ALL_DATA_DIR", REPO_ROOT.parent / "nirs4all-data")
+).expanduser().resolve()
 PATH_AOMPLS = SCEN / "paper_aom_aompls_seeds012" / "results.csv"
 PATH_AOMRIDGE_HEADLINE = RUNS / "ridge" / "all54_headline" / "results.csv"
 PATH_DEFAULT = SCEN / "paper_aom_linear_hpo_full_cartesian_default_cv5_all" / "results.csv"
@@ -310,13 +315,57 @@ def fmt_r2(value: float | None) -> str:
     return f"{value:.3f}"
 
 
-def rpd_from_r2(value: float | None) -> float | None:
-    if value is None or not math.isfinite(value):
-        return None
-    if value < 0 or value >= 1:
-        return None
-    value = min(value, 1.0 - 1e-12)
-    return 1.0 / math.sqrt(1.0 - value)
+def resolve_data_path(raw: str) -> Path:
+    """Resolve the frozen cohort's historical paths against NIRS4ALL_DATA_DIR."""
+
+    path = Path(raw)
+    if path.is_absolute():
+        return path
+    parts = path.parts
+    if "data" in parts:
+        parts = parts[parts.index("data") + 1 :]
+    return DATA_ROOT.joinpath(*parts)
+
+
+def numeric_column(path: Path) -> list[float]:
+    """Read the single numerical response column used by the benchmark."""
+
+    text = path.read_text(encoding="utf-8-sig")
+    delimiter = ";" if text.partition("\n")[0].count(";") else ","
+    rows = list(csv.reader(io.StringIO(text), delimiter=delimiter))
+    values: list[float] = []
+    for row in rows:
+        if not row:
+            continue
+        value = parse_float(row[0])
+        if value is not None:
+            values.append(value)
+    if len(values) < 2:
+        raise RuntimeError(f"fewer than two numerical test responses in {path}")
+    return values
+
+
+def collect_rpd(datasets: set[str], rmsep: dict[str, float]) -> dict[str, float]:
+    """Compute standard RPD = sample SD(y_test) / RMSEP directly."""
+
+    paths: dict[str, Path] = {}
+    for row in read_csv_rows(REGRESSION_COHORT):
+        ds = dataset_id(row.get("dataset", ""))
+        if ds in datasets:
+            paths[ds] = resolve_data_path(row["ytest_path"])
+    missing = sorted(ds for ds in datasets if ds not in paths or not paths[ds].is_file())
+    if missing:
+        raise RuntimeError(
+            "standard RPD requires local Ytest files; set NIRS4ALL_DATA_DIR. Missing: "
+            + ", ".join(missing)
+        )
+    out: dict[str, float] = {}
+    for ds in datasets:
+        error = rmsep.get(ds)
+        if error is None or error <= 0:
+            raise RuntimeError(f"invalid RMSEP for RPD on {ds}: {error}")
+        out[ds] = statistics.stdev(numeric_column(paths[ds])) / error
+    return out
 
 
 def fmt_rpd(value: float | None) -> str:
@@ -376,6 +425,7 @@ def build_table_rows(datasets: list[str]) -> list[dict[str, object]]:
     aomridge = per_dataset_metric(AOMRIDGE_SIMPLE, AOMRIDGE_SIMPLE.rmsep_column, dataset_set)
     ridge_hpo = per_dataset_metric(RIDGE_HPO, RIDGE_HPO.rmsep_column, dataset_set)
     aomridge_r2 = per_dataset_metric(AOMRIDGE_SIMPLE, AOMRIDGE_SIMPLE.r2_column or "r2", dataset_set)
+    aomridge_rpd = collect_rpd(dataset_set, aomridge)
 
     missing = []
     rows = []
@@ -387,13 +437,13 @@ def build_table_rows(datasets: list[str]) -> list[dict[str, object]]:
             "aomridge_rmsep": aomridge.get(ds),
             "ridge_hpo_rmsep": ridge_hpo.get(ds),
             "aomridge_r2": aomridge_r2.get(ds),
+            "aomridge_rpd": aomridge_rpd.get(ds),
         }
         absent = [key for key, value in required.items() if value is None]
         if absent:
             missing.append(f"{ds}: {', '.join(absent)}")
             continue
-        rpd = rpd_from_r2(float(required["aomridge_r2"]))
-        rows.append({"dataset": ds, **required, "aomridge_rpd": rpd})
+        rows.append({"dataset": ds, **required})
     if missing:
         raise RuntimeError("missing table values after strict-intersection filtering:\n" + "\n".join(missing))
     return rows

@@ -1,0 +1,4 @@
+Representative raw and transformed spectra from the real ALPINE phosphorus task.
+Total training spectra: 247; Alps: 144; Fennoscandia: 103.
+SG smoothing suppresses high-frequency variation while retaining broad bands; the first derivative emphasizes local slopes and reduces offsets; degree-1 detrending removes constant and linear wavelength backgrounds.
+Structured source data: fig_spectral_operators_source_data.csv.

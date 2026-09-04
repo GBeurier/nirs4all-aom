@@ -1,0 +1,16 @@
+{
+  "path": "/home/delete/nirs4all/nirs4all-aom/benchmarks/runs/pls/paper_aom_aompls_da_seeds012/results.csv",
+  "rows": 240,
+  "ok_rows": 204,
+  "models": 5,
+  "ok_criterion_values": [
+    "holdout"
+  ],
+  "logged_n_splits_values": [
+    5.0
+  ],
+  "holdout_implementation": "legacy 20% split, np.random.RandomState(42), independent of run seed",
+  "headline_baseline_engine": "pls_standard with identity-only bank",
+  "headline_aom_engine": "simpls_covariance with compact nine-operator bank",
+  "finding": "Archived classification selection used holdout, not five-fold CV; n_splits=5 is metadata only for these rows. The headline contrast also changes both operator set and PLS engine."
+}

@@ -1,0 +1,10 @@
+model,engine,operator_bank,criterion,status,rows
+AOM-PLS-DA-global-nipals-adjoint,nipals_adjoint,compact,holdout,ok,39
+AOM-PLS-DA-global-nipals-adjoint,nipals_adjoint,compact,,skipped,9
+AOM-PLS-DA-global-simpls-covariance,simpls_covariance,compact,holdout,ok,39
+AOM-PLS-DA-global-simpls-covariance,simpls_covariance,compact,,skipped,9
+PLS-DA-standard,pls_standard,identity,holdout,ok,48
+POP-PLS-DA-nipals-adjoint,nipals_adjoint,compact,holdout,ok,39
+POP-PLS-DA-nipals-adjoint,nipals_adjoint,compact,,skipped,9
+POP-PLS-DA-simpls-covariance,simpls_covariance,compact,holdout,ok,39
+POP-PLS-DA-simpls-covariance,simpls_covariance,compact,,skipped,9

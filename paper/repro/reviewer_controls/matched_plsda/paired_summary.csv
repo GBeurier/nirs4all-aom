@@ -1,0 +1,5 @@
+scope,analysis_unit,n_tasks,n_source_families,median_delta_balanced_accuracy,bootstrap_95_ci,bootstrap_replicates,wins,ties,losses,wilcoxon_two_sided_p,wilcoxon_zero_method,median_identity_balanced_accuracy,median_aom_balanced_accuracy,median_identity_log_loss,median_aom_log_loss,one_sided_sign_p
+all_currently_runnable,task mean across seeds,14.0,10,0.0,"[-0.006759129213483132, 0.0064814814814814214]",10000.0,5,3,6,0.7646484375,wilcox,0.7273990943696826,0.7332819188799582,1.0455309921661908,0.985662912242472,
+archived_headline_intersection,task mean across seeds,13.0,9,0.0,"[-0.006759129213483132, 0.0064814814814814214]",10000.0,5,2,6,0.7646484375,wilcox,0.6103537442949207,0.6245885291179409,1.1264287428890436,1.141497563715921,
+source_family_sensitivity_all,source-family median of task means,,10,0.0,,,3,3,4,,,,,,,0.7734375
+source_family_sensitivity_archived_headline,source-family median of task means,,9,0.0,,,3,2,4,,,,,,,0.7734375

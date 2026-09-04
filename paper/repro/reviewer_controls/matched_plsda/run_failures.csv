@@ -1,0 +1,10 @@
+database_name,dataset,seed,error
+FUSARIUM,FinalScoreBin_grp70_30_classStrat,0,non-finite spectra
+FUSARIUM,FinalScoreBin_grp70_30_classStrat,1,non-finite spectra
+ARABIDOPSIS_CEFE,Group9_1856,1,non-finite spectra
+ARABIDOPSIS_CEFE,Group9_1856,0,non-finite spectra
+ARABIDOPSIS_CEFE,Group9_1856,2,non-finite spectra
+FUSARIUM,ScoreBin_grp70_30_classStrat,0,non-finite spectra
+FUSARIUM,FinalScoreBin_grp70_30_classStrat,2,non-finite spectra
+FUSARIUM,ScoreBin_grp70_30_classStrat,2,non-finite spectra
+FUSARIUM,ScoreBin_grp70_30_classStrat,1,non-finite spectra

@@ -18,6 +18,7 @@ paper/repro/reproduce.sh check
 | `reproduce.sh figures` | Run the existing paper figure/statistics builder | No |
 | `reproduce.sh paper` | Build the paper through the manuscript build script selected by `AOM_MANUSCRIPT_BUILD` | No |
 | `reproduce.sh web` | Start the local WebAssembly demo and print its self-test URL | No |
+| `reproduce.sh reviewer-controls` | Regenerate the real-spectrum figure, standard RPD table, HPO audits, matched PLS-DA rerun and folded/materialised timing control | Yes; CPU-only, at most five workers |
 | `reproduce.sh full` | Launch fresh benchmark fits into a new, explicit output directory | Yes; opt-in only |
 
 `reproduce.sh tables` needs Python with `numpy`, `pandas`, and `scipy`. Outputs normally go to the
@@ -71,6 +72,22 @@ and starting inputs.
 Inputs are the whitelisted workspaces under `benchmarks/runs/`, the frozen benchmark master selected
 by `AOM_BENCHMARK_MASTER`, and `paper/review/cohort_manifest.csv`. Each script performs a numerical
 sanity check before writing its LaTeX fragment.
+
+## Corrective reviewer controls
+
+The targeted revision controls are collected under `reviewer_controls/`. They preserve the published
+external splits and write only into that directory or the paper figure/table output directories. The
+matched PLS-DA runner is resumable and varies only the identity-versus-compact operator bank. The
+folded/materialised control uses the same operators, folds, grids and deterministic tie rule in both
+paths. Both controls disable GPUs, cap numerical-library threads, and use at most five CPU workers,
+leaving more than two logical CPUs free on the 24-thread reference workstation.
+
+Run all corrective controls with local regression and classification data available under
+`NIRS4ALL_DATA_DIR` (or the sibling `nirs4all-data` checkout):
+
+```bash
+paper/repro/reproduce.sh reviewer-controls
+```
 
 ## WebAssembly companion
 

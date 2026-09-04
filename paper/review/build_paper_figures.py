@@ -1733,9 +1733,11 @@ def build_results_overview(rows: list[dict]) -> None:
     ax.tick_params(axis="y", length=0, labelsize=7.8)
     style_grid(ax, axis="x")
 
-    cls_effect, cls_low, cls_high = 0.159, 0.129, 0.422
-    ax_cls.set_xlim(0.0, 0.46)
-    ax_cls.axvspan(0.0, 0.46, facecolor="#edf7f2", zorder=-3)
+    # Corrective matched-protocol control (14 task means; same folds, response
+    # coding, score calibration, component grid, and selection criterion).
+    cls_effect, cls_low, cls_high = 0.0, -0.006759, 0.006481
+    ax_cls.set_xlim(-0.012, 0.012)
+    ax_cls.axvspan(0.0, 0.012, facecolor="#edf7f2", zorder=-3)
     ax_cls.axvline(0.0, color=COLOR_REFERENCE, linewidth=0.9,
                    linestyle=(0, (4, 3)), zorder=1)
     ax_cls.errorbar(cls_effect, 0, xerr=[[cls_effect - cls_low], [cls_high - cls_effect]],
@@ -1743,7 +1745,7 @@ def build_results_overview(rows: list[dict]) -> None:
                     ecolor=FAMILY_COLORS["AOM-PLS"], elinewidth=2.2,
                     capsize=3.5, markersize=7.5, markeredgecolor="white",
                     markeredgewidth=0.8, zorder=4)
-    ax_cls.annotate("+0.159  [0.129, 0.422]  ·  12/13 wins", (cls_effect, 0),
+    ax_cls.annotate("0.000  [-0.0068, 0.0065]  ·  5/2/6 W/T/L", (cls_effect, 0),
                     xytext=(0, 10), textcoords="offset points", ha="center",
                     va="bottom", fontsize=7.2, color=COLOR_AXIS)
     ax_cls.set_yticks([0], labels=["AOM-PLS-DA vs PLS-DA"])
@@ -1752,7 +1754,7 @@ def build_results_overview(rows: list[dict]) -> None:
     ax_cls.set_title("B   Classification", loc="left", weight="bold")
     ax_cls.tick_params(axis="y", length=0, labelsize=7.8)
     style_grid(ax_cls, axis="x")
-    save_fig(fig, "fig_results", png=False)
+    save_fig(fig, "fig_results", png=True)
 
 
 def _strict_dataset_list(dfs: dict[str, pd.DataFrame]) -> list[str]:
@@ -2286,7 +2288,6 @@ def build_fastaom_variants_figure() -> None:
 def write_v3_stats(rows: list[dict], dfs: dict[str, pd.DataFrame]) -> None:
     fast_summary = pd.read_csv(FAST_SUMMARY)
     strict_n = len(_strict_dataset_list(dfs))
-    by_label = {r["label"]: r for r in rows}
     lines = [
         "# AOM v3 statistics summary",
         "",

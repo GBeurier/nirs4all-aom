@@ -1,0 +1,15 @@
+{
+  "tasks": 4,
+  "model_task_comparisons": 8,
+  "all_parity_ok": true,
+  "failed_comparisons": [],
+  "operator_agreements": 8,
+  "hyperparameter_agreements": 8,
+  "max_abs_cv_score_difference": 2.86029910867569e-09,
+  "max_abs_prediction_difference": 6.549412745471273e-08,
+  "max_abs_original_coefficient_difference": 1.2129659808124416e-05,
+  "median_materialized_over_folded_time_by_model": {
+    "PLS": 0.5867809496225787,
+    "Ridge": 0.10344194854609735
+  }
+}

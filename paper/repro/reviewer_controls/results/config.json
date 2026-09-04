@@ -1,0 +1,227 @@
+{
+  "command": [
+    "/usr/bin/python3.11",
+    "/home/delete/nirs4all/nirs4all-aom/paper/repro/reviewer_controls/folded_materialized_control.py",
+    "--cpu-limit",
+    "5"
+  ],
+  "git_revision": "d530f43bfa51bc27e41d394d50397b493b966882",
+  "data_root": "/home/delete/nirs4all/nirs4all-data/regression",
+  "tasks": [
+    {
+      "name": "Beer_OriginalExtract_60_KS",
+      "relative_dir": "BEER/Beer_OriginalExtract_60_KS"
+    },
+    {
+      "name": "Corn_Oil_80_ZhengChenPelegYbaseSplit",
+      "relative_dir": "CORN/Corn_Oil_80_ZhengChenPelegYbaseSplit"
+    },
+    {
+      "name": "An_spxyG70_30_byCultivar_MicroNIR",
+      "relative_dir": "GRAPEVINE_LeafTraits/An_spxyG70_30_byCultivar_MicroNIR"
+    },
+    {
+      "name": "DIESEL_bp50_246_hla-b",
+      "relative_dir": "DIESEL/DIESEL_bp50_246_hla-b"
+    }
+  ],
+  "data_provenance": {
+    "Beer_OriginalExtract_60_KS": {
+      "Xtrain": {
+        "path": "/home/delete/nirs4all/nirs4all-data/regression/BEER/Beer_OriginalExtract_60_KS/Xtrain.csv",
+        "sha256": "a7af410f6f1d319ef7558c5c3e7a4d81734e84f5229158b3b1ab05bdc6671c98"
+      },
+      "Xtest": {
+        "path": "/home/delete/nirs4all/nirs4all-data/regression/BEER/Beer_OriginalExtract_60_KS/Xtest.csv",
+        "sha256": "25ba0b66610accce95241e24a7db87bc7b3d48880c51eb494de9269b16b75436"
+      },
+      "Ytrain": {
+        "path": "/home/delete/nirs4all/nirs4all-data/regression/BEER/Beer_OriginalExtract_60_KS/Ytrain.csv",
+        "sha256": "5d4906d3ce487a6a70d956f920d4ec551f45c3c4ab580c1fc318c81ade5bf179"
+      },
+      "Ytest": {
+        "path": "/home/delete/nirs4all/nirs4all-data/regression/BEER/Beer_OriginalExtract_60_KS/Ytest.csv",
+        "sha256": "43beba1c4f8f37d9f3817875c4fe3c751cdf8373e7002c9575f3b054bbdff4ec"
+      }
+    },
+    "Corn_Oil_80_ZhengChenPelegYbaseSplit": {
+      "Xtrain": {
+        "path": "/home/delete/nirs4all/nirs4all-data/regression/CORN/Corn_Oil_80_ZhengChenPelegYbaseSplit/Xtrain.csv",
+        "sha256": "10f0dbe1271191e463176ec6a78ce75a1b13f9cc7748a8f3e86d6a50485102a0"
+      },
+      "Xtest": {
+        "path": "/home/delete/nirs4all/nirs4all-data/regression/CORN/Corn_Oil_80_ZhengChenPelegYbaseSplit/Xtest.csv",
+        "sha256": "0d77ac9d24a18dfe07b1e8465a8a49c38d96ece83d4609dc0d4ca3c9fcf8354d"
+      },
+      "Ytrain": {
+        "path": "/home/delete/nirs4all/nirs4all-data/regression/CORN/Corn_Oil_80_ZhengChenPelegYbaseSplit/Ytrain.csv",
+        "sha256": "d31d0ef0fb9050583d03f6ad08e7f648cf945923d23f6f2469dddb1f3743a078"
+      },
+      "Ytest": {
+        "path": "/home/delete/nirs4all/nirs4all-data/regression/CORN/Corn_Oil_80_ZhengChenPelegYbaseSplit/Ytest.csv",
+        "sha256": "b8572d8936f4d70c30d76a5df257871153a4345748f3eb47c92fb12c6de7e14f"
+      }
+    },
+    "An_spxyG70_30_byCultivar_MicroNIR": {
+      "Xtrain": {
+        "path": "/home/delete/nirs4all/nirs4all-data/regression/GRAPEVINE_LeafTraits/An_spxyG70_30_byCultivar_MicroNIR/Xtrain.csv",
+        "sha256": "f1f84601a6200b60b1b5d284cbd8b409914a7198f8c7fa8a2761cc29c64b50af"
+      },
+      "Xtest": {
+        "path": "/home/delete/nirs4all/nirs4all-data/regression/GRAPEVINE_LeafTraits/An_spxyG70_30_byCultivar_MicroNIR/Xtest.csv",
+        "sha256": "8e6df9e6df6f48ba1c0e16a8089c1bba3a84eb8ec1e705df1f8e166dcc6677eb"
+      },
+      "Ytrain": {
+        "path": "/home/delete/nirs4all/nirs4all-data/regression/GRAPEVINE_LeafTraits/An_spxyG70_30_byCultivar_MicroNIR/Ytrain.csv",
+        "sha256": "7a518cdec9b89a9fbbebe1423b38604eb2bc1d9ff430547579a3f90044a1f0a3"
+      },
+      "Ytest": {
+        "path": "/home/delete/nirs4all/nirs4all-data/regression/GRAPEVINE_LeafTraits/An_spxyG70_30_byCultivar_MicroNIR/Ytest.csv",
+        "sha256": "1b7a61ff92f186c8e8a50e2ed8045b2172e4b5ff061b57d2caed670d512f9c36"
+      }
+    },
+    "DIESEL_bp50_246_hla-b": {
+      "Xtrain": {
+        "path": "/home/delete/nirs4all/nirs4all-data/regression/DIESEL/DIESEL_bp50_246_hla-b/Xtrain.csv",
+        "sha256": "9cb3622b63bef0b3d8d109cc84e08d3ded68e72de9b79a7f31a3e977f13ae374"
+      },
+      "Xtest": {
+        "path": "/home/delete/nirs4all/nirs4all-data/regression/DIESEL/DIESEL_bp50_246_hla-b/Xtest.csv",
+        "sha256": "c42fb0534dcc024c07281830312945cba384980aed0a1a192acedd586f2eb5bc"
+      },
+      "Ytrain": {
+        "path": "/home/delete/nirs4all/nirs4all-data/regression/DIESEL/DIESEL_bp50_246_hla-b/Ytrain.csv",
+        "sha256": "998eb5d511de1ce2ef24626c1d15bd4bb2c5283395acfe66acfdb66f593b242b"
+      },
+      "Ytest": {
+        "path": "/home/delete/nirs4all/nirs4all-data/regression/DIESEL/DIESEL_bp50_246_hla-b/Ytest.csv",
+        "sha256": "9faa6eb407167d4ac8e17a1872d2f3744bdd2ce1c374d069da21501265e3dd2b"
+      }
+    }
+  },
+  "compact_bank_names": [
+    "identity",
+    "sg_smooth_w11_p2",
+    "sg_smooth_w21_p3",
+    "sg_d1_w11_p2",
+    "sg_d1_w21_p3",
+    "sg_d2_w11_p2",
+    "detrend_d1",
+    "detrend_d2",
+    "fd_d1"
+  ],
+  "cv": {
+    "class": "KFold",
+    "n_splits": 5,
+    "shuffle": true,
+    "random_state": 20260904
+  },
+  "pls_k_grid": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15
+  ],
+  "ridge_alpha_grid": "per-task identity-trace-relative: trace(Xc Xc.T)/n * logspace(-6,6,size)",
+  "ridge_alpha_grid_size": 50,
+  "tie_break": "np.argmin C-order: lowest operator index, then lowest hyperparameter-grid index",
+  "timing_repeats": 3,
+  "warmup": "one unrecorded run per mode, followed by one parity run and alternating timed runs",
+  "cpu_only": true,
+  "cpu_affinity_original": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19,
+    20,
+    21,
+    22,
+    23
+  ],
+  "cpu_affinity_active": [
+    0,
+    1,
+    2,
+    3,
+    4
+  ],
+  "thread_environment": {
+    "OMP_NUM_THREADS": "1",
+    "OPENBLAS_NUM_THREADS": "1",
+    "MKL_NUM_THREADS": "1",
+    "BLIS_NUM_THREADS": "1",
+    "VECLIB_MAXIMUM_THREADS": "1",
+    "NUMEXPR_NUM_THREADS": "1",
+    "CUDA_VISIBLE_DEVICES": ""
+  },
+  "software": {
+    "python": "3.11.15 (main, Mar  3 2026, 09:26:23) [GCC 11.4.0]",
+    "platform": "Linux-6.18.33.2-microsoft-standard-WSL2-x86_64-with-glibc2.35",
+    "numpy": "2.1.3",
+    "scipy": "1.17.1",
+    "scikit_learn": "1.7.2"
+  },
+  "threadpools": [
+    {
+      "user_api": "blas",
+      "internal_api": "openblas",
+      "num_threads": 1,
+      "prefix": "libscipy_openblas",
+      "filepath": "/home/delete/.local/lib/python3.11/site-packages/numpy.libs/libscipy_openblas64_-ff651d7f.so",
+      "version": "0.3.27",
+      "threading_layer": "pthreads",
+      "architecture": "Haswell"
+    },
+    {
+      "user_api": "blas",
+      "internal_api": "openblas",
+      "num_threads": 1,
+      "prefix": "libscipy_openblas",
+      "filepath": "/home/delete/.local/lib/python3.11/site-packages/scipy.libs/libscipy_openblas-6cdc3b4a.so",
+      "version": "0.3.30",
+      "threading_layer": "pthreads",
+      "architecture": "Haswell"
+    },
+    {
+      "user_api": "openmp",
+      "internal_api": "openmp",
+      "num_threads": 1,
+      "prefix": "libgomp",
+      "filepath": "/home/delete/.local/lib/python3.11/site-packages/scikit_learn.libs/libgomp-a34b3233.so.1.0.0",
+      "version": null
+    }
+  ],
+  "parity_thresholds": {
+    "max_relative_cv_score_difference": 1e-08,
+    "max_relative_prediction_difference": 1e-08,
+    "max_relative_original_coefficient_difference": 1e-07,
+    "selected_operator_and_grid_index": "exact"
+  }
+}
