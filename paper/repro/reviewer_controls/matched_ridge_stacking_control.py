@@ -272,12 +272,13 @@ def _paired_summary(
     task_means = task_means[(task_means[candidate] > 0) & (task_means[reference] > 0)]
     ratios = (task_means[candidate] / task_means[reference]).to_numpy(float)
     differences = (task_means[candidate] - task_means[reference]).to_numpy(float)
+    log_ratios = np.log(ratios)
     rng = np.random.default_rng(BOOTSTRAP_SEED)
     draws = rng.choice(ratios, size=(BOOTSTRAP_N, len(ratios)), replace=True)
     medians = np.median(draws, axis=1)
     p = (
-        float(stats.wilcoxon(differences, alternative="two-sided", zero_method="wilcox").pvalue)
-        if np.any(differences != 0)
+        float(stats.wilcoxon(log_ratios, alternative="two-sided", zero_method="wilcox").pvalue)
+        if np.any(log_ratios != 0)
         else math.nan
     )
     return {
@@ -308,7 +309,7 @@ def _write_report(output_dir: Path, summaries: list[dict[str, Any]], metadata: d
         "This is an SPRR-inspired same-bank control, not a faithful reproduction of SPRR or PROSAC.",
         "Each of the nine strict-linear views has its own five-fold-tuned Ridge base learner; a five-fold-tuned Ridge meta-model combines out-of-fold base predictions. The external test split is untouched until final evaluation.",
         "",
-        "| Comparison | N | Median RMSEP ratio | 95% bootstrap CI | Wins/ties/losses | Raw two-sided Wilcoxon p |",
+        "| Comparison | N | Median RMSEP ratio | 95% bootstrap CI | Wins/ties/losses | Raw two-sided log-ratio Wilcoxon p |",
         "|---|---:|---:|---:|---:|---:|",
     ]
     for row in summaries:

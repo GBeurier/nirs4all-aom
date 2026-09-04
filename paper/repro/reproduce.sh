@@ -45,6 +45,7 @@ case "$mode" in
     "$python_bin" "$script_dir/reviewer_controls/full_matched_hpo_control.py" --max-workers 5
     "$python_bin" "$script_dir/reviewer_controls/analyze_full_matched_hpo.py"
     "$python_bin" "$script_dir/reviewer_controls/matched_ridge_stacking_control.py" --max-workers 5
+    "$python_bin" "$script_dir/reviewer_controls/ridge_identity_inference.py"
     "$python_bin" "$script_dir/reviewer_controls/rpd_quality_sensitivity.py"
     "$python_bin" "$script_dir/reviewer_insurance/fixed_recipe.py"
     ;;

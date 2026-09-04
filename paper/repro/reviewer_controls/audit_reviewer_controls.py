@@ -478,7 +478,7 @@ def make_report(
     lines = [
         "# Reviewer controls: AOM Talanta targeted revision",
         "",
-        "Sections 1--4 aggregate frozen outputs and do not fit models. Separate matched-fitting controls are documented in `matched_plsda/PROTOCOL_REPORT.md`, `full_matched_hpo/REPORT.md` and `matched_ridge_stacking/PROTOCOL_REPORT.md`.",
+        "Sections 1--4 aggregate frozen outputs and do not fit models. Separate matched-fitting controls are documented in `matched_plsda/PROTOCOL_REPORT.md`, `full_matched_hpo/REPORT.md` and `matched_ridge_stacking/PROTOCOL_REPORT.md`; `ridge_identity_inference/REPORT.md` aggregates the matched Ridge arm by task and source family.",
         "The full matched HPO control covers the strict 32-task panel, three seeds and both five- and three-fold compact-bank searches; it found complete folded/materialized selection and prediction parity in all 384 model-runs.",
         "",
         "## 1. HPO attempted/missing rule",
@@ -573,6 +573,17 @@ def make_report(
                 f"(95% bootstrap CI {f(r['ci95_low'])}--{f(r['ci95_high'])}); "
                 f"wins={int(r['wins'])}/{int(r['n'])}; raw two-sided Wilcoxon p={p_fmt(r['wilcoxon_raw_two_sided_p'])}."
             )
+    identity_summary_path = HERE / "ridge_identity_inference" / "summary.csv"
+    if identity_summary_path.exists():
+        identity_summary = pd.read_csv(identity_summary_path)
+        lines += ["", "### Matched identity-only Ridge inference", ""]
+        for _, r in identity_summary.iterrows():
+            lines.append(
+                f"- **{r['scope']} / {r['unit']}**: N={int(r['n'])}; median ratio={f(r['median_ratio'])} "
+                f"(95% bootstrap CI {f(r['ci95_low'])}--{f(r['ci95_high'])}); "
+                f"W/T/L={int(r['wins'])}/{int(r['ties'])}/{int(r['losses'])}; "
+                f"raw two-sided Wilcoxon p on log ratios={p_fmt(r['wilcoxon_log_ratio_raw_two_sided_p'])}."
+            )
     lines += [
         "- The new matched compact-bank control answers the practical ensemble objection on common splits. It does not reproduce the full published SPRR or PROSAC algorithms, and no numerical superiority claim over those methods is made. SPORT and a literature-faithful SPRR/PROSAC comparison remain future scope rather than a submission-critical omission.",
         "",
@@ -585,6 +596,7 @@ def make_report(
         "- `ta_groupsampleid_hpo_audit.csv` and `ta_leave_one_out_sensitivity.csv`: outlier evidence.",
         "- `comparator_reuse_audit.csv`: code/result inventory and reuse decision.",
         "- `matched_ridge_stacking/`: matched compact-bank Ridge stacking protocol, per-run outputs and summary.",
+        "- `ridge_identity_inference/`: matched identity-only Ridge and broader archived-default task/family inference on log RMSEP ratios.",
         "- `rpd_quality_sensitivity/`: standard baseline-defined RPD sensitivity and task audit.",
         "- `input_sha256.csv`: exact hashes of every primary artifact consumed by the audit.",
     ]

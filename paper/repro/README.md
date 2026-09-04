@@ -18,7 +18,7 @@ paper/repro/reproduce.sh check
 | `reproduce.sh figures` | Run the existing paper figure/statistics builder | No |
 | `reproduce.sh paper` | Build the paper through the manuscript build script selected by `AOM_MANUSCRIPT_BUILD` | No |
 | `reproduce.sh web` | Start the local WebAssembly demo and print its self-test URL | No |
-| `reproduce.sh reviewer-controls` | Regenerate the real-spectrum figure, standard RPD table, HPO audits, matched PLS-DA rerun, folded/materialised controls, the RPD>=2 sensitivity and the matched compact-bank Ridge-stacking control | Yes; CPU-only, at most five workers |
+| `reproduce.sh reviewer-controls` | Regenerate the real-spectrum figure, standard RPD table, HPO audits, matched PLS-DA rerun, folded/materialised controls, matched identity-only Ridge inference, the RPD>=2 sensitivity and the matched compact-bank Ridge-stacking control | Yes; CPU-only, at most five workers |
 | `reproduce.sh full` | Launch fresh benchmark fits into a new, explicit output directory | Yes; opt-in only |
 
 `reproduce.sh tables` needs Python with `numpy`, `pandas`, and `scipy`. Outputs normally go to the
@@ -82,7 +82,9 @@ folded/materialised controls use the same operators, folds, grids and determinis
 paths. The full control covers 32 tasks, three seeds and both five- and three-fold protocols. The
 SPRR-inspired control fits one Ridge model per strict-linear view and a Ridge meta-model from
 out-of-fold predictions; it is a same-bank ensemble comparator, not a claimed reproduction of SPRR
-or PROSAC. The RPD sensitivity uses the standard test-response definition and a baseline-defined
+or PROSAC. The identity-only aggregation compares AOM-Ridge with its matched raw-Ridge arm on both
+task rows and source-family medians, using log RMSEP ratios for unit-invariant signed-rank inference.
+The RPD sensitivity uses the standard test-response definition and a baseline-defined
 threshold. These controls disable GPUs, cap numerical-library threads, and use at most five CPU workers,
 leaving more than two logical CPUs free on the 24-thread reference workstation.
 
@@ -102,6 +104,5 @@ same local bundle with:
 paper/repro/reproduce.sh web
 ```
 
-Then open the printed `/demo/wasm/?selftest=1` URL. The browser's compact workload commonly shows
-about a 5–6× time reduction for AOM relative to its matched HPO run; this is illustrative and
-workload-dependent, not a hardware-independent algorithmic speedup.
+Then open the printed `/demo/wasm/?selftest=1` URL. Browser timings are interactive diagnostics only;
+they are not a frozen benchmark and are not used as quantitative evidence in the manuscript.

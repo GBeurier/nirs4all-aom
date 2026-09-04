@@ -32,11 +32,14 @@ Run the matched ensemble and task-quality controls with:
 
 ```bash
 python paper/repro/reviewer_controls/matched_ridge_stacking_control.py --max-workers 5
+python paper/repro/reviewer_controls/ridge_identity_inference.py
 python paper/repro/reviewer_controls/rpd_quality_sensitivity.py
 ```
 
 The first command is an SPRR-inspired same-bank comparison: nine separately
 fitted Ridge views are combined by a Ridge meta-model trained on out-of-fold
 predictions. It is not labelled as a faithful SPRR or PROSAC reproduction. The
-second command is a pure aggregation using the standard
+second command aggregates the same matched runs into task- and source-family
+inference for AOM-Ridge versus identity-only Ridge; it ranks log RMSEP ratios
+and treats source family as the primary unit. The third command is a pure aggregation using the standard
 `SD(y_test) / RMSEP` definition and a Ridge-default-defined threshold.

@@ -1,6 +1,6 @@
 # Reviewer controls: AOM Talanta targeted revision
 
-Sections 1--4 aggregate frozen outputs and do not fit models. Separate matched-fitting controls are documented in `matched_plsda/PROTOCOL_REPORT.md`, `full_matched_hpo/REPORT.md` and `matched_ridge_stacking/PROTOCOL_REPORT.md`.
+Sections 1--4 aggregate frozen outputs and do not fit models. Separate matched-fitting controls are documented in `matched_plsda/PROTOCOL_REPORT.md`, `full_matched_hpo/REPORT.md` and `matched_ridge_stacking/PROTOCOL_REPORT.md`; `ridge_identity_inference/REPORT.md` aggregates the matched Ridge arm by task and source family.
 The full matched HPO control covers the strict 32-task panel, three seeds and both five- and three-fold compact-bank searches; it found complete folded/materialized selection and prediction parity in all 384 model-runs.
 
 ## 1. HPO attempted/missing rule
@@ -72,8 +72,15 @@ Minimal revision: retain the task in the primary analysis (avoid post-hoc deleti
 - **Huang et al. 2024 SPRR (Ridge bases on separately preprocessed spectra + Ridge meta-model)**: faithful=False; reusable=scaffold_only_not_results; N=6. Existing StackingHybrid uses heterogeneous AOM/MoE/block-view base estimators, not one Ridge base learner per preprocessing view; full-cohort run stopped after six datasets.
 - **Archived Multi-kernel Stack-5**: faithful=False; reusable=no_results_reuse; N=1. Five heterogeneous raw/multi-kernel/mixed-model learners with Ridge meta-model; only one successful archived result, so it is not SPORT or SPRR.
 - **Matched compact-bank Ridge stacking (SPRR-inspired control)**: faithful=False; reusable=new_matched_control; N=32. Out-of-fold Ridge base predictions and a Ridge meta-model use the same nine operators, five folds, seeds and alpha grid as the matched AOM-Ridge control; the external test split remains untouched. This isolates a practical compact-bank ensemble but is not presented as a faithful reproduction of published SPRR or PROSAC.
-- **SPRR-inspired Ridge stacking vs matched AOM-Ridge**: N=32; median ratio=0.991 (95% bootstrap CI 0.981--1.011); wins=18/32; raw two-sided Wilcoxon p=0.561.
+- **SPRR-inspired Ridge stacking vs matched AOM-Ridge**: N=32; median ratio=0.991 (95% bootstrap CI 0.981--1.011); wins=18/32; raw two-sided Wilcoxon p=0.548.
 - **SPRR-inspired Ridge stacking vs matched raw Ridge**: N=32; median ratio=0.968 (95% bootstrap CI 0.931--0.991); wins=25/32; raw two-sided Wilcoxon p=0.002.
+
+### Matched identity-only Ridge inference
+
+- **matched_identity / source family**: N=15; median ratio=0.969 (95% bootstrap CI 0.955--0.999); W/T/L=12/0/3; raw two-sided Wilcoxon p on log ratios=0.007.
+- **matched_identity / task row**: N=32; median ratio=0.974 (95% bootstrap CI 0.961--0.996); W/T/L=23/0/9; raw two-sided Wilcoxon p on log ratios=0.001.
+- **broader_archived_default / source family**: N=22; median ratio=0.978 (95% bootstrap CI 0.877--0.989); W/T/L=21/0/1; raw two-sided Wilcoxon p on log ratios=1.43e-06.
+- **broader_archived_default / task row**: N=52; median ratio=0.974 (95% bootstrap CI 0.951--0.991); W/T/L=41/0/11; raw two-sided Wilcoxon p on log ratios=1.04e-05.
 - The new matched compact-bank control answers the practical ensemble objection on common splits. It does not reproduce the full published SPRR or PROSAC algorithms, and no numerical superiority claim over those methods is made. SPORT and a literature-faithful SPRR/PROSAC comparison remain future scope rather than a submission-critical omission.
 
 ## Files
@@ -85,5 +92,6 @@ Minimal revision: retain the task in the primary analysis (avoid post-hoc deleti
 - `ta_groupsampleid_hpo_audit.csv` and `ta_leave_one_out_sensitivity.csv`: outlier evidence.
 - `comparator_reuse_audit.csv`: code/result inventory and reuse decision.
 - `matched_ridge_stacking/`: matched compact-bank Ridge stacking protocol, per-run outputs and summary.
+- `ridge_identity_inference/`: matched identity-only Ridge and broader archived-default task/family inference on log RMSEP ratios.
 - `rpd_quality_sensitivity/`: standard baseline-defined RPD sensitivity and task audit.
 - `input_sha256.csv`: exact hashes of every primary artifact consumed by the audit.

@@ -94,26 +94,26 @@
       "candidate": "stacking_test_rmse",
       "reference": "folded_test_rmse",
       "n": 32,
-      "median_ratio": 0.9908416410383658,
+      "median_ratio": 0.9908416410383654,
       "ci95_low": 0.9806608353040681,
-      "ci95_high": 1.010737462377616,
+      "ci95_high": 1.010737462377615,
       "wins": 18,
       "ties": 0,
       "losses": 14,
-      "wilcoxon_raw_two_sided_p": 0.5607573566958308
+      "wilcoxon_raw_two_sided_p": 0.5483431480824947
     },
     {
       "comparison": "SPRR-inspired Ridge stacking vs matched raw Ridge",
       "candidate": "stacking_test_rmse",
       "reference": "raw_ridge_test_rmse",
       "n": 32,
-      "median_ratio": 0.9684968950608445,
+      "median_ratio": 0.968496895060844,
       "ci95_low": 0.9314665485556349,
       "ci95_high": 0.9912983120501468,
       "wins": 25,
       "ties": 0,
       "losses": 7,
-      "wilcoxon_raw_two_sided_p": 0.0022269743494689465
+      "wilcoxon_raw_two_sided_p": 0.0015479698777198792
     }
   ],
   "input_provenance": {

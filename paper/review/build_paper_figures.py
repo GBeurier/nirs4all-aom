@@ -392,11 +392,14 @@ def paired_stats(cand: pd.Series, ref: pd.Series, lower_is_better: bool = True) 
     rows = pd.DataFrame({"candidate": cand.loc[common], "reference": ref.loc[common]}).dropna()
     rows = rows[np.isfinite(rows["candidate"]) & np.isfinite(rows["reference"])]
     if lower_is_better:
-        rows = rows[rows["reference"] > 0]
+        rows = rows[(rows["candidate"] > 0) & (rows["reference"] > 0)]
         effect = (rows["candidate"] / rows["reference"]).to_numpy(dtype=float)
         wins = int((rows["candidate"] < rows["reference"]).sum())
         losses = int((rows["candidate"] > rows["reference"]).sum())
-        signal = (rows["candidate"] - rows["reference"]).to_numpy(dtype=float)
+        # Regression effects are reported as ratios because response scales
+        # differ across tasks.  Rank the corresponding log-ratios rather than
+        # raw RMSEP differences so the inferential scale matches the estimand.
+        signal = np.log(effect)
         alternative = "less"
     else:
         effect = (rows["candidate"] - rows["reference"]).to_numpy(dtype=float)
@@ -630,6 +633,8 @@ def build_regression_stats() -> tuple[list[dict], dict[str, pd.DataFrame]]:
                 per_dataset(ridge_head, "AOMRidge-global-compact-none"),
                 per_dataset(default, "ridge-default-cv5"),
                 "AOM-Ridge headline / default-CV all",
+                bootstrap_seed=20260904,
+                bootstrap_n=20_000,
             ),
             stat_row(
                 "AOMRidge-Blender vs Ridge-TabPFN-HPO",

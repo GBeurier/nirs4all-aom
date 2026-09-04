@@ -2,6 +2,7 @@
   "definition": "sample SD(y_test) / RMSEP",
   "primary_filter": "Ridge-default RPD >= 2",
   "post_hoc": true,
+  "inference_signal": "log RMSEP ratio; finite positive pairs only",
   "baseline_and_aom_sets_identical": true,
   "baseline_keep": [
     "Beer_OriginalExtract_60_KS",
@@ -44,7 +45,7 @@
       "wins": 25,
       "ties": 0,
       "losses": 7,
-      "wilcoxon_raw_two_sided_p": 0.0006058444269001484
+      "wilcoxon_raw_two_sided_p": 0.00030640000477433205
     },
     {
       "comparison": "AOM-Ridge simple vs Ridge-default",
@@ -56,7 +57,7 @@
       "wins": 12,
       "ties": 0,
       "losses": 1,
-      "wilcoxon_raw_two_sided_p": 0.00341796875
+      "wilcoxon_raw_two_sided_p": 0.001708984375
     },
     {
       "comparison": "AOM-Ridge simple vs Ridge-default",
@@ -68,7 +69,7 @@
       "wins": 12,
       "ties": 0,
       "losses": 1,
-      "wilcoxon_raw_two_sided_p": 0.00341796875
+      "wilcoxon_raw_two_sided_p": 0.001708984375
     }
   ]
 }

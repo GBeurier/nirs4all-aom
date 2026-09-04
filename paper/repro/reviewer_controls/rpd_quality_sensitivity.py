@@ -52,15 +52,14 @@ def summarise(
 ) -> dict[str, object]:
     _, rows = median_ratio(candidate, reference, datasets)
     ratios = np.asarray([float(row["ratio"]) for row in rows])
-    differences = np.asarray(
-        [float(row["candidate"]) - float(row["reference"]) for row in rows]
-    )
+    ratios = ratios[np.isfinite(ratios) & (ratios > 0)]
+    log_ratios = np.log(ratios)
     rng = np.random.default_rng(BOOTSTRAP_SEED)
     draws = rng.choice(ratios, size=(N_BOOTSTRAP, len(ratios)), replace=True)
     medians = np.median(draws, axis=1)
     p = (
-        float(stats.wilcoxon(differences, alternative="two-sided", zero_method="wilcox").pvalue)
-        if np.any(differences != 0)
+        float(stats.wilcoxon(log_ratios, alternative="two-sided", zero_method="wilcox").pvalue)
+        if np.any(log_ratios != 0)
         else math.nan
     )
     return {
@@ -70,9 +69,9 @@ def summarise(
         "median_ratio": float(np.median(ratios)),
         "ci95_low": float(np.percentile(medians, 2.5)),
         "ci95_high": float(np.percentile(medians, 97.5)),
-        "wins": int(np.sum(differences < 0)),
-        "ties": int(np.sum(differences == 0)),
-        "losses": int(np.sum(differences > 0)),
+        "wins": int(np.sum(ratios < 1)),
+        "ties": int(np.sum(ratios == 1)),
+        "losses": int(np.sum(ratios > 1)),
         "wilcoxon_raw_two_sided_p": p,
     }
 
@@ -129,6 +128,7 @@ def main() -> int:
         "definition": "sample SD(y_test) / RMSEP",
         "primary_filter": "Ridge-default RPD >= 2",
         "post_hoc": True,
+        "inference_signal": "log RMSEP ratio; finite positive pairs only",
         "baseline_and_aom_sets_identical": baseline_keep == aom_keep,
         "baseline_keep": baseline_keep,
         "aom_keep": aom_keep,
@@ -142,7 +142,7 @@ def main() -> int:
         "",
         "Post-hoc sensitivity using the standard RPD = sample SD(y_test) / RMSEP. The primary inclusion rule is defined from Ridge-default, independently of the AOM result.",
         "",
-        "| Subset | N | Median AOM/default RMSEP ratio | 95% bootstrap CI | Wins/ties/losses | Raw two-sided Wilcoxon p |",
+        "| Subset | N | Median AOM/default RMSEP ratio | 95% bootstrap CI | Wins/ties/losses | Raw two-sided log-ratio Wilcoxon p |",
         "|---|---:|---:|---:|---:|---:|",
     ]
     for row in summaries:
