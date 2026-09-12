@@ -68,14 +68,22 @@ full preprocessing-HPO protocol, not with the inexpensive standalone PLS/Ridge r
 
 ## Reproducible inputs
 
-The committed JavaScript/WASM bundle is built from `nirs4all-methods` commit
-`54bebd3a`, which adds the configurable AOM chain-sweep browser surface and
-honours forced operator moments on CPU-wide spectra.
-Refresh it from a built sibling checkout with:
+The JavaScript/WASM bundle is staged from the latest published
+`@nirs4all/methods` npm release (currently **1.0.18**). Each Pages deployment
+refreshes the bundle and runs the PLS/Ridge browser self-test before publishing.
+The public `n4m/version.json` records the resolved package version, npm archive
+integrity and SHA-256 of every staged JavaScript/WASM asset.
+
+Refresh locally with:
 
 ```bash
 ./stage_bundle.sh
+# To replay a specific release:
+N4M_DEMO_VERSION=1.0.18 ./stage_bundle.sh
 ```
+
+The runtime version shown in the page is read from the loaded WASM engine.
+The canonical public demonstration URL is https://aom.nirs4all.org/.
 
 The demo uses canonical design tokens, chart styles, and brand marks vendored
 unchanged from `nirs4all-ui`. Refresh them from a sibling checkout with:

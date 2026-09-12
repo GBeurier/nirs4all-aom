@@ -6,6 +6,7 @@ on:
     paths:
       - "demo/wasm/**"
       - ".github/workflows/pages-wasm-demo.yml"
+      - "scripts/check_wasm_demo.cjs"
   workflow_dispatch:
 
 permissions:
@@ -25,6 +26,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Stage the latest published WASM release
+        run: bash demo/wasm/stage_bundle.sh
+      - name: Install browser test tools
+        run: |
+          npm install --prefix "$RUNNER_TEMP/aom-demo-test" --no-save playwright@1.63.0
+          node "$RUNNER_TEMP/aom-demo-test/node_modules/playwright/cli.js" install --with-deps chromium
+      - name: Verify the deployed version and PLS/Ridge comparison
+        run: NODE_PATH="$RUNNER_TEMP/aom-demo-test/node_modules" node scripts/check_wasm_demo.cjs
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v4
         with:

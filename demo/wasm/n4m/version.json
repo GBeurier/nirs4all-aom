@@ -1,0 +1,19 @@
+{
+  "package": "@nirs4all/methods",
+  "version": "1.0.18",
+  "source": "npm",
+  "archive_integrity": "sha512-lxLJn8c8Q2L6upBmq5sis71A/YmMwZZ7DqU9wiD7hkHxQj2V35dbi/JMi0scl1a1xXlVtUFroCYwsCWlCY7CPQ==",
+  "files": {
+    "config.js": "386dfd18890d81c815bb07ccaa1ae1dd8e9f0f6063a85bf8b90869e7a5938788",
+    "context.js": "3a58b4044b0ddb86bbfdfc4127b8146b69bc087e043364ef402840d3ad4142c5",
+    "ffi.js": "5c548af3c9ca606cd33b7cc5e4d3fd0fa0b05de2ae1393126e7c75df36feab45",
+    "index.js": "03f3dac2d88a6c22d80b050fd6ea74b62ec769385cc815de8ae61ec60e6e952a",
+    "methodResult.js": "48e484fc3c6e05bdbbf3db2ea748e237d8c84eb04004315d0bdea9203f235469",
+    "model.js": "415a102999637359812a74d0b8edd8a8321f09aa7afdd2c68c1ba11d338c5255",
+    "n4m.js": "16047780dec8998f47f526c31358d786a9f24bf7f9d84030278de9a6cc1bd757",
+    "n4m.wasm": "98d5554d18cd0c903563bd0ee65fb321d3d5c0e54a213c31eeacc5e5cef840b5",
+    "preprocessing.js": "e9714d38d9a744a706ff38c13c4b42fc737a3236dee6a1ccdf9e690db2519af8",
+    "serialization.js": "0bbb43cf63525293ff8675a4fb53c42b9aa36a940d1807a53ec9e4c84bd75474",
+    "types.js": "464fcb35f9fc3ca1c03ed888d125afba145269333098e25b9e864abd14b5aff0"
+  }
+}
