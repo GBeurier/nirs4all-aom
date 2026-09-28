@@ -31,6 +31,8 @@ from .kernels import (
     compute_block_scales_from_xt,
     fit_operator_bank,
     linear_operator_kernel_train,
+    operator_coefficients,
+    operator_design,
     resolve_operator_bank,
 )
 from .mkl import learn_block_weights, mkl_kernel_train
@@ -50,10 +52,10 @@ _VALID_SELECTIONS = ("superblock", "global", "active_superblock", "branch_global
 
 
 class AOMRidgeRegressor(RegressorMixin, BaseEstimator):
-    """Adaptive Operator-Mixture Ridge regressor (dual / kernel).
+    """Adaptive Operator-Mixture Ridge regressor (primal / dual).
 
-    The Ridge solution is computed via a dual / kernel formulation that never
-    materialises the wide superblock feature matrix. The fitted ``coef_`` has
+    The Ridge solution uses the smaller feature or sample Gram matrix. Wide
+    superblocks remain implicit in the dual path. The fitted ``coef_`` has
     shape ``(p, q)`` and lives in the original feature space, so the estimator
     is a drop-in replacement for ``sklearn.linear_model.Ridge``.
 
@@ -664,6 +666,7 @@ class AOMRidgeRegressor(RegressorMixin, BaseEstimator):
         active_template = [ops_template[i] for i in selected_indices]
         ops_final = clone_operator_bank(active_template, p=p)
         fit_operator_bank(ops_final, Xc)
+        self.primal_ = self.selection != "mkl" and len(ops_final) * p < len(Xc)
         if self.selection == "mkl":
             # Per the MKL math the kernel must be ``K = sum_b w_b K_b`` where
             # ``K_b = (X A_b^T)(X A_b^T)^T`` (no per-block scale). Use unit
@@ -680,12 +683,30 @@ class AOMRidgeRegressor(RegressorMixin, BaseEstimator):
                 Xc.T, ops_final, block_scaling=self.block_scaling,
                 scale_power=self.scale_power,
             )
-            K, U = linear_operator_kernel_train(Xc, ops_final, block_scales)
+            if self.primal_:
+                Z = operator_design(Xc, ops_final, block_scales)
+                K = Z.T @ Z
+            else:
+                K, U = linear_operator_kernel_train(Xc, ops_final, block_scales)
             self.mkl_weights_ = None
         method = "eigh" if self.solver == "eigh" else "cholesky"
         if self.solver == "auto":
             method = "cholesky"
-        C = solve_dual_ridge(K, Yc, alpha=self.alpha_, method=method)
+        if self.primal_:
+            theta = solve_dual_ridge(K, Z.T @ Yc, alpha=self.alpha_, method=method)
+            coef_proc = operator_coefficients(theta, ops_final, block_scales, p)
+            # Recover public dual coefficients in an orthogonal basis.
+            # (Yc - Z @ theta) / alpha amplifies solve-roundoff in the
+            # feature span when alpha is small, even for exact linear fits.
+            left, singular, _ = np.linalg.svd(Z, full_matrices=False)
+            projected_y = left.T @ Yc
+            residual = Yc - left @ projected_y
+            residual -= left @ (left.T @ residual)
+            C = left @ (projected_y / (singular[:, None] ** 2 + self.alpha_))
+            C += residual / self.alpha_
+        else:
+            C = solve_dual_ridge(K, Yc, alpha=self.alpha_, method=method)
+            coef_proc = U @ C
 
         # ``coef_proc`` lives in the processed feature space; map back to the
         # original feature space by dividing by the per-feature scale so the
@@ -693,7 +714,6 @@ class AOMRidgeRegressor(RegressorMixin, BaseEstimator):
         # With a non-trivial branch the relationship between raw and processed
         # inputs is no longer linear, so ``coef_`` is not available - predict()
         # applies the branch transformer first.
-        coef_proc = U @ C                        # shape (p, q)
         self._coef_proc_ = coef_proc
         self._branch_preproc_ = branch_preproc
         self._chosen_branch_ = chosen_branch
@@ -761,8 +781,13 @@ class AOMRidgeRegressor(RegressorMixin, BaseEstimator):
         scales = compute_block_scales_from_xt(
             Xc.T, ops, block_scaling=self.block_scaling, scale_power=self.scale_power,
         )
-        K, _ = linear_operator_kernel_train(Xc, ops, scales)
-        return make_alpha_grid(K, n_grid=size_, low=low_, high=high_)
+        # trace(Phi Phi.T) = ||Phi||_F^2; no sample kernel is needed.
+        trace = sum(float(s) ** 2 * float(np.sum(op.apply_cov(Xc.T) ** 2))
+                    for op, s in zip(ops, scales, strict=True))
+        base = max(trace / max(len(Xc), 1), 1e-12)
+        if size_ < 1:
+            raise ValueError("n_grid must be >= 1")
+        return base * np.logspace(low_, high_, size_)
 
     def predict(self, X: np.ndarray) -> np.ndarray:
         if not hasattr(self, "_chosen_branch_"):
@@ -835,6 +860,7 @@ class AOMRidgeRegressor(RegressorMixin, BaseEstimator):
         coef_available = chosen_branch == "none"
         diag: dict = {
             "model": "AOMRidgeRegressor",
+            "solve_space": "primal" if self.primal_ else "dual",
             "selection": self.selection,
             "operator_bank": self.operator_bank if isinstance(self.operator_bank, str)
             else "custom",

@@ -229,8 +229,41 @@ def linear_operator_kernel_cross(
 
 
 # ----------------------------------------------------------------------
-# Explicit superblock (tests only)
+# Transformed design and coefficient recovery
 # ----------------------------------------------------------------------
+
+
+def operator_design(
+    Xc: np.ndarray,
+    operators: Sequence[LinearSpectralOperator],
+    block_scales: np.ndarray,
+) -> np.ndarray:
+    """Build the feature design when ``B*p < n`` for a smaller Ridge solve.
+
+    The dual path retains implicit operators for wide designs. All supported
+    strict-linear operators preserve spectral width. Custom operators must
+    satisfy ``transform(X) == apply_cov(X.T).T`` and the adjoint identity;
+    inconsistent or nonlinear implementations are outside this contract.
+    """
+    if not operators or len(operators) != len(block_scales):
+        raise ValueError("operators and block_scales must have equal nonzero length")
+    return np.concatenate([
+        float(s) * op.transform(Xc)
+        for op, s in zip(operators, block_scales, strict=True)
+    ], axis=1)
+
+
+def operator_coefficients(
+    theta: np.ndarray,
+    operators: Sequence[LinearSpectralOperator],
+    block_scales: np.ndarray,
+    p: int,
+) -> np.ndarray:
+    """Map concatenated feature coefficients back through the adjoints."""
+    return sum(
+        float(s) * op.adjoint_vec(theta[i * p:(i + 1) * p])
+        for i, (op, s) in enumerate(zip(operators, block_scales, strict=True))
+    )
 
 
 def explicit_superblock(

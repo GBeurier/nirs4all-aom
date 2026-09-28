@@ -49,9 +49,7 @@ def make_alpha_grid(
     return base * np.logspace(low, high, n_grid)
 
 
-def alpha_at_boundary(
-    rmse_per_alpha: np.ndarray, edge_tolerance: int = 2
-) -> bool:
+def alpha_at_boundary(rmse_per_alpha: np.ndarray, edge_tolerance: int = 2) -> bool:
     """Return True if the CV optimum sits at (or within `edge_tolerance` of) a grid edge.
 
     This is used to detect under-/over-regularised optima where the grid
@@ -73,9 +71,7 @@ def _symmetrize(K: np.ndarray) -> np.ndarray:
     return 0.5 * (K + K.T)
 
 
-def _cholesky_solve_with_jitter(
-    Ka: np.ndarray, Y: np.ndarray, base_jitter: float
-) -> np.ndarray:
+def _cholesky_solve_with_jitter(Ka: np.ndarray, Y: np.ndarray, base_jitter: float) -> np.ndarray:
     """Cholesky-solve ``(Ka + jitter I) C = Y`` with retries on failure."""
     jitter = 0.0
     last_error: Exception | None = None
@@ -187,3 +183,39 @@ def solve_dual_ridge_path_eigh(
 def predict_dual(K_cross: np.ndarray, dual: np.ndarray) -> np.ndarray:
     """Predict from ``K_cross`` (shape ``n_pred x n_train``) and dual coefs."""
     return K_cross @ dual
+
+
+def predict_dual_ridge_path_eigh(K: np.ndarray, Y: np.ndarray, alphas: np.ndarray, K_cross: np.ndarray) -> np.ndarray:
+    """Predict an entire Ridge path without constructing every dual model.
+
+    One eigendecomposition and one projection of the validation kernel are
+    shared by all alphas. The spectral clipping convention is identical to
+    :func:`solve_dual_ridge_path_eigh`. Outputs have shape ``(a, m, q)`` for
+    matrix targets, or ``(a, m)`` for vector targets. No validation targets
+    enter this calculation.
+    """
+    alphas = np.asarray(alphas, dtype=float)
+    if alphas.ndim != 1 or not np.all(np.isfinite(alphas)) or np.any(alphas <= 0):
+        raise ValueError("alphas must be a finite positive 1D array")
+    K = np.asarray(K, dtype=float)
+    K_cross = np.asarray(K_cross, dtype=float)
+    Y = np.asarray(Y, dtype=float)
+    if K.ndim != 2 or K.shape[0] != K.shape[1]:
+        raise ValueError("K must be square")
+    if Y.ndim not in (1, 2) or Y.shape[0] != K.shape[0]:
+        raise ValueError("Y must have one row per training sample")
+    if K_cross.ndim != 2 or K_cross.shape[1] != K.shape[0]:
+        raise ValueError("K_cross must have one column per training sample")
+    Y2 = Y.reshape(-1, 1) if Y.ndim == 1 else Y
+    lam, V = np.linalg.eigh(_symmetrize(K))
+    lam = np.maximum(lam, 0.0)
+    rhs = V.T @ Y2
+    projected = K_cross @ V
+    # Bound temporary storage for multi-target/large validation workloads.
+    out = np.empty((len(alphas), K_cross.shape[0], Y2.shape[1]))
+    for start in range(0, len(alphas), 16):
+        stop = min(start + 16, len(alphas))
+        weights = rhs[:, None, :] / (lam[:, None, None] + alphas[None, start:stop, None])
+        values = projected @ weights.reshape(len(lam), -1)
+        out[start:stop] = values.reshape(K_cross.shape[0], stop - start, -1).transpose(1, 0, 2)
+    return out[:, :, 0] if Y.ndim == 1 else out

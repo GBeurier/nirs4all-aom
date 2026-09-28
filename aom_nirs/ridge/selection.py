@@ -23,10 +23,11 @@ from .kernels import (
     fit_operator_bank,
     linear_operator_kernel_cross,
     linear_operator_kernel_train,
+    operator_design,
 )
 from .mkl import learn_block_weights, mkl_kernel_cross, mkl_kernel_train
 from .preprocessing import apply_feature_scaler, fit_feature_scaler
-from .solvers import solve_dual_ridge_path_eigh
+from .solvers import predict_dual_ridge_path_eigh
 
 CVSpec = int | object
 
@@ -183,6 +184,7 @@ def _fold_local_kernels(
     center: bool,
     scale_power: float = 1.0,
     x_scale: str = "center",
+    primal_if_smaller: bool = False,
 ) -> tuple[
     np.ndarray,
     np.ndarray,
@@ -200,6 +202,10 @@ def _fold_local_kernels(
 
     ``x_scale``: ``"center"`` (default, current behavior - only subtract
     mean), ``"none"``, ``"feature_std"``, or ``"feature_rms"``.
+
+    With ``primal_if_smaller``, a tall design returns ``Z_tr.T @ Z_tr``,
+    ``Z_va``, ``Z_tr.T @ Yc_tr`` and ``Z_tr.T`` in the system/kernel slots.
+    Its order is then ``min(n_train, B*p)``. Means and scales are unchanged.
     """
     # Reconcile center=False with x_scale: center=False means "no centering",
     # in which case x_scale must be "none".
@@ -219,6 +225,11 @@ def _fold_local_kernels(
     scales_f = compute_block_scales_from_xt(
         Xc_tr.T, ops_f, block_scaling=block_scaling, scale_power=scale_power,
     )
+    if primal_if_smaller and len(ops_f) * Xc_tr.shape[1] < Xc_tr.shape[0]:
+        Z_tr = operator_design(Xc_tr, ops_f, scales_f)
+        Z_va = operator_design(Xc_va, ops_f, scales_f)
+        return (Z_tr.T @ Z_tr, Z_va, Z_tr.T @ Yc_tr, y_mean_f,
+                x_mean_f, Z_tr.T, scales_f, x_scale_f)
     K_tr, U_tr = linear_operator_kernel_train(Xc_tr, ops_f, scales_f)
     K_va = linear_operator_kernel_cross(Xc_va, U_tr)
     return K_tr, K_va, Yc_tr, y_mean_f, x_mean_f, U_tr, scales_f, x_scale_f
@@ -274,11 +285,11 @@ def cv_score_alphas(
         Y_tr, Y_va = Y[train_idx], Y[valid_idx]
         K_tr, K_va, Yc_tr, y_mean_f, _, _, _, _ = _fold_local_kernels(
             X_tr, X_va, Y_tr, operators_template, block_scaling, center,
-            scale_power=scale_power, x_scale=x_scale,
+            scale_power=scale_power, x_scale=x_scale, primal_if_smaller=True,
         )
-        Cs = solve_dual_ridge_path_eigh(K_tr, Yc_tr, alphas)
+        predictions = predict_dual_ridge_path_eigh(K_tr, Yc_tr, alphas, K_va)
         for i in range(n_alphas):
-            Y_pred = K_va @ Cs[i] + y_mean_f
+            Y_pred = predictions[i] + y_mean_f
             rmse_per_fold[fold_idx, i] = _rmse(Y_va, Y_pred)
             sse, count = _sum_squared_error(Y_va, Y_pred)
             sse_per_fold[fold_idx, i] = sse
@@ -648,11 +659,11 @@ def cv_score_active_alphas(
         active_subset = [operators_template[i] for i in active_idx]
         K_tr, K_va, Yc_tr, y_mean_f, _, _, _, _ = _fold_local_kernels(
             X_tr, X_va, Y_tr, active_subset, block_scaling, center,
-            scale_power=scale_power, x_scale=x_scale,
+            scale_power=scale_power, x_scale=x_scale, primal_if_smaller=True,
         )
-        Cs = solve_dual_ridge_path_eigh(K_tr, Yc_tr, alphas)
+        predictions = predict_dual_ridge_path_eigh(K_tr, Yc_tr, alphas, K_va)
         for i in range(n_alphas):
-            Y_pred = K_va @ Cs[i] + y_mean_f
+            Y_pred = predictions[i] + y_mean_f
             rmse_per_fold[fold_idx, i] = _rmse(Y_va, Y_pred)
             sse, count = _sum_squared_error(Y_va, Y_pred)
             sse_per_fold[fold_idx, i] = sse
@@ -774,9 +785,9 @@ def cv_score_alphas_mkl(
         )
         K_tr, U_tr = mkl_kernel_train(Xc_tr, ops_f, weights_f, scales=scales_f)
         K_va = mkl_kernel_cross(Xc_va, U_tr)
-        Cs = solve_dual_ridge_path_eigh(K_tr, Yc_tr, alphas)
+        predictions = predict_dual_ridge_path_eigh(K_tr, Yc_tr, alphas, K_va)
         for i in range(n_alphas):
-            Y_pred = K_va @ Cs[i] + y_mean_f
+            Y_pred = predictions[i] + y_mean_f
             rmse_per_fold[fold_idx, i] = _rmse(Y_va, Y_pred)
             sse, count = _sum_squared_error(Y_va, Y_pred)
             sse_per_fold[fold_idx, i] = sse
@@ -915,11 +926,11 @@ def cv_score_branch_global(
                     block_scaling,
                     center,
                     scale_power=scale_power,
-                    x_scale=x_scale,
+                    x_scale=x_scale, primal_if_smaller=True,
                 )
-                Cs = solve_dual_ridge_path_eigh(K_tr, Yc_tr, alphas)
+                predictions = predict_dual_ridge_path_eigh(K_tr, Yc_tr, alphas, K_va)
                 for ai in range(n_alpha):
-                    Y_pred = K_va @ Cs[ai] + y_mean_f
+                    Y_pred = predictions[ai] + y_mean_f
                     rmse_per_fold[fold_idx, bi, oi, ai] = _rmse(Y_va, Y_pred)
                     sse, count = _sum_squared_error(Y_va, Y_pred)
                     sse_per_fold[fold_idx, bi, oi, ai] = sse
