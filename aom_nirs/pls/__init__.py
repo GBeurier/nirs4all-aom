@@ -26,6 +26,8 @@ from .operators import (
 )
 from .banks import (
     compact_bank,
+    compact_no_fd_bank,
+    compact_no_fd_gaussian_bank,
     default_bank,
     extended_bank,
     bank_by_name,
@@ -57,6 +59,8 @@ __all__ = [
     "WhittakerOperator",
     "bank_by_name",
     "compact_bank",
+    "compact_no_fd_bank",
+    "compact_no_fd_gaussian_bank",
     "default_bank",
     "extended_bank",
 ]

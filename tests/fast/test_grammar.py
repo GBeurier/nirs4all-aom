@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from aom_nirs.pls.banks import compact_bank
+from aom_nirs.pls.banks import compact_bank, compact_no_fd_bank
 from aom_nirs.pls.operators import (
     DetrendProjectionOperator,
     FiniteDifferenceOperator,
@@ -88,6 +88,21 @@ def test_generator_respects_max_depth(bank, feature_dim) -> None:
     assert all(c.depth() <= 2 for c in chains)
     # We should have more than just identity given the bank size
     assert len(chains) > 1
+
+
+def test_compact_no_fd_chain_counts_are_stable(feature_dim) -> None:
+    """The current FastAOM grammar yields 8 / 40 / 112 cumulative chains."""
+    bank = compact_no_fd_bank(p=feature_dim)
+    expected = {1: 8, 2: 40, 3: 112}
+    for max_depth, expected_count in expected.items():
+        chains = generate_chains(
+            bank,
+            default_grammar(max_depth=max_depth),
+            ChainGenerationConfig(max_depth=max_depth, include_identity_chain=True),
+            feature_dim=feature_dim,
+        )
+        assert len(chains) == expected_count
+        assert all("fd_d1" not in chain.signature for chain in chains)
 
 
 def test_generator_dedup_signatures(bank, feature_dim) -> None:

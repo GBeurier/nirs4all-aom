@@ -240,6 +240,28 @@ def test_fast_aom_pls_ridge_meta_estimator_default() -> None:
     assert est.diagnostics_["n_finalists"] > 0
 
 
+def test_fast_aom_pls_ridge_supports_compact_no_fd() -> None:
+    """FastAOM resolves the versioned bank and never enumerates ``fd_d1``."""
+    X_tr, X_te, y_tr, y_te = _make_data(seed=13)
+    cfg = FastAOMConfig(
+        model="hard_aom_chain",
+        primitive_bank="compact_no_fd",
+        max_chain_depth=3,
+        rank=30,
+        top_global=40,
+        top_per_base=15,
+        top_per_family=2,
+        n_components=6,
+    )
+    est = FastAOMPLSRidge(config=cfg)
+    est.fit(X_tr, y_tr)
+    yhat = est.predict(X_te)
+    assert yhat.shape == y_te.shape
+    assert np.all(np.isfinite(yhat))
+    assert est.diagnostics_["n_chains_enumerated"] == 112
+    assert all("fd_d1" not in signature for signature in est.diagnostics_["selected_chain_signatures"])
+
+
 def test_sparse_chains_does_not_infinite_loop_on_redundant_candidates() -> None:
     """When NNLS-refit zeroes out a freshly selected chain, that chain must be
     blacklisted; otherwise the greedy loop re-selects it forever."""

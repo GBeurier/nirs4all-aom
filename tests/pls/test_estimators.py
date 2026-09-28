@@ -6,7 +6,7 @@ import numpy as np
 import pytest
 from sklearn.cross_decomposition import PLSRegression
 
-from aom_nirs.pls.banks import compact_bank
+from aom_nirs.pls.banks import bank_by_name, compact_bank, compact_no_fd_bank
 from aom_nirs.pls.estimators import AOMPLSRegressor, POPPLSRegressor
 from aom_nirs.pls.operators import IdentityOperator
 from aom_nirs.pls.synthetic import make_regression
@@ -34,6 +34,29 @@ def test_aom_default_runs_cv(regression_data):
     diag = est.get_diagnostics()
     assert "engine" in diag
     assert diag["engine"] == "simpls_covariance"
+
+
+def test_compact_no_fd_is_registered_and_runs_cv(regression_data):
+    """The versioned no-FD preset is selectable without changing legacy compact."""
+    ds = regression_data
+    legacy_names = [op.name for op in compact_bank(p=ds.X_train.shape[1])]
+    no_fd_names = [op.name for op in compact_no_fd_bank(p=ds.X_train.shape[1])]
+    assert legacy_names[-1] == "fd_d1"
+    assert no_fd_names == legacy_names[:-1]
+    assert [op.name for op in bank_by_name("compact_no_fd", p=ds.X_train.shape[1])] == no_fd_names
+
+    est = AOMPLSRegressor(
+        max_components=4,
+        criterion="cv",
+        cv=3,
+        random_state=0,
+        operator_bank="compact_no_fd",
+    )
+    est.fit(ds.X_train, ds.y_train)
+    pred = est.predict(ds.X_test)
+    assert pred.shape == (ds.X_test.shape[0],)
+    assert np.all(np.isfinite(pred))
+    assert "fd_d1" not in est.get_diagnostics()["selected_operator_names"]
 
 
 def test_pop_default_runs_cv(regression_data):

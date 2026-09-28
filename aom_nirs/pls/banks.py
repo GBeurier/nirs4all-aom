@@ -41,6 +41,44 @@ def compact_bank(p: Optional[int] = None) -> List[LinearSpectralOperator]:
     ]
 
 
+def compact_no_fd_bank(p: int | None = None) -> list[LinearSpectralOperator]:
+    """Versioned compact bank with no finite-difference operator.
+
+    This is the eight-operator counterpart to :func:`compact_bank`: identity,
+    two SG smoothers, three SG derivatives, and two detrend projections.  It
+    deliberately leaves the legacy ``compact`` preset unchanged, so historical
+    experiments that selected ``fd_d1`` remain reproducible.  New experiments
+    that must exclude finite differences should use the ``"compact_no_fd"``
+    preset explicitly.
+    """
+    return [
+        IdentityOperator(p=p),
+        SavitzkyGolayOperator(window_length=11, polyorder=2, deriv=0, p=p),
+        SavitzkyGolayOperator(window_length=21, polyorder=3, deriv=0, p=p),
+        SavitzkyGolayOperator(window_length=11, polyorder=2, deriv=1, p=p),
+        SavitzkyGolayOperator(window_length=21, polyorder=3, deriv=1, p=p),
+        SavitzkyGolayOperator(window_length=11, polyorder=2, deriv=2, p=p),
+        DetrendProjectionOperator(degree=1, p=p),
+        DetrendProjectionOperator(degree=2, p=p),
+    ]
+
+
+def compact_no_fd_gaussian_bank(p: int | None = None) -> list[LinearSpectralOperator]:
+    """Ten-operator compact bank without finite differences.
+
+    This versioned preset extends :func:`compact_no_fd_bank` with Gaussian
+    smoothers at sigma 1 and 2.  Keeping it separate preserves every legacy
+    ``compact`` and ``compact_no_fd`` result while giving the matched AOM/HPO
+    controls one explicit, shared operator universe.
+    """
+    from .operator_generation import GaussianDerivativeOperator
+
+    return compact_no_fd_bank(p=p) + [
+        GaussianDerivativeOperator(sigma=1.0, order=0, p=p),
+        GaussianDerivativeOperator(sigma=2.0, order=0, p=p),
+    ]
+
+
 def default_bank(p: Optional[int] = None) -> List[LinearSpectralOperator]:
     """Default benchmark bank — exact 1:1 mirror of the production nirs4all
     `default_operator_bank`.
@@ -261,6 +299,10 @@ def bank_by_name(name: str, p: Optional[int] = None) -> List[LinearSpectralOpera
     name = name.lower()
     if name == "compact":
         return compact_bank(p)
+    if name == "compact_no_fd":
+        return compact_no_fd_bank(p)
+    if name == "compact_no_fd_gaussian":
+        return compact_no_fd_gaussian_bank(p)
     if name == "default":
         return default_bank(p)
     if name == "extended":
