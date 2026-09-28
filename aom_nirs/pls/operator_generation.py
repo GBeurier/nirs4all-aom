@@ -81,6 +81,10 @@ class GaussianDerivativeOperator(LinearSpectralOperator):
     def _adjoint_vec_impl(self, v: np.ndarray) -> np.ndarray:
         return _xcorr_zero_pad(v, self._kernel[::-1])
 
+    def _adjoint_matrix_impl(self, v: np.ndarray) -> np.ndarray:
+        return _xcorr_zero_pad(v.T, self._kernel[::-1]).T
+
+
     def _matrix_impl(self, p: int) -> np.ndarray:
         return self._apply_cov_impl(np.eye(p))
 
@@ -145,6 +149,10 @@ class FixedShiftOperator(LinearSpectralOperator):
         else:
             out[:s] = v[-s:]
         return out
+
+    def _adjoint_matrix_impl(self, v: np.ndarray) -> np.ndarray:
+        return self._adjoint_vec_impl(v)
+
 
     def _matrix_impl(self, p: int) -> np.ndarray:
         return self._apply_cov_impl(np.eye(p))

@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import time
-
 import numpy as np
 import pytest
 
@@ -14,6 +12,19 @@ from aom_nirs.fast.xcorr_fast import (
     uninstall_xcorr_patch,
     xcorr_zero_pad_fast,
 )
+
+
+def _reference_xcorr(X, kernel):
+    """Independent convolution oracle with the declared zero-padding convention."""
+    array = np.asarray(X, dtype=float)
+    rows = np.atleast_2d(array)
+    left = (len(kernel) - 1) // 2
+    right = len(kernel) - 1 - left
+    result = np.array([
+        np.convolve(np.pad(row, (left, right)), kernel[::-1], mode="valid")
+        for row in rows
+    ])
+    return result.ravel() if array.ndim == 1 else result
 
 
 @pytest.fixture(autouse=True)
@@ -31,7 +42,7 @@ def test_xcorr_parity_2d(k: int, p: int) -> None:
     n = 17
     X = rng.standard_normal((n, p))
     kernel = rng.standard_normal(k)
-    expected = _parent_ops._xcorr_zero_pad(X, kernel)
+    expected = _reference_xcorr(X, kernel)
     got = xcorr_zero_pad_fast(X, kernel)
     np.testing.assert_allclose(got, expected, rtol=1e-12, atol=1e-12)
 
@@ -42,7 +53,7 @@ def test_xcorr_parity_1d(k: int) -> None:
     p = 64
     x = rng.standard_normal(p)
     kernel = rng.standard_normal(k)
-    expected = _parent_ops._xcorr_zero_pad(x, kernel)
+    expected = _reference_xcorr(x, kernel)
     got = xcorr_zero_pad_fast(x, kernel)
     assert got.shape == expected.shape
     np.testing.assert_allclose(got, expected, rtol=1e-12, atol=1e-12)
@@ -54,7 +65,7 @@ def test_xcorr_parity_large_p() -> None:
     p = 2000
     X = rng.standard_normal((4, p))
     kernel = rng.standard_normal(11)
-    expected = _parent_ops._xcorr_zero_pad(X, kernel)
+    expected = _reference_xcorr(X, kernel)
     got = xcorr_zero_pad_fast(X, kernel)
     np.testing.assert_allclose(got, expected, rtol=1e-12, atol=1e-12)
 
@@ -143,31 +154,17 @@ def test_detrend_parity_transform_and_adjoint() -> None:
     np.testing.assert_allclose(got_adjoint, expected_adjoint, rtol=1e-10, atol=1e-12)
 
 
-def test_xcorr_speedup_signal() -> None:
-    """Sanity check that the patch actually buys speed; not a strict
-    benchmark, but flags regressions if the fast path becomes slower than
-    the parent loop."""
+def test_default_xcorr_handles_strided_inputs() -> None:
+    """The optimized default preserves the convolution on non-contiguous arrays.
+
+    Timing evidence belongs in repeated isolated benchmarks, not a CI threshold.
+    """
     rng = np.random.default_rng(42)
     p = 600
-    X = rng.standard_normal((40, p))
+    X = rng.standard_normal((40, p * 2))[:, ::2]
     kernel = rng.standard_normal(11)
 
-    # Warm-up call so JIT-style import overhead doesn't bias the timing.
-    _parent_ops._xcorr_zero_pad(X, kernel)
-    xcorr_zero_pad_fast(X, kernel)
-
-    t0 = time.perf_counter()
-    for _ in range(5):
-        _parent_ops._xcorr_zero_pad(X, kernel)
-    slow = time.perf_counter() - t0
-
-    t0 = time.perf_counter()
-    for _ in range(5):
-        xcorr_zero_pad_fast(X, kernel)
-    fast = time.perf_counter() - t0
-
-    # Allow 10% slack so a heavily loaded CI box doesn't flake this test.
-    # We expect a real ~10× speedup, so the 0.9× margin is conservative.
-    assert fast < slow * 0.9, (
-        f"fast path {fast:.3f}s not meaningfully faster than slow {slow:.3f}s"
+    np.testing.assert_allclose(
+        _parent_ops._xcorr_zero_pad(X, kernel), _reference_xcorr(X, kernel),
+        rtol=1e-12, atol=1e-12,
     )

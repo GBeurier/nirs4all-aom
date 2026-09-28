@@ -15,6 +15,7 @@ import math
 from typing import Optional, Sequence
 
 import numpy as np
+from numpy.lib.stride_tricks import sliding_window_view
 from scipy.linalg import solve_banded
 
 
@@ -104,8 +105,14 @@ class LinearSpectralOperator:
             self.p = v.shape[0]
         if v.shape[0] != self.p:
             raise ValueError(f"v has shape {v.shape}; operator {self.name} expects p={self.p}")
-        cols = [self._adjoint_vec_impl(v[:, j]) for j in range(v.shape[1])]
-        return np.column_stack(cols)
+        # Honor a subclass's vector-only customization before using an
+        # inherited batched implementation from a parent operator.
+        for cls in type(self).__mro__:
+            if "_adjoint_matrix_impl" in cls.__dict__:
+                return self._adjoint_matrix_impl(v)
+            if "_adjoint_vec_impl" in cls.__dict__:
+                return LinearSpectralOperator._adjoint_matrix_impl(self, v)
+        raise AssertionError("operator adjoint implementation is missing")
 
     def matrix(self, p: Optional[int] = None) -> np.ndarray:
         """Return the explicit `p x p` matrix of the operator."""
@@ -141,6 +148,12 @@ class LinearSpectralOperator:
     def _adjoint_vec_impl(self, v: np.ndarray) -> np.ndarray:
         return self.matrix(v.shape[0]).T @ v
 
+    def _adjoint_matrix_impl(self, v: np.ndarray) -> np.ndarray:
+        """Compatibility fallback for custom operators with vector-only adjoints."""
+        if v.shape[1] == 0:
+            return np.empty_like(v, dtype=float)
+        return np.column_stack([self._adjoint_vec_impl(v[:, j]) for j in range(v.shape[1])])
+
     def _matrix_impl(self, p: int) -> np.ndarray:
         raise NotImplementedError
 
@@ -161,7 +174,6 @@ def _xcorr_zero_pad(X: np.ndarray, kernel: np.ndarray) -> np.ndarray:
     kernel = np.asarray(kernel, dtype=float)
     k = kernel.shape[0]
     half_left = (k - 1) // 2
-    half_right = k - 1 - half_left
     if X.ndim == 1:
         X2 = X.reshape(1, -1)
         squeeze = True
@@ -171,9 +183,10 @@ def _xcorr_zero_pad(X: np.ndarray, kernel: np.ndarray) -> np.ndarray:
     n, p = X2.shape
     pad = np.zeros((n, p + k - 1), dtype=float)
     pad[:, half_left : half_left + p] = X2
-    out = np.empty((n, p), dtype=float)
-    for i in range(p):
-        out[:, i] = pad[:, i : i + k] @ kernel
+    if p == 0:
+        out = np.empty((n, 0), dtype=float)
+    else:
+        out = sliding_window_view(pad, window_shape=k, axis=1) @ kernel
     return out.ravel() if squeeze else out
 
 
@@ -196,6 +209,10 @@ class IdentityOperator(LinearSpectralOperator):
 
     def _adjoint_vec_impl(self, v: np.ndarray) -> np.ndarray:
         return v.copy()
+
+    def _adjoint_matrix_impl(self, v: np.ndarray) -> np.ndarray:
+        return self._adjoint_vec_impl(v)
+
 
     def _matrix_impl(self, p: int) -> np.ndarray:
         return np.eye(p)
@@ -269,6 +286,10 @@ class SavitzkyGolayOperator(LinearSpectralOperator):
         # which equals xcorr(v, k_rev)[t] with k_rev[j] = k[k_len - 1 - j].
         return _xcorr_zero_pad(v, self._kernel[::-1])
 
+    def _adjoint_matrix_impl(self, v: np.ndarray) -> np.ndarray:
+        return _xcorr_zero_pad(v.T, self._kernel[::-1]).T
+
+
     def _matrix_impl(self, p: int) -> np.ndarray:
         # A is the column-action matrix; apply_cov(eye) returns A directly.
         return self._apply_cov_impl(np.eye(p))
@@ -300,6 +321,10 @@ class FiniteDifferenceOperator(LinearSpectralOperator):
 
     def _adjoint_vec_impl(self, v: np.ndarray) -> np.ndarray:
         return _xcorr_zero_pad(v, self._kernel[::-1])
+
+    def _adjoint_matrix_impl(self, v: np.ndarray) -> np.ndarray:
+        return _xcorr_zero_pad(v.T, self._kernel[::-1]).T
+
 
     def _matrix_impl(self, p: int) -> np.ndarray:
         return self._apply_cov_impl(np.eye(p))
@@ -380,6 +405,10 @@ class FCKOperator(LinearSpectralOperator):
     def _adjoint_vec_impl(self, v: np.ndarray) -> np.ndarray:
         return _xcorr_zero_pad(v, self._kernel[::-1])
 
+    def _adjoint_matrix_impl(self, v: np.ndarray) -> np.ndarray:
+        return _xcorr_zero_pad(v.T, self._kernel[::-1]).T
+
+
     def _matrix_impl(self, p: int) -> np.ndarray:
         return self._apply_cov_impl(np.eye(p))
 
@@ -406,32 +435,43 @@ class DetrendProjectionOperator(LinearSpectralOperator):
         self.degree = degree
         self._cached_p: Optional[int] = None
         self._cached_complement: Optional[np.ndarray] = None
+        self._cached_basis: np.ndarray | None = None
+
+    def _basis(self, p: int) -> np.ndarray:
+        if self._cached_p == p and self._cached_basis is not None:
+            return self._cached_basis
+        if p < self.degree + 1:
+            raise ValueError(f"DetrendProjection degree={self.degree} requires p >= {self.degree + 1}")
+        t = np.linspace(-1.0, 1.0, p)
+        basis, _ = np.linalg.qr(np.column_stack([t**k for k in range(self.degree + 1)]))
+        self._cached_p = p
+        self._cached_basis = basis
+        self._cached_complement = None
+        return basis
 
     def _basis_complement(self, p: int) -> np.ndarray:
         if self._cached_p == p and self._cached_complement is not None:
             return self._cached_complement
-        if p < self.degree + 1:
-            raise ValueError(f"DetrendProjection degree={self.degree} requires p >= {self.degree + 1}")
-        t = np.linspace(-1.0, 1.0, p)
-        cols = [t**k for k in range(self.degree + 1)]
-        P = np.column_stack(cols)
-        Q, _ = np.linalg.qr(P)
+        Q = self._basis(p)
         complement = np.eye(p) - Q @ Q.T
         self._cached_p = p
         self._cached_complement = complement
         return complement
 
     def _transform_impl(self, X: np.ndarray) -> np.ndarray:
-        complement = self._basis_complement(X.shape[1])
-        return X @ complement.T
+        basis = self._basis(X.shape[1])
+        return X - (X @ basis) @ basis.T
 
     def _apply_cov_impl(self, S: np.ndarray) -> np.ndarray:
-        complement = self._basis_complement(S.shape[0])
-        return complement @ S
+        basis = self._basis(S.shape[0])
+        return S - basis @ (basis.T @ S)
 
     def _adjoint_vec_impl(self, v: np.ndarray) -> np.ndarray:
-        complement = self._basis_complement(v.shape[0])
-        return complement.T @ v
+        return self._apply_cov_impl(v)
+
+    def _adjoint_matrix_impl(self, v: np.ndarray) -> np.ndarray:
+        return self._adjoint_vec_impl(v)
+
 
     def _matrix_impl(self, p: int) -> np.ndarray:
         return self._basis_complement(p)
@@ -484,6 +524,10 @@ class NorrisWilliamsOperator(LinearSpectralOperator):
 
     def _adjoint_vec_impl(self, v: np.ndarray) -> np.ndarray:
         return _xcorr_zero_pad(v, self._kernel[::-1])
+
+    def _adjoint_matrix_impl(self, v: np.ndarray) -> np.ndarray:
+        return _xcorr_zero_pad(v.T, self._kernel[::-1]).T
+
 
     def _matrix_impl(self, p: int) -> np.ndarray:
         return self._apply_cov_impl(np.eye(p))
@@ -562,6 +606,10 @@ class WhittakerOperator(LinearSpectralOperator):
     def _adjoint_vec_impl(self, v: np.ndarray) -> np.ndarray:
         return self._solve(v)
 
+    def _adjoint_matrix_impl(self, v: np.ndarray) -> np.ndarray:
+        return self._adjoint_vec_impl(v)
+
+
     def _matrix_impl(self, p: int) -> np.ndarray:
         # Build the dense matrix by solving against the identity. For the
         # tiny-p fall-through, this is the only available representation.
@@ -627,6 +675,10 @@ class ComposedOperator(LinearSpectralOperator):
             out = op.adjoint_vec(out)
         return out
 
+    def _adjoint_matrix_impl(self, v: np.ndarray) -> np.ndarray:
+        return self._adjoint_vec_impl(v)
+
+
     def _matrix_impl(self, p: int) -> np.ndarray:
         mat = np.eye(p)
         for op in self.operators:
@@ -660,6 +712,10 @@ class ExplicitMatrixOperator(LinearSpectralOperator):
 
     def _adjoint_vec_impl(self, v: np.ndarray) -> np.ndarray:
         return self._matrix.T @ v
+
+    def _adjoint_matrix_impl(self, v: np.ndarray) -> np.ndarray:
+        return self._adjoint_vec_impl(v)
+
 
     def _matrix_impl(self, p: int) -> np.ndarray:
         if p != self._matrix.shape[0]:

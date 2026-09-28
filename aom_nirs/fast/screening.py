@@ -2,15 +2,13 @@
 
 For each ``(base, chain)`` candidate, compute the dimensionless score
 
-    score(j, s) = ||A_s^T B_j(X)^T y||^2 / (||B_j(X) A_s^T||_F^2 ||y||^2)
+    score(j, s) = ||A_s B_j(X)^T y||^2 / (||B_j(X) A_s^T||_F^2 ||y||^2)
 
-following the user's preprocessing convention ``X_s = X @ A_s``. Under
+following the preprocessing convention ``X_s = B_j(X) @ A_s.T``. Under
 the parent codebase convention ``transform(X) = X @ A.T`` (where ``A``
-is the operator's :meth:`matrix`), the user's ``A_s`` corresponds to
-codebase's ``A.T``, so the user's ``A_s^T = codebase A``. The numerator
-becomes
+is the operator's :meth:`matrix`), the numerator becomes
 
-    ||A_s^T (B_j(X)^T y)||^2 = ||A @ g_0||^2 = ||chain.apply_cov(g_0)||^2
+    ||A_s (B_j(X)^T y)||^2 = ||A @ g_0||^2 = ||chain.apply_cov(g_0)||^2
 
 with ``g_0 = B_j(X)^T y``. The denominator is computed from the truncated
 SVD ``B_j(X) ≈ U S V^T``: ``||B_j(X) A.T||_F^2 ≈ ||F_s||_F^2`` with
@@ -48,7 +46,7 @@ class ScreeningCandidate:
         base_name: Convenience signature of the base.
         chain: The candidate chain.
         score: Screening score (``[0, 1]``).
-        numerator: Raw numerator (``||A^T g_0||^2``); informative for
+        numerator: Raw numerator (``||A g_0||^2``); informative for
             debugging.
         denominator: Raw denominator (``||F_s||_F^2 * ||y||^2``).
         chain_norm_F_sq: Frobenius norm squared of the transformed
@@ -117,9 +115,8 @@ def fast_covariance_screen(
                 )
             continue
         for chain in chains:
-            # Numerator: ||A_s^T B_j(X)^T y||^2 (user's notation, X_s = X @ A_s).
-            # Under codebase convention (transform = X @ A.T), this is
-            # ||A @ g_0||^2 = ||chain.apply_cov(g_0)||^2.
+            # Numerator under X_s = B_j(X) @ A_s.T:
+            # ||A_s @ B_j(X).T @ y||^2 = ||chain.apply_cov(g_0)||^2.
             g_s = chain.apply_cov(base.g0)
             num = float(np.dot(g_s, g_s))
             # Denominator: ||F_s||_F^2 = ||A_s V diag(S)||_F^2
