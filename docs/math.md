@@ -1,7 +1,7 @@
 # Mathematical reference
 
 Companion notes to the paper *Operator-adaptive PLS and Ridge
-calibration for NIR spectroscopy*. The paper (`paper/main.tex`) contains
+calibration for NIR spectroscopy*. The privately maintained manuscript contains
 the full derivations and the formal statements; this document gives just
 enough to map each formula to the corresponding code in `aom_nirs`.
 The companion library [`nirs4all`](https://github.com/GBeurier/nirs4all)
@@ -335,18 +335,9 @@ best aligns with the current residual:
 `score(s) = (y_res^T K_s y_res) / sqrt(trace(K_s K_s) + ε)`, then
 refits `θ` via projected-gradient NNLS and `α` by GCV.
 
-## Pointers
+## Further documentation
 
-For the formal derivations and the discussion that motivates each
-choice (e.g. why strict-linear, why dual Ridge, why KTA over learned
-weights, why convex blend over a global meta-learner) see:
-
-- `paper/main.tex` §3.1-3.4 — Linear-operator scope, covariance
-  identity, AOM-PLS solvers, AOM-Ridge kernels.
-- `paper/supplement.tex` — Extended bank, soft / superblock /
-  active-superblock derivations, GCV α grid, MKL weights, multi-branch
-  MKL, local Ridge.
-- `paper/review/aom_code_inventory.md` — per-variant inventory mapping
-  each paper claim to the implementing module.
-- `paper/review/pls4all_integration_eval.md` — parity oracle for the
-  AOM-PLS / POP-PLS core (`pls4all` C++ engine).
+See [architecture.md](architecture.md) for the implementation map and
+[../REPRODUCTION.md](../REPRODUCTION.md) for the public numerical validation
+workflow. Formal manuscript derivations, supplements and editorial inventories
+are maintained privately in `nirs4all-drafts` until submission.

@@ -18,8 +18,7 @@ aom_nirs/
 │   ├── ridge/      # AOM-Ridge family
 │   ├── fast/       # FastAOM chain screening
 │   └── experimental/
-├── benchmarks/     # Paper runners (pls/, ridge/, fast/, runs/, scenarios/)
-├── paper/          # manuscript, figures, review/
+├── benchmarks/     # Generic research runners (pls/, ridge/, fast/, scenarios/)
 ├── examples/       # 01_aom_pls_quickstart.py, 02_aom_ridge_blender.py
 ├── tests/          # pls/, ridge/, fast/
 └── docs/           # this directory
@@ -212,5 +211,5 @@ full-training refit.
 The `simpls_covariance` and `nipals_adjoint` paths are the speed gains
 the paper relies on. Their correctness is checked against the materialised
 references and against the C++ `pls4all` oracle
-(`pls4all/parity/fixtures/synthetic_aom_*_v1.json`); see
-`paper/review/pls4all_integration_eval.md`.
+(`pls4all/parity/fixtures/synthetic_aom_*_v1.json`). Publication-specific
+parity reports are maintained privately in `nirs4all-drafts`.

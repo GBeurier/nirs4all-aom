@@ -268,3 +268,9 @@ paper/review/paper_review.md
 paper/review/pls4all_integration_eval.md
 paper/review/ridge_seed_audit.md
 paper/review/v3_stats.md
+
+# Private submission artifacts (maintained in nirs4all-drafts).
+paper/
+_archive/
+benchmarks/runs/
+benchmarks/workspaces/
