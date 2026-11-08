@@ -92,6 +92,19 @@ unchanged from `nirs4all-ui`. Refresh them from a sibling checkout with:
 ./sync_ui_assets.sh
 ```
 
+The Data section mounts the shared dataset summary card and spectra explorer from
+the vendored `nirs4all-ui` browser bundle in `assets/nirs4all-ui/browser/`. These
+files are copied unchanged from the local, unpublished UI export recorded in
+`assets/nirs4all-ui/browser/VERSION.json` (version, archive SHA-256, source commit
+and per-file SHA-256); there is no staging script and no download. The explorer
+positions curves by axis value, so a feature axis that is not strictly ascending
+keeps the built-in index-spaced plot in native column order. Arrays are never sorted
+or resampled, and the fits, folds and grids are unaffected. The plot shows a
+decimated subset of rows plus two display means, and the summary states the counts.
+Check the Data section without running any fit with
+`NODE_PATH=<playwright modules> node scripts/check_wasm_demo_display.cjs`
+(`AOM_CHROME` selects a browser binary).
+
 The bundled snapshots are regenerated deterministically from public measured
 sources in `nirs4all-datasets`. Refresh them from a sibling checkout with:
 

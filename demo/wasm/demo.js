@@ -567,6 +567,154 @@ function drawTargetHistogram(data) {
   });
 }
 
+const SPECTRA_ROW_LIMITS = { train: 28, test: 14 };
+const MEAN_COLORS = { train: "#0f766e", test: "#3730a3" };
+let previewHandle = null;
+let spectraHandle = null;
+let selectedSpectrum = null;
+
+function plottedRowCount(rows, limit) {
+  return Math.ceil(rows / Math.max(1, Math.ceil(rows / limit)));
+}
+
+function axisIsStrictlyAscending(axis) {
+  for (let index = 0; index < axis.length; index += 1) {
+    if (!Number.isFinite(axis[index]) || (index > 0 && !(axis[index] > axis[index - 1]))) return false;
+  }
+  return axis.length > 0;
+}
+
+function sharedUiError(host, message) {
+  const note = document.createElement("p");
+  note.className = "shared-ui-error";
+  note.setAttribute("role", "alert");
+  note.textContent = message;
+  host.replaceChildren(note);
+}
+
+function clearSharedDisplays() {
+  [previewHandle, spectraHandle].forEach((handle) => handle?.unmount());
+  previewHandle = null;
+  spectraHandle = null;
+  selectedSpectrum = null;
+  byId("dataset-preview").replaceChildren();
+  byId("spectra-explorer").replaceChildren();
+  byId("spectra-mode-note").hidden = true;
+  byId("spectra-chart").replaceChildren();
+  byId("spectra-chart").toggleAttribute("hidden", true);
+}
+
+function datasetPreviewView(data, axisRange, targetRange) {
+  const rows = data.trainRows + data.testRows;
+  const split = (id, label, count) => ({ id, label, count, countLabel: `${count} rows`, percentage: null, percentageLabel: null });
+  return {
+    id: activeDatasetId,
+    title: "Active split summary",
+    description: null,
+    taskKind: "regression",
+    taskLabel: "Regression",
+    sampleCount: rows,
+    sampleCountLabel: `${rows} rows`,
+    featureCount: data.cols,
+    featureCountLabel: `${data.cols} features`,
+    targetCount: 1,
+    targetCountLabel: "1 target",
+    classCount: null,
+    classCountLabel: null,
+    spectralRangeLabel: axisRange,
+    splitCounts: [split("calibration", "Calibration", data.trainRows), split("validation", "Validation", data.testRows)],
+    splitSummaryLabel: `Calibration ${data.trainRows} rows, validation ${data.testRows} rows`,
+    tags: [],
+    badges: [
+      { id: "task", label: "Regression", tone: "default" },
+      { id: "signal", label: signalLabel(data.meta.signalType), tone: "muted" },
+    ],
+    stats: [
+      { id: "samples", label: "Calibration", value: `${data.trainRows} × ${data.cols}`, detail: "rows × features", tone: "default" },
+      { id: "splits", label: "Validation", value: `${data.testRows} × ${data.cols}`, detail: "rows × features", tone: "default" },
+      { id: "range", label: "Spectral axis", value: axisRange, detail: null, tone: "default" },
+      { id: "targets", label: "Response", value: targetRange, detail: data.meta.targetName, tone: "default" },
+    ],
+  };
+}
+
+function renderDatasetPreview(data, targetMin, targetMax) {
+  const host = byId("dataset-preview");
+  previewHandle?.unmount();
+  previewHandle = null;
+  const ui = window.Nirs4allUIBrowser;
+  if (!ui) {
+    sharedUiError(host, "The shared nirs4all-ui browser bundle did not load, so the dataset summary cannot be shown.");
+    return;
+  }
+  const axisRange = `${compactNumber(data.axis[0])} → ${compactNumber(data.axis.at(-1))} ${axisUnit(data.meta.unit)}`;
+  const targetRange = `${compactNumber(targetMin)} → ${compactNumber(targetMax)}`;
+  host.replaceChildren();
+  previewHandle = ui.mountDatasetPreview(host, { view: datasetPreviewView(data, axisRange, targetRange) });
+}
+
+function spectraExplorerSeries(data) {
+  const series = [];
+  const addPartition = (buffer, rows, limit, prefix, label, color, meanColor) => {
+    const step = Math.max(1, Math.ceil(rows / limit));
+    for (let row = 0; row < rows; row += step) {
+      series.push({ id: `${prefix}-${row}`, values: Array.from(buffer.subarray(row * data.cols, (row + 1) * data.cols)), color, label: `${label} row ${row + 1}` });
+    }
+    series.push({ id: `${prefix}-mean`, values: Array.from(meanRows(buffer, rows, data.cols)), color: meanColor, label: `${label} mean (display)` });
+  };
+  addPartition(data.trainX.data, data.trainRows, SPECTRA_ROW_LIMITS.train, "cal", "calibration", COLORS.train, MEAN_COLORS.train);
+  addPartition(data.testX.data, data.testRows, SPECTRA_ROW_LIMITS.test, "val", "validation", COLORS.test, MEAN_COLORS.test);
+  return series;
+}
+
+function showSpectra(data) {
+  const host = byId("spectra-explorer");
+  const svg = byId("spectra-chart");
+  const note = byId("spectra-mode-note");
+  spectraHandle?.unmount();
+  spectraHandle = null;
+  selectedSpectrum = null;
+  host.replaceChildren();
+  const shownTrain = plottedRowCount(data.trainRows, SPECTRA_ROW_LIMITS.train);
+  const shownTest = plottedRowCount(data.testRows, SPECTRA_ROW_LIMITS.test);
+  byId("spectra-summary").textContent += ` Showing ${shownTrain + shownTest} of ${data.trainRows + data.testRows} spectra rows (calibration ${shownTrain} of ${data.trainRows}, validation ${shownTest} of ${data.testRows}) plus the two display means.`;
+  if (!axisIsStrictlyAscending(data.axis)) {
+    // The shared explorer places x by axis value; keep the native column order for this axis.
+    byId("spectra-legend").dataset.mode = "native";
+    svg.toggleAttribute("hidden", false);
+    note.hidden = false;
+    note.textContent = "This feature axis is not strictly ascending, so the spectra are drawn in native column order with the built-in plot instead of the shared explorer. No array is sorted or resampled.";
+    drawSpectra(data);
+    return;
+  }
+  svg.replaceChildren();
+  svg.toggleAttribute("hidden", true);
+  note.hidden = true;
+  byId("spectra-legend").dataset.mode = "explorer";
+  const ui = window.Nirs4allUIBrowser;
+  if (!ui) {
+    sharedUiError(host, "The shared nirs4all-ui browser bundle did not load, so the spectra explorer cannot be shown.");
+    return;
+  }
+  const axis = Array.from(data.axis);
+  const series = spectraExplorerSeries(data);
+  const propsFor = () => ({
+    axis,
+    series,
+    axisUnit: axisUnit(data.meta.unit),
+    yLabel: signalLabel(data.meta.signalType),
+    title: "Calibration and held-out spectra",
+    selected: selectedSpectrum === null ? [] : [selectedSpectrum],
+    onSelect: (id) => {
+      selectedSpectrum = id;
+      spectraHandle?.update(propsFor());
+    },
+    width: 760,
+    height: 360,
+  });
+  spectraHandle = ui.mountSpectraExplorer(host, propsFor());
+}
+
 function plotPlaceholder(id, message, viewBox = [0, 0, 700, 420]) {
   const svg = byId(id);
   svg.replaceChildren();
@@ -661,11 +809,7 @@ function setDatasetUi(data) {
   byId("dataset-name").textContent = data.meta.label;
   byId("dataset-kind").textContent = data.meta.kind;
   byId("dataset-description").textContent = data.meta.description;
-  byId("train-shape").textContent = `${data.trainRows} × ${data.cols}`;
-  byId("test-shape").textContent = `${data.testRows} × ${data.cols}`;
-  byId("axis-range").textContent = `${compactNumber(data.axis[0])} → ${compactNumber(data.axis.at(-1))} ${axisUnit(data.meta.unit)}`;
   const [targetMin, targetMax] = extent([...data.trainY, ...data.testY]);
-  byId("target-range").textContent = `${compactNumber(targetMin)} → ${compactNumber(targetMax)}`;
   byId("dataset-provenance").textContent = data.meta.provenance;
   const link = byId("dataset-source-link");
   if (data.meta.sourceUrl) {
@@ -675,13 +819,14 @@ function setDatasetUi(data) {
     link.hidden = true;
   }
   byId("fairness-text").textContent = `${data.trainRows} calibration rows · ${data.testRows} held-out rows · selected-input identity always included`;
-  drawSpectra(data);
+  renderDatasetPreview(data, targetMin, targetMax);
   drawTargetHistogram(data);
   const [signalMin, signalMax] = extent([...data.trainX.data, ...data.testX.data]);
   const trainMean = data.trainY.reduce((sum, value) => sum + value, 0) / data.trainY.length;
   const testMean = data.testY.reduce((sum, value) => sum + value, 0) / data.testY.length;
   byId("spectra-summary").textContent = `${data.trainRows + data.testRows} spectra across ${data.cols} wavelengths; ${data.meta.signalType} spans ${compactNumber(signalMin)} to ${compactNumber(signalMax)}.`;
   byId("target-summary").textContent = `${data.meta.targetName}: ${compactNumber(targetMin)} to ${compactNumber(targetMax)}; calibration mean ${compactNumber(trainMean)}, validation mean ${compactNumber(testMean)}.`;
+  showSpectra(data);
   resetResults();
 }
 
@@ -742,6 +887,7 @@ async function loadBundledDataset(id, runAfterLoad = false, announceReady = true
     loadingDatasetId = null;
     renderDatasetOptions();
     byId("dataset-name").textContent = "Dataset failed to load";
+    clearSharedDisplays();
     byId("dataset-description").textContent = location.protocol === "file:"
       ? "Serve this directory over HTTP; browsers cannot fetch the CSV and WASM files from file://."
       : error.message;

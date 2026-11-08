@@ -9,6 +9,7 @@
   <link rel="icon" href="assets/nirs4all-ui/brands/nirs4all-formats/icon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="assets/nirs4all-ui/styles/nirs4all-default.css">
   <link rel="stylesheet" href="assets/nirs4all-ui/viz.css">
+  <link rel="stylesheet" href="assets/nirs4all-ui/browser/browser.css">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body class="n4-app n4-spectral-canvas">
@@ -123,12 +124,7 @@
             <span id="dataset-kind" class="n4-badge">Public measured data</span>
           </div>
           <p id="dataset-description" class="muted"></p>
-          <dl class="metadata-grid">
-            <div><dt>Calibration</dt><dd id="train-shape">—</dd></div>
-            <div><dt>Validation</dt><dd id="test-shape">—</dd></div>
-            <div><dt>Spectral axis</dt><dd id="axis-range">—</dd></div>
-            <div><dt>Response</dt><dd id="target-range">—</dd></div>
-          </dl>
+          <div id="dataset-preview" class="dataset-preview"></div>
           <div class="file-contract">
             <span>Xcal.csv</span><span>Ycal.csv</span><span>Xval.csv</span><span>Yval.csv</span>
           </div>
@@ -137,8 +133,10 @@
 
       <div class="inspection-grid">
         <article class="chart-panel n4-surface">
-          <div class="chart-title"><div><p class="overline">X · spectra</p><h3>Calibration and held-out spectra</h3></div><div class="legend"><span class="legend-key train"></span>Calibration <span class="legend-key test"></span>Validation</div></div>
-          <svg id="spectra-chart" class="n4viz" viewBox="0 0 760 360" role="img" aria-label="Spectra in the calibration and validation partitions" aria-describedby="spectra-summary"></svg>
+          <div class="chart-title"><div><p class="overline">X · spectra</p><h3>Calibration and held-out spectra</h3></div><div id="spectra-legend" class="legend"><span class="legend-key train"></span>Calibration <span class="legend-key test"></span>Validation<span class="legend-note">· darker line: display mean</span></div></div>
+          <div id="spectra-explorer" class="spectra-explorer"></div>
+          <p id="spectra-mode-note" class="chart-footnote" hidden></p>
+          <svg id="spectra-chart" hidden class="n4viz" viewBox="0 0 760 360" role="img" aria-label="Spectra in the calibration and validation partitions" aria-describedby="spectra-summary"></svg>
           <p id="spectra-summary" class="chart-footnote">A concise spectral summary will appear with the dataset.</p>
         </article>
         <article class="chart-panel n4-surface">
@@ -479,6 +477,7 @@ plot(aom$rmse_curves, type = "l", xlab = "Candidate", ylab = "CV RMSE")</code></
     <div class="footer-links"><a href="https://pypi.org/project/nirs4all-aom/">Python · PyPI</a><a href="https://github.com/GBeurier/nirs4all-methods">Portable engine · GitHub</a><a href="https://github.com/GBeurier/nirs4all-aom">Demo source · GitHub</a></div>
     <p class="license-note">No analytics · no data upload · open source under the repository license.</p>
   </footer>
+  <script src="assets/nirs4all-ui/browser/nirs4all-ui-browser.iife.js"></script>
   <script type="module" src="demo.js"></script>
 </body>
 </html>

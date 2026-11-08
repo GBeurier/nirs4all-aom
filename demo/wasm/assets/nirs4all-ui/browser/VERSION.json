@@ -1,0 +1,18 @@
+{
+  "package": "nirs4all-ui",
+  "version": "0.2.2-local.20261107.2",
+  "artifact": "nirs4all-ui-0.2.2-local.20261107.2.tgz",
+  "artifact_sha256": "237a3bf306bdb6fec5088783c425381bcf125540ba7ad25e1aec0604198d7728",
+  "source_base_commit": "8bfc5f51600b59fc5cc899cd93f58da98fb2f851",
+  "source_kind": "local-private-full-source-export",
+  "publication": "unpublished-local-development",
+  "files": {
+    "LICENSE": "d8a6cc31abc16b6748c7a21f21611f5a1ec33f67d22ca23d7da1c19b95496bee",
+    "LICENSES/THIRD-PARTY/README.md": "0962af54004e2fa30c25cac39f8eddb51e0fa1cd4cbde3030ee3560f555551ef",
+    "LICENSES/THIRD-PARTY/react-dom.LICENSE.txt": "da6d3703ed11cbe42bd212c725957c98da23cbff1998c05fa4b3d976d1a58e93",
+    "LICENSES/THIRD-PARTY/react.LICENSE.txt": "da6d3703ed11cbe42bd212c725957c98da23cbff1998c05fa4b3d976d1a58e93",
+    "LICENSES/THIRD-PARTY/scheduler.LICENSE.txt": "da6d3703ed11cbe42bd212c725957c98da23cbff1998c05fa4b3d976d1a58e93",
+    "browser.css": "aa9789e306265c9da905890b5512ecb6b6e0146de00086fcf712a4265cfa9d68",
+    "nirs4all-ui-browser.iife.js": "07a581c0ef4dfb368694ae2b175011b5b0922aae2ae1fb405587015f28fd15b8"
+  }
+}

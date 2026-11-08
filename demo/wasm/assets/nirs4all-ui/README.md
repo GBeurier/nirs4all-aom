@@ -13,3 +13,8 @@ without a CDN. Run `../../sync_ui_assets.sh` from this directory, or
 `./sync_ui_assets.sh` from `demo/wasm`, to refresh them from a sibling checkout.
 No demo-specific logo, icon or chart asset is maintained outside
 `nirs4all-ui`.
+
+`browser/` is separate: it holds the unmodified self-contained browser bundle
+(`nirs4all-ui-browser.iife.js`, `browser.css`) and the licence texts from the local
+unpublished `nirs4all-ui` export identified in `browser/VERSION.json`. It is copied once
+from that archive, not refreshed by `sync_ui_assets.sh`.
