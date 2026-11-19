@@ -24,10 +24,17 @@ if ! grep -q 'fitAomChain' "$dist_dir/index.js"; then
   echo "The published bundle lacks the configurable AOM chain API" >&2
   exit 1
 fi
+if [[ ! -f "$dist_dir/THIRD_PARTY_LICENSES.md" || ! -d "$dist_dir/LICENSES" || ! -f package/LICENSE || ! -f package/LICENSE-CeCILL-2.1 ]]; then
+  echo "The published @nirs4all/methods archive lacks its license notices" >&2
+  exit 1
+fi
 
 mkdir -p "$target_dir"
 find "$target_dir" -maxdepth 1 -type f \( -name '*.js' -o -name '*.wasm' \) -delete
 cp "$dist_dir"/*.js "$dist_dir"/*.wasm "$target_dir"/
+cp "$dist_dir/THIRD_PARTY_LICENSES.md" package/LICENSE package/LICENSE-CeCILL-2.1 "$target_dir/"
+rm -rf -- "$target_dir/LICENSES"
+cp -R "$dist_dir/LICENSES" "$target_dir/LICENSES"
 node - "$target_dir" <<'JS'
 const fs = require('node:fs');
 const path = require('node:path');

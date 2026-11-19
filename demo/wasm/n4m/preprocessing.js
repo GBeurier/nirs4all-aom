@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: CECILL-2.1
+// SPDX-License-Identifier: CECILL-2.1 OR AGPL-3.0-or-later
 //
 // Generic preprocessing surface over libn4m. One opaque handle wraps any
 // supported preprocessing operator; the numerics live entirely in libn4m
@@ -18,7 +18,7 @@
 //                           0 mirror, 1 constant, 2 nearest, 3 wrap, 4 interp
 //   Derivative            : [order]                   (1 → 1st, ≥2 → 2nd derivative)
 //   Detrend               : [polyorder]
-//   Normalize             : []                        (vector L2 norm)
+// Row L2 uses the generic RowL2Normalize transformer; ppCreate has no Normalize token.
 //   GaussianFilter        : [sigma]
 import { getModule, checkStatus } from "./ffi.js";
 function pushF64(m, data) {
@@ -38,6 +38,10 @@ function checkDims(X, n, p) {
 }
 /** Create a preprocessing operator by catalog type token + numeric params. */
 export function ppCreate(op, params = []) {
+    if (op === "StandardNormalVariate" && !(params === undefined ||
+        (Array.isArray(params) && params.length === 0))) {
+        throw new TypeError("SNV accepts only an empty parameter Array; use SNV/RolePipeline for options");
+    }
     const m = getModule();
     let pPtr = 0;
     let ptr = 0;
