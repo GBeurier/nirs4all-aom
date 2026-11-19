@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: CECILL-2.1
+// SPDX-License-Identifier: CECILL-2.1 OR AGPL-3.0-or-later
 //
 // PLS regression model wrapper. Internally uses the `n4m_wasm_pls_fit`
 // helper which takes raw double pointers and works around an Emscripten
@@ -106,7 +106,10 @@ export function predictPls(model, X_new) {
  * @param X row-major (n × p) input matrix.
  * @param Y row-major (n × q) target matrix.
  * @param n_components number of latent components (used by the PLS family).
- * @param params positional hyper-parameter vector for the model.
+ * @param params positional hyper-parameter vector for the model. For
+ *   GroupSparsePLS this is `[group_lambda, ...group_assignment]`, with exactly
+ *   one non-negative integer group ID per input feature; no implicit grouping
+ *   is applied.
  */
 export function fitModel(model, X, Y, n_components, params = []) {
     if (X.rows !== Y.rows) {
@@ -134,7 +137,7 @@ export function fitModel(model, X, Y, n_components, params = []) {
             coefsBuf.ptr, xmBuf.ptr, ymBuf.ptr, interBuf.ptr,
             hasInterBuf, 0]);
         checkStatus(status);
-        // Only models with a genuine affine intercept (currently Ridge) report
+        // Only models with a genuine affine intercept (Ridge and MBPLS) report
         // has_intercept=1; the PLS/PCR family and the PLS-based Tier-B fits
         // predict via the centred form and carry no intercept (kept null so a
         // caller never adds a misleading zero/y_mean term to x.B).
@@ -176,7 +179,7 @@ export function predictModel(model, X_new) {
     // AOM-PLS (and any future affine model) carries input-space coefficients +
     // a genuine intercept and zero means — it predicts on RAW X via the
     // explicit-intercept form  pred = intercept + x.B. Every centred model
-    // (PLS family + the Tier-B fits, including Ridge) carries intercept = null
+    // (PLS family + centred Tier-B fits) carries intercept = null
     // and predicts via  pred = y_mean + (x - x_mean).B. The C helper picks the
     // form from whether the intercept pointer is non-NULL.
     const useIntercept = model.intercept !== null;

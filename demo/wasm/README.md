@@ -68,18 +68,17 @@ full preprocessing-HPO protocol, not with the inexpensive standalone PLS/Ridge r
 
 ## Reproducible inputs
 
-The JavaScript/WASM bundle is staged from the latest published
-`@nirs4all/methods` npm release (currently **1.0.18**). Each Pages deployment
+The JavaScript/WASM bundle is staged from the selected published
+`@nirs4all/methods` npm release **1.5.0**. Each Pages deployment
 refreshes the bundle and runs the PLS/Ridge browser self-test before publishing.
 The public `n4m/version.json` records the resolved package version, npm archive
 integrity and SHA-256 of every staged JavaScript/WASM asset.
+The upstream license texts and third-party notices accompany the runtime unchanged.
 
 Refresh locally with:
 
 ```bash
-./stage_bundle.sh
-# To replay a specific release:
-N4M_DEMO_VERSION=1.0.18 ./stage_bundle.sh
+N4M_DEMO_VERSION=1.5.0 ./stage_bundle.sh
 ```
 
 The runtime version shown in the page is read from the loaded WASM engine.

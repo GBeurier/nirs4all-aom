@@ -1,25 +1,26 @@
-// SPDX-License-Identifier: CECILL-2.1
-/** Mirror of the C enum n4m_status_t. */
+// SPDX-License-Identifier: CECILL-2.1 OR AGPL-3.0-or-later
+/** Mirror of the C enum n4m_status_t (cpp/include/n4m/n4m.h). */
 export var Status;
 (function (Status) {
     Status[Status["OK"] = 0] = "OK";
     Status[Status["ERR_INVALID_ARGUMENT"] = 1] = "ERR_INVALID_ARGUMENT";
     Status[Status["ERR_NULL_POINTER"] = 2] = "ERR_NULL_POINTER";
-    Status[Status["ERR_OUT_OF_MEMORY"] = 3] = "ERR_OUT_OF_MEMORY";
+    Status[Status["ERR_SHAPE_MISMATCH"] = 3] = "ERR_SHAPE_MISMATCH";
     Status[Status["ERR_DTYPE_MISMATCH"] = 4] = "ERR_DTYPE_MISMATCH";
-    Status[Status["ERR_SHAPE_MISMATCH"] = 5] = "ERR_SHAPE_MISMATCH";
-    Status[Status["ERR_DIM_MISMATCH"] = 6] = "ERR_DIM_MISMATCH";
+    Status[Status["ERR_STRIDE_INVALID"] = 5] = "ERR_STRIDE_INVALID";
+    Status[Status["ERR_NOT_FITTED"] = 6] = "ERR_NOT_FITTED";
     Status[Status["ERR_NUMERICAL_FAILURE"] = 7] = "ERR_NUMERICAL_FAILURE";
-    Status[Status["ERR_NOT_FITTED"] = 8] = "ERR_NOT_FITTED";
-    Status[Status["ERR_INTERNAL"] = 9] = "ERR_INTERNAL";
-    Status[Status["ERR_ABI_MISMATCH"] = 10] = "ERR_ABI_MISMATCH";
-    Status[Status["ERR_VERSION_INCOMPATIBLE"] = 11] = "ERR_VERSION_INCOMPATIBLE";
-    Status[Status["ERR_BACKEND_UNAVAILABLE"] = 12] = "ERR_BACKEND_UNAVAILABLE";
+    Status[Status["ERR_CONVERGENCE_FAILED"] = 8] = "ERR_CONVERGENCE_FAILED";
+    Status[Status["ERR_OUT_OF_MEMORY"] = 9] = "ERR_OUT_OF_MEMORY";
+    Status[Status["ERR_UNSUPPORTED"] = 10] = "ERR_UNSUPPORTED";
+    Status[Status["ERR_NOT_IMPLEMENTED"] = 11] = "ERR_NOT_IMPLEMENTED";
+    Status[Status["ERR_ABI_MISMATCH"] = 12] = "ERR_ABI_MISMATCH";
     Status[Status["ERR_IO"] = 13] = "ERR_IO";
-    Status[Status["ERR_PERMISSION"] = 14] = "ERR_PERMISSION";
-    Status[Status["ERR_NOT_IMPLEMENTED"] = 15] = "ERR_NOT_IMPLEMENTED";
-    Status[Status["ERR_TIMEOUT"] = 16] = "ERR_TIMEOUT";
-    Status[Status["ERR_CANCELED"] = 17] = "ERR_CANCELED";
+    Status[Status["ERR_CORRUPT_BUFFER"] = 14] = "ERR_CORRUPT_BUFFER";
+    Status[Status["ERR_VERSION_INCOMPATIBLE"] = 15] = "ERR_VERSION_INCOMPATIBLE";
+    Status[Status["ERR_BACKEND_UNAVAILABLE"] = 16] = "ERR_BACKEND_UNAVAILABLE";
+    Status[Status["ERR_CANCELLED"] = 17] = "ERR_CANCELLED";
+    Status[Status["ERR_INTERNAL"] = 255] = "ERR_INTERNAL";
 })(Status || (Status = {}));
 /** Mirror of n4m_dtype_t (cpp/include/n4m/n4m.h §2). */
 export var Dtype;
@@ -58,6 +59,26 @@ export var Solver;
     Solver[Solver["POWER"] = 6] = "POWER";
     Solver[Solver["RANDOMIZED_SVD"] = 7] = "RANDOMIZED_SVD";
 })(Solver || (Solver = {}));
+/** Mirror of n4m_model_array_t (n4m_model_get_array tags). */
+export var ModelArray;
+(function (ModelArray) {
+    ModelArray[ModelArray["COEFFICIENTS"] = 0] = "COEFFICIENTS";
+    ModelArray[ModelArray["INTERCEPT"] = 1] = "INTERCEPT";
+    ModelArray[ModelArray["X_MEAN"] = 2] = "X_MEAN";
+    ModelArray[ModelArray["X_SCALE"] = 3] = "X_SCALE";
+    ModelArray[ModelArray["Y_MEAN"] = 4] = "Y_MEAN";
+    ModelArray[ModelArray["Y_SCALE"] = 5] = "Y_SCALE";
+    ModelArray[ModelArray["WEIGHTS_W"] = 6] = "WEIGHTS_W";
+    ModelArray[ModelArray["LOADINGS_P"] = 7] = "LOADINGS_P";
+    ModelArray[ModelArray["Y_LOADINGS_Q"] = 8] = "Y_LOADINGS_Q";
+    ModelArray[ModelArray["ROTATIONS_R"] = 9] = "ROTATIONS_R";
+    ModelArray[ModelArray["SCORES_T"] = 10] = "SCORES_T";
+    ModelArray[ModelArray["Y_SCORES_U"] = 11] = "Y_SCORES_U";
+    /** ABI 2.20: (1, 1) X-Y cross-covariance resolution of the components. */
+    ModelArray[ModelArray["COMPONENT_RESOLUTION"] = 12] = "COMPONENT_RESOLUTION";
+    /** ABI 2.20: (1, n_components), 1 for a numerically unresolved component. */
+    ModelArray[ModelArray["UNRESOLVED_COMPONENTS"] = 13] = "UNRESOLVED_COMPONENTS";
+})(ModelArray || (ModelArray = {}));
 /** Mirror of n4m_deflation_t. */
 export var Deflation;
 (function (Deflation) {
